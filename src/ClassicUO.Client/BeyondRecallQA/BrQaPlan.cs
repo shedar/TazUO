@@ -1,14 +1,13 @@
-// SPDX-License-Identifier: BSD-2-Clause
-// Beyond Recall QA evidence mode - typed plan engine with bounded timeouts.
-
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace ClassicUO.BeyondRecallQA
 {
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     internal sealed class BrQaPlan
     {
         [JsonPropertyName("schemaVersion")]
@@ -26,33 +25,44 @@ namespace ClassicUO.BeyondRecallQA
         public static BrQaPlan Load(string path)
         {
             if (!File.Exists(path))
-                throw new FileNotFoundException("BR QA plan file not found: " + path);
+                throw new FileNotFoundException("Beyond Recall QA plan file was not found.");
 
-            var json = File.ReadAllText(path);
-            var plan = JsonSerializer.Deserialize(json, BrQaPlanJsonContext.Default.BrQaPlan);
+            BrQaPlan plan;
+            try
+            {
+                plan = JsonSerializer.Deserialize(File.ReadAllText(path), BrQaPlanJsonContext.Default.BrQaPlan);
+            }
+            catch (JsonException exception)
+            {
+                throw new InvalidDataException("Beyond Recall QA plan JSON is invalid or contains unknown fields.", exception);
+            }
 
             if (plan == null)
-                throw new InvalidDataException("BR QA plan file was empty or invalid.");
-
+                throw new InvalidDataException("Beyond Recall QA plan was empty.");
             if (plan.SchemaVersion != 1)
-                throw new InvalidDataException("BR QA plan schema version must be 1, got: " + plan.SchemaVersion);
+                throw new InvalidDataException("Beyond Recall QA plan schema version must be 1.");
+            if (string.IsNullOrWhiteSpace(plan.Name) || plan.Name.Length > 64 ||
+                plan.Name.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '-' or '_')))
+            {
+                throw new InvalidDataException("Beyond Recall QA plan name is invalid.");
+            }
+            if (plan.TimeoutSeconds is < 1 or > 300)
+                throw new InvalidDataException("Beyond Recall QA plan timeout must be between 1 and 300 seconds.");
+            if (plan.Actions == null || plan.Actions.Count is < 1 or > 64)
+                throw new InvalidDataException("Beyond Recall QA plan must contain between 1 and 64 actions.");
 
-            if (string.IsNullOrWhiteSpace(plan.Name))
-                throw new InvalidDataException("BR QA plan must have a name.");
-
-            if (plan.TimeoutSeconds <= 0)
-                throw new InvalidDataException("BR QA plan timeout must be positive.");
-
-            foreach (var action in plan.Actions)
-                ValidateAction(action);
+            for (var i = 0; i < plan.Actions.Count; i++)
+                ValidateAction(plan.Actions[i], i);
 
             return plan;
         }
 
-        private static void ValidateAction(BrQaAction action)
+        private static void ValidateAction(BrQaAction action, int index)
         {
-            if (string.IsNullOrWhiteSpace(action.Type))
-                throw new InvalidDataException("BR QA action must have a type.");
+            if (action == null || string.IsNullOrWhiteSpace(action.Type))
+                throw Error(index, "action type is required");
+            if (action.TimeoutSeconds is < 1 or > 60)
+                throw Error(index, "timeoutSeconds must be between 1 and 60");
 
             switch (action.Type)
             {
@@ -64,50 +74,86 @@ namespace ClassicUO.BeyondRecallQA
                 case "open-skills":
                 case "logout":
                 case "exit":
+                    RequireNoPayload(action, index);
                     break;
-
                 case "select-or-create-named-qa-character":
-                    if (string.IsNullOrWhiteSpace(action.CharacterName))
-                        throw new InvalidDataException("select-or-create-named-qa-character requires characterName.");
+                    if (!IsSafeCharacterName(action.CharacterName))
+                        throw Error(index, "characterName must be a bounded safe UO character name");
+                    RequireEmpty(action.Direction, action.Message, action.Contains, action.Command);
+                    if (action.Steps != 1 || action.GumpId != null)
+                        throw Error(index, "unexpected fields for character selection");
                     break;
-
                 case "walk-relative":
-                    if (string.IsNullOrWhiteSpace(action.Direction))
-                        throw new InvalidDataException("walk-relative requires direction.");
-                    if (action.Steps <= 0)
-                        throw new InvalidDataException("walk-relative requires positive steps.");
+                    if (!Directions.Contains(action.Direction, StringComparer.OrdinalIgnoreCase))
+                        throw Error(index, "direction is invalid");
+                    if (action.Steps is < 1 or > 10)
+                        throw Error(index, "steps must be between 1 and 10");
+                    RequireEmpty(action.CharacterName, action.Message, action.Contains, action.Command);
+                    if (action.GumpId != null)
+                        throw Error(index, "unexpected gumpId for walk-relative");
                     break;
-
                 case "speak":
-                    if (string.IsNullOrWhiteSpace(action.Message))
-                        throw new InvalidDataException("speak requires message.");
+                    if (!IsBoundedText(action.Message, 80))
+                        throw Error(index, "message is required and may not exceed 80 characters");
+                    RequireEmpty(action.CharacterName, action.Direction, action.Contains, action.Command);
+                    if (action.Steps != 1 || action.GumpId != null)
+                        throw Error(index, "unexpected fields for speak");
                     break;
-
                 case "wait-journal":
-                    if (string.IsNullOrWhiteSpace(action.Contains))
-                        throw new InvalidDataException("wait-journal requires contains.");
+                    if (!IsBoundedText(action.Contains, 80))
+                        throw Error(index, "contains is required and may not exceed 80 characters");
+                    RequireEmpty(action.CharacterName, action.Direction, action.Message, action.Command);
+                    if (action.Steps != 1 || action.GumpId != null)
+                        throw Error(index, "unexpected fields for wait-journal");
                     break;
-
                 case "send-server-command":
-                    if (string.IsNullOrWhiteSpace(action.Command))
-                        throw new InvalidDataException("send-server-command requires command.");
+                    if (!IsBoundedText(action.Command, 80) || !action.Command.StartsWith("[", StringComparison.Ordinal))
+                        throw Error(index, "command must be a bounded bracket command");
+                    RequireEmpty(action.CharacterName, action.Direction, action.Message, action.Contains);
+                    if (action.Steps != 1 || action.GumpId != null)
+                        throw Error(index, "unexpected fields for send-server-command");
                     break;
-
                 case "wait-gump":
+                    RequireEmpty(action.CharacterName, action.Direction, action.Message, action.Contains, action.Command);
+                    if (action.Steps != 1)
+                        throw Error(index, "unexpected steps for wait-gump");
                     break;
-
-                case "capture-rendered-frame":
-                    break;
-
                 default:
-                    throw new InvalidDataException("Unknown BR QA action type: " + action.Type);
+                    throw Error(index, "unknown action type");
             }
-
-            if (action.TimeoutSeconds < 0)
-                throw new InvalidDataException("BR QA action timeout cannot be negative.");
         }
+
+        private static readonly string[] Directions =
+        {
+            "north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"
+        };
+
+        private static bool IsSafeCharacterName(string value) =>
+            !string.IsNullOrWhiteSpace(value) && value.Length <= 30 &&
+            value.All(c => char.IsAsciiLetterOrDigit(c) || c is ' ' or '_' or '-');
+
+        private static bool IsBoundedText(string value, int maximum) =>
+            !string.IsNullOrWhiteSpace(value) && value.Length <= maximum &&
+            !value.Contains('\r') && !value.Contains('\n') && !value.Contains('\0');
+
+        private static void RequireNoPayload(BrQaAction action, int index)
+        {
+            RequireEmpty(action.CharacterName, action.Direction, action.Message, action.Contains, action.Command);
+            if (action.Steps != 1 || action.GumpId != null)
+                throw Error(index, "action has unexpected payload fields");
+        }
+
+        private static void RequireEmpty(params string[] values)
+        {
+            if (values.Any(value => value != null))
+                throw new InvalidDataException("Beyond Recall QA action has unexpected payload fields.");
+        }
+
+        private static InvalidDataException Error(int index, string detail) =>
+            new InvalidDataException($"Beyond Recall QA action {index} {detail}.");
     }
 
+    [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
     internal sealed class BrQaAction
     {
         [JsonPropertyName("type")]
@@ -138,6 +184,7 @@ namespace ClassicUO.BeyondRecallQA
         public uint? GumpId { get; set; }
     }
 
+    [JsonSourceGenerationOptions(UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)]
     [JsonSerializable(typeof(BrQaPlan))]
     [JsonSerializable(typeof(BrQaAction))]
     internal partial class BrQaPlanJsonContext : JsonSerializerContext

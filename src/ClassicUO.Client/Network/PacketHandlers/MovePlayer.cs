@@ -13,9 +13,6 @@ internal static class MovePlayer
 
         var direction = (Direction)p.ReadUInt8();
 
-        if (BeyondRecallQA.BrQaSession.IsActive)
-            BeyondRecallQA.BrQaSession.Instance.EmitMovementAcknowledged((direction & Direction.Mask).ToString());
-
         world.Player.Walk(direction & Direction.Mask, (direction & Direction.Running) != 0);
     }
 }

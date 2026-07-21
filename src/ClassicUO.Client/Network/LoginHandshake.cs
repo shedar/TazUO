@@ -183,7 +183,7 @@ namespace ClassicUO.Network
             ushort count = p.ReadUInt16BE();
 
             if (BeyondRecallQA.BrQaSession.IsActive)
-                BeyondRecallQA.BrQaSession.Instance.EmitServerListReceived(count);
+                BeyondRecallQA.BrQaSession.Instance.ObserveServerListReceived(count);
 
             DisposeAllServerEntries();
             Servers = new ServerListEntry[count];
@@ -375,7 +375,7 @@ namespace ClassicUO.Network
             Log.Info("Connected!");
 
             if (BeyondRecallQA.BrQaSession.IsActive)
-                BeyondRecallQA.BrQaSession.Instance.EmitNetworkConnected(IP + ":" + Port);
+                BeyondRecallQA.BrQaSession.Instance.EmitNetworkConnected();
 
             SetLoginStep(LoginSteps.VerifyingAccount);
 

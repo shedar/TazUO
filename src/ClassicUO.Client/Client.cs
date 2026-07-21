@@ -197,6 +197,9 @@ namespace ClassicUO
             try
             {
                 FileManager.Load(Settings.GlobalSettings.UseVerdata, Settings.GlobalSettings.Language, Settings.GlobalSettings.MapsLayouts);
+
+                if (BeyondRecallQA.BrQaSession.IsActive)
+                    BeyondRecallQA.BrQaSession.Instance.EmitLegalDataOpened();
             }
             catch (FileNotFoundException ex)
             {

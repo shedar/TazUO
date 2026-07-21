@@ -11,6 +11,8 @@
     <PublishAot>false</PublishAot>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Nullable>disable</Nullable>
+    <BeyondRecallSourceCommit Condition="'$(BeyondRecallSourceCommit)' == ''">not-injected</BeyondRecallSourceCommit>
+    <BeyondRecallBuildIdentity Condition="'$(BeyondRecallBuildIdentity)' == ''">not-injected</BeyondRecallBuildIdentity>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -39,6 +41,14 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>ClassicUO.UnitTests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BeyondRecallSourceCommit</_Parameter1>
+      <_Parameter2>$(BeyondRecallSourceCommit)</_Parameter2>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>BeyondRecallBuildIdentity</_Parameter1>
+      <_Parameter2>$(BeyondRecallBuildIdentity)</_Parameter2>
     </AssemblyAttribute>
   </ItemGroup>
 

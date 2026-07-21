@@ -60,7 +60,7 @@ internal static class Talk
         }
 
         if (BeyondRecallQA.BrQaSession.IsActive && !string.IsNullOrEmpty(text))
-            BeyondRecallQA.BrQaSession.Instance.EmitJournalObserved(text);
+            BeyondRecallQA.BrQaSession.Instance.ObserveJournal(text);
 
         world.MessageManager.HandleMessage(entity, text, name, hue, type, (byte)font, text_type);
     }
