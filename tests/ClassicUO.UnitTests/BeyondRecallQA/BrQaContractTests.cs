@@ -126,6 +126,21 @@ public sealed class BrQaContractTests
         Assert.DoesNotContain(fixture.Secret, exception.ToString(), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq", "fixture-only")]
+    [InlineData("qa", "ppppppppppppppppppppppppppppppp")]
+    [InlineData("qa user", "fixture-only")]
+    public void SecretParserRejectsCredentialsThatCannotRoundTripThroughLoginPackets(string username, string password)
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Secret,
+            JsonSerializer.Serialize(new { schemaVersion = 1, username, password })
+        );
+
+        Assert.Throws<InvalidDataException>(() => BrQaSecret.Read(fixture.Secret));
+    }
+
     private const string ValidPlan =
         "{\"schemaVersion\":1,\"name\":\"contract\",\"timeoutSeconds\":30,\"actions\":[{\"type\":\"connect\"},{\"type\":\"exit\"}]}";
 
