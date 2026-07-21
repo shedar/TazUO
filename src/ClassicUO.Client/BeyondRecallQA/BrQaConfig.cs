@@ -17,6 +17,8 @@ namespace ClassicUO.BeyondRecallQA
         public string SecretsRoot { get; private set; }
         public string DataIdentity { get; private set; }
         public string PreparationBuildIdentity { get; private set; }
+        public string ServerEndpoint { get; private set; }
+        public string ClientVersion { get; private set; }
         public bool ExitOnComplete { get; private set; }
 
         public static BrQaConfig Disabled { get; } = new BrQaConfig();
@@ -88,9 +90,46 @@ namespace ClassicUO.BeyondRecallQA
             if (!IsLowerHex(config.PreparationBuildIdentity, 64))
                 throw new ArgumentException("Beyond Recall QA preparation build identity must be exactly 64 lowercase hexadecimal characters.");
 
+            var ip = RequireOrdinaryValue(args, "-ip");
+            var port = RequireOrdinaryValue(args, "-port");
+            config.ClientVersion = RequireOrdinaryValue(args, "-clientversion");
+            if (!string.Equals(ip, "127.0.0.1", StringComparison.Ordinal) ||
+                !ushort.TryParse(port, out var parsedPort) || parsedPort == 0)
+            {
+                throw new ArgumentException("Beyond Recall QA mode requires an explicit loopback server endpoint.");
+            }
+            if (config.ClientVersion.Length > 32 ||
+                config.ClientVersion.Any(c => !(char.IsAsciiDigit(c) || c == '.')))
+            {
+                throw new ArgumentException("Beyond Recall QA client version is invalid.");
+            }
+
+            config.ServerEndpoint = ip + ":" + parsedPort;
+
             ValidatePaths(config);
             config.Enabled = true;
             return config;
+        }
+
+        private static string RequireOrdinaryValue(string[] args, string option)
+        {
+            string value = null;
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (!string.Equals(args[i], option, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (value != null)
+                    throw new ArgumentException("Duplicate Beyond Recall QA launch option: " + option);
+                if (i + 1 >= args.Length || string.IsNullOrWhiteSpace(args[i + 1]) ||
+                    args[i + 1].StartsWith("-", StringComparison.Ordinal))
+                {
+                    throw new ArgumentException("Beyond Recall QA launch option requires a non-option value: " + option);
+                }
+
+                value = args[++i];
+            }
+
+            return value ?? throw new ArgumentException("Beyond Recall QA mode requires launch option " + option + ".");
         }
 
         private static string RequireValue(string[] args, ref int index, string option)

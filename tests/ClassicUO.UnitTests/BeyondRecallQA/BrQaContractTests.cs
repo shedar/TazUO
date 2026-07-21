@@ -34,6 +34,8 @@ public sealed class BrQaContractTests
 
         Assert.True(config.Enabled);
         Assert.Equal(fixture.Output, config.OutputDirectory);
+        Assert.Equal("127.0.0.1:2593", config.ServerEndpoint);
+        Assert.Equal("7.0.116.0", config.ClientVersion);
 
         if (!OperatingSystem.IsWindows())
         {
@@ -101,6 +103,8 @@ public sealed class BrQaContractTests
         using var third = JsonDocument.Parse(lines[2]);
         Assert.Equal(1, first.RootElement.GetProperty("sequence").GetInt64());
         Assert.Equal("process-started", first.RootElement.GetProperty("eventType").GetString());
+        Assert.Equal("127.0.0.1:2593", first.RootElement.GetProperty("serverEndpoint").GetString());
+        Assert.Equal("7.0.116.0", first.RootElement.GetProperty("clientVersion").GetString());
         Assert.Equal(2, second.RootElement.GetProperty("sequence").GetInt64());
         Assert.Equal("settings-loaded", second.RootElement.GetProperty("eventType").GetString());
         Assert.Equal("scenario-failed", third.RootElement.GetProperty("eventType").GetString());
@@ -147,6 +151,9 @@ public sealed class BrQaContractTests
         public string[] Arguments(string output = null, string plan = null) =>
         new[]
         {
+            "-ip", "127.0.0.1",
+            "-port", "2593",
+            "-clientversion", "7.0.116.0",
             "-br-qa-plan", plan ?? Plan,
             "-br-qa-output", output ?? Output,
             "-br-qa-session", new string('a', 32),

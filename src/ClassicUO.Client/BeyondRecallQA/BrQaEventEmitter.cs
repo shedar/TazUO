@@ -92,6 +92,8 @@ namespace ClassicUO.BeyondRecallQA
             using var process = Process.GetCurrentProcess();
             _processId = process.Id;
             _processStartTime = process.StartTime.ToUniversalTime().ToString("O");
+            ServerEndpoint = config.ServerEndpoint;
+            ClientVersion = config.ClientVersion;
         }
 
         internal void Emit(string eventType, string detail = null)

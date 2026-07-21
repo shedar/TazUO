@@ -85,7 +85,9 @@ namespace ClassicUO.BeyondRecallQA
             var settings = Settings.GlobalSettings;
             if (settings == null || settings.IP != "127.0.0.1" || settings.Port != 2593 ||
                 string.IsNullOrWhiteSpace(settings.ClientVersion) || settings.SaveAccount || settings.AutoLogin ||
-                settings.Reconnect || !string.IsNullOrEmpty(settings.Password))
+                settings.Reconnect || !string.IsNullOrEmpty(settings.Password) ||
+                !string.Equals(settings.IP + ":" + settings.Port, _config.ServerEndpoint, StringComparison.Ordinal) ||
+                !string.Equals(settings.ClientVersion, _config.ClientVersion, StringComparison.Ordinal))
             {
                 FailScenario("unsafe-settings");
                 return;
