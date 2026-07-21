@@ -16,6 +16,9 @@ internal static class LoginComplete
     {
         if (world.Player != null && Client.Game.Scene is LoginScene)
         {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.EmitCharacterEnteredWorld(world.Player.Name);
+
             var scene = new GameScene(world);
             Client.Game.SetScene(scene);
             LoginScene.Instance?.Dispose();

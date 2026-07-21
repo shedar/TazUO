@@ -99,6 +99,9 @@ namespace ClassicUO
 
             ReadSettingsFromArgs(args);
 
+            // Beyond Recall QA evidence mode - opt-in, completely inert when not enabled
+            BeyondRecallQA.BrQaSession.Initialize(args);
+
             if (CUOEnviroment.IsHighDPI)
             {
                 Environment.SetEnvironmentVariable("FNA_GRAPHICS_ENABLE_HIGHDPI", "1");

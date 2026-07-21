@@ -181,6 +181,10 @@ namespace ClassicUO.Network
             Log.TraceDebug($"[HandShake] Got server list.");
             byte flags = p.ReadUInt8();
             ushort count = p.ReadUInt16BE();
+
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.EmitServerListReceived(count);
+
             DisposeAllServerEntries();
             Servers = new ServerListEntry[count];
 
@@ -210,6 +214,9 @@ namespace ClassicUO.Network
             ParseCharacterList(ref p);
             ParseCities(ref p);
             CharacterListFlags = p.ReadUInt32BE();
+
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.EmitCharacterListReceived(Characters?.Length ?? 0);
 
             SetLoginStep(LoginSteps.CharacterSelection);
             ReceiveCharacterListNotifier?.Invoke();
@@ -366,6 +373,10 @@ namespace ClassicUO.Network
         private void OnNetClientConnected(object sender, EventArgs e)
         {
             Log.Info("Connected!");
+
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.EmitNetworkConnected(IP + ":" + Port);
+
             SetLoginStep(LoginSteps.VerifyingAccount);
 
             uint address = AsyncNetClient.Socket.LocalIP;
