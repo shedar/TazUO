@@ -225,6 +225,12 @@ namespace ClassicUO
             UIManager.World = UO.World;
 
             SetScene(new LoginScene(UO.World));
+
+            if (BeyondRecallQA.BrQaSession.IsActive)
+            {
+                BeyondRecallQA.BrQaSession.Instance.EmitAssetsLoaded();
+                BeyondRecallQA.BrQaSession.Instance.EmitWindowReady();
+            }
 #endif
         }
 
@@ -513,6 +519,8 @@ namespace ClassicUO
             Profiler.EnterContext("MainThreadQueue");
             MainThreadQueue.ProcessQueue();
             Profiler.ExitContext("MainThreadQueue");
+
+            BeyondRecallQA.BrQaSession.Instance?.Update();
 
             Profiler.EnterContext("FpsTiming");
             _totalElapsed += gameTime.ElapsedGameTime.TotalMilliseconds;

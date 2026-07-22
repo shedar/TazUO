@@ -137,6 +137,9 @@ internal static class OpenCompressedGump
                 return;
             }
 
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.EmitGumpOpened(gumpID);
+
             Helpers.GumpHelpers.CreateGump(world, sender, gumpID, (int)x, (int)y, layout, lines);
         }
         catch (Exception e)

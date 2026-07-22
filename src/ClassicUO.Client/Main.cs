@@ -53,6 +53,7 @@ namespace ClassicUO
 
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
+                BeyondRecallQA.BrQaSession.Instance?.FailUnhandledException();
                 var sb = new StringBuilder();
 #if DEV_BUILD || DEBUG
                 sb.Append($"[TazUO - DEV (DEBUG: {CUOEnviroment.Debug}) - {CUOEnviroment.Version} - {DateTime.Now}]");
@@ -98,6 +99,8 @@ namespace ClassicUO
             };
 
             ReadSettingsFromArgs(args);
+
+            BeyondRecallQA.BrQaSession.Initialize(args);
 
             if (CUOEnviroment.IsHighDPI)
             {
@@ -207,6 +210,9 @@ namespace ClassicUO
             }
             else
             {
+                if (BeyondRecallQA.BrQaSession.IsActive)
+                    BeyondRecallQA.BrQaSession.Instance.EmitSettingsLoaded();
+
                 switch (Settings.GlobalSettings.ForceDriver)
                 {
                     default:
@@ -228,6 +234,7 @@ namespace ClassicUO
                 Client.Run(pluginHost);
             }
 
+            BeyondRecallQA.BrQaSession.Instance?.Dispose();
             Log.Trace("Closing...");
         }
 

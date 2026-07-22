@@ -12,6 +12,7 @@ internal static class MovePlayer
             return;
 
         var direction = (Direction)p.ReadUInt8();
+
         world.Player.Walk(direction & Direction.Mask, (direction & Direction.Running) != 0);
     }
 }
