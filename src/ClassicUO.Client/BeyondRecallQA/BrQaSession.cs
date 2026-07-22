@@ -698,6 +698,7 @@ namespace ClassicUO.BeyondRecallQA
                 "mana" when entity is Mobile mobile => mobile.Mana.ToString(CultureInfo.InvariantCulture),
                 "stamina" when entity is Mobile mobile => mobile.Stamina.ToString(CultureInfo.InvariantCulture),
                 "gold" when entity is PlayerMobile player => player.Gold.ToString(CultureInfo.InvariantCulture),
+                "map-index" when action.Target == null => world.MapIndex.ToString(CultureInfo.InvariantCulture),
                 "x" => entity.X.ToString(CultureInfo.InvariantCulture),
                 "y" => entity.Y.ToString(CultureInfo.InvariantCulture),
                 "z" => entity.Z.ToString(CultureInfo.InvariantCulture),

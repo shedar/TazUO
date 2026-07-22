@@ -138,6 +138,7 @@ public sealed class BrQaContractTests
             "{\"type\":\"wait-mobile\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-property\",\"target\":\"fixture\",\"contains\":\"exceptional\"}",
             "{\"type\":\"wait-status\",\"field\":\"dead\",\"value\":\"false\"}",
+            "{\"type\":\"wait-status\",\"field\":\"map-index\",\"value\":\"0\"}",
             "{\"type\":\"wait-combat-delta\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-vendor-gump\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-trade-window\",\"target\":\"fixture\"}",
