@@ -133,6 +133,7 @@ namespace ClassicUO.BeyondRecallQA
                 case "wait-combat-delta":
                 case "wait-vendor-gump":
                 case "wait-trade-window":
+                case "wait-player-location":
                     RequireAlias(action.Target, index);
                     RequireOnly(action, index, nameof(action.Target));
                     break;
@@ -194,7 +195,8 @@ namespace ClassicUO.BeyondRecallQA
                     ValidateGumpSelector(action, index);
                     bool missingSelection = action.Type == "gump-select-list-entry"
                         ? action.Entry is null or < 0
-                        : action.SwitchId is null or < 0;
+                        : action.SwitchId is null or < 0 &&
+                          (action.Type != "gump-select-radio" || action.Target == null);
                     if (missingSelection)
                         throw Error(index, "gump selection payload is invalid");
                     string selection = action.Type == "gump-select-list-entry"

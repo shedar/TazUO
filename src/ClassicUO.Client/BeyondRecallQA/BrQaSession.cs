@@ -395,6 +395,13 @@ namespace ClassicUO.BeyondRecallQA
                         CompleteAction(action);
                     }
                     return;
+                case "wait-player-location":
+                    if (PlayerAtTarget(Target(action)))
+                    {
+                        _emitter.EmitStatusObserved("player-location");
+                        CompleteAction(action);
+                    }
+                    return;
                 case "wait-combat-delta":
                     WaitCombatDelta(action);
                     return;
@@ -418,7 +425,11 @@ namespace ClassicUO.BeyondRecallQA
                     return;
                 case "gump-select-switch":
                 case "gump-select-radio":
-                    AddSwitch(checked((uint)action.SwitchId.Value));
+                    int switchId = action.SwitchId ?? (action.Target == null
+                        ? null
+                        : Target(action).ButtonId) ??
+                        throw new InvalidDataException("Gump selection target does not provide a switch identifier.");
+                    AddSwitch(checked((uint)switchId));
                     CompleteAction(action);
                     return;
                 case "gump-select-list-entry":
@@ -706,6 +717,25 @@ namespace ClassicUO.BeyondRecallQA
                 "z" => entity.Z.ToString(CultureInfo.InvariantCulture),
                 _ => throw new InvalidDataException("Unsupported bounded QA status field.")
             };
+        }
+
+        private static bool PlayerAtTarget(BrQaTarget target)
+        {
+            var world = World.Instance;
+            var player = world?.Player;
+            if (player == null || target.X == null || target.Y == null || target.Z == null || target.Map == null)
+                throw new InvalidDataException("Player-location target has no complete map coordinates.");
+
+            int expectedMap = target.Map switch
+            {
+                "Felucca" => 0,
+                "Trammel" => 1,
+                "Ilshenar" => 2,
+                "Malas" => 3,
+                "Tokuno" => 4,
+                _ => throw new InvalidDataException("Player-location target uses an unsupported exact-ML map.")
+            };
+            return world.MapIndex == expectedMap && player.X == target.X && player.Y == target.Y && player.Z == target.Z;
         }
 
         private void WaitCombatDelta(BrQaAction action)
