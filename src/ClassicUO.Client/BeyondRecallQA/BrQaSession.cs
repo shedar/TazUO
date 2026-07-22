@@ -767,15 +767,20 @@ namespace ClassicUO.BeyondRecallQA
             int buttonId = action.ButtonId ??
                 (action.Target == null ? null : Target(action).ButtonId) ??
                 throw new InvalidDataException("Gump target does not provide a button id.");
+            uint serverSerial = gump.ServerSerial;
             GameActions.ReplyGump(
                 World.Instance,
                 gump.LocalSerial,
-                gump.ServerSerial,
+                serverSerial,
                 buttonId,
                 _gumpSwitches.ToArray(),
                 entries
             );
-            _emitter.EmitGumpResponseSent(gump.ServerSerial, buttonId);
+            // A real button click disposes the replied gump.  Keep the QA lifecycle identical so
+            // a server-regenerated gump with the same type ID cannot resolve back to a stale local
+            // serial on the next action (crafting pages are the canonical example).
+            gump.Dispose();
+            _emitter.EmitGumpResponseSent(serverSerial, buttonId);
             _gumpSwitches.Clear();
             _gumpEntries.Clear();
             CompleteAction(action);
