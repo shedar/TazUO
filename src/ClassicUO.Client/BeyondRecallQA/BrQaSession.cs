@@ -303,7 +303,7 @@ namespace ClassicUO.BeyondRecallQA
                     IssueSpeech(action, action.Command);
                     return;
                 case "invoke-qa-checkpoint":
-                    IssueSpeech(action, $"[BrQaScenario {_config.SessionToken} {action.Target}]");
+                    IssueSpeech(action, BuildCheckpointCommand(_config.SessionToken, action.Target));
                     return;
                 case "wait-gump":
                     if (HasExpectedGump(action))
@@ -607,6 +607,9 @@ namespace ClassicUO.BeyondRecallQA
             _actionIssued = true;
             CompleteAction(action);
         }
+
+        internal static string BuildCheckpointCommand(string sessionToken, string target) =>
+            $"[BrQaScenario {sessionToken} {target}";
 
         private void IssueEntityAction(BrQaAction action, Action<World, uint> operation)
         {

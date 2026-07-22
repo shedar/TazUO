@@ -195,6 +195,15 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void CheckpointCommandUsesModernUoPrefixSyntaxWithoutClosingBracket()
+    {
+        Assert.Equal(
+            $"[BrQaScenario {new string('a', 32)} checkpoint-1",
+            BrQaSession.BuildCheckpointCommand(new string('a', 32), "checkpoint-1")
+        );
+    }
+
+    [Fact]
     public void EventsAreOrderedAtomicAndDoNotFabricateMilestones()
     {
         var fixture = Fixture.Create();
