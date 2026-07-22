@@ -149,6 +149,7 @@ public sealed class BrQaContractTests
             "{\"type\":\"gump-select-radio\",\"target\":\"fixture\"}",
             "{\"type\":\"gump-select-list-entry\",\"target\":\"fixture\",\"entry\":1}",
             "{\"type\":\"gump-click-button\",\"target\":\"fixture\"}",
+            "{\"type\":\"equip-item\",\"target\":\"fixture\"}",
             "{\"type\":\"drag-item\",\"target\":\"fixture\",\"amount\":1}",
             "{\"type\":\"drop-item\",\"target\":\"fixture\",\"containerTarget\":\"fixture\"}",
             "{\"type\":\"vendor-buy\",\"containerTarget\":\"fixture\",\"target\":\"fixture\",\"amount\":1}",

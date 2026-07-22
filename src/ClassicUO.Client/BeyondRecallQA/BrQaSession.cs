@@ -453,6 +453,9 @@ namespace ClassicUO.BeyondRecallQA
                         CompleteAction(action);
                     }
                     return;
+                case "equip-item":
+                    EquipItem(action);
+                    return;
                 case "drop-item":
                     DropItem(action);
                     return;
@@ -630,6 +633,28 @@ namespace ClassicUO.BeyondRecallQA
                 return;
 
             operation(World.Instance, RequireResolvedSerial(Target(action)));
+            CompleteAction(action);
+        }
+
+        private void EquipItem(BrQaAction action)
+        {
+            World world = World.Instance;
+            if (world?.Player == null)
+                return;
+
+            uint serial = RequireResolvedSerial(Target(action));
+            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
+            if (itemHold.Enabled && itemHold.Serial != serial)
+                itemHold.Clear();
+
+            if (!itemHold.Enabled && !GameActions.PickUp(world, serial, 0, 0, 1, skipQueue: true))
+                return;
+
+            if (!itemHold.Enabled || itemHold.Serial != serial || !itemHold.IsWearable)
+                return;
+
+            GameActions.Equip(world, world.Player.Serial);
+            _emitter.EmitItemEquipped(action.Target);
             CompleteAction(action);
         }
 

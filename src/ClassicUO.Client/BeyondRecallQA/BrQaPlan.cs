@@ -126,6 +126,7 @@ namespace ClassicUO.BeyondRecallQA
                 case "single-click-serial":
                 case "attack-serial":
                 case "target-serial":
+                case "equip-item":
                 case "open-context-menu":
                 case "wait-container":
                 case "wait-item":

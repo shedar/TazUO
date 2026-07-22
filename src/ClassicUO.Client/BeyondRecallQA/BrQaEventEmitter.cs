@@ -194,6 +194,7 @@ namespace ClassicUO.BeyondRecallQA
         public void EmitCombatDeltaObserved(string target) => Emit("combat-delta-observed", "target=" + target);
         public void EmitItemDragged(string target, int amount) =>
             Emit("item-dragged", $"target={target};amount={amount}");
+        public void EmitItemEquipped(string target) => Emit("item-equipped", "target=" + target);
         public void EmitItemDropped(string target, string container) =>
             Emit("item-dropped", $"target={target};container={container ?? "ground"}");
         public void EmitTradeWindowOpened(string target) => Emit("trade-window-opened", "target=" + target);
