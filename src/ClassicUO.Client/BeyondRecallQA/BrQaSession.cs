@@ -348,14 +348,15 @@ namespace ClassicUO.BeyondRecallQA
                     TargetLocation(action);
                     return;
                 case "open-context-menu":
+                    UIManager.ShowGamePopup(null);
                     GameActions.OpenPopupMenu(RequireResolvedSerial(Target(action)), shift: true);
                     CompleteAction(action);
                     return;
                 case "select-context-entry":
-                    if (UIManager.PopupMenu != null)
+                    BrQaTarget target = Target(action);
+                    uint serial = RequireResolvedSerial(target);
+                    if (UIManager.PopupMenu is { IsDisposed: false } popup && popup.Serial == serial)
                     {
-                        BrQaTarget target = Target(action);
-                        uint serial = RequireResolvedSerial(target);
                         int entry = action.Entry ?? target.ContextEntry ??
                             throw new InvalidDataException("Context target does not provide an entry.");
                         GameActions.ResponsePopupMenu(serial, checked((ushort)entry));
