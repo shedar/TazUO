@@ -206,6 +206,25 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void EquipActionRemainsAliasBoundAndRejectsPacketShapingFields()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"equip\",\"actions\":[" +
+            "{\"type\":\"equip-item\",\"target\":\"fixture\"}]}"
+        );
+        Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"equip\",\"actions\":[" +
+            "{\"type\":\"equip-item\",\"target\":\"fixture\",\"layer\":10}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
     public void TargetDataIsHashSessionBuildAndExpiryBound()
     {
         var fixture = Fixture.Create();

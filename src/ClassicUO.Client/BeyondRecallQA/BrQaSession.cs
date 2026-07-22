@@ -643,15 +643,25 @@ namespace ClassicUO.BeyondRecallQA
                 return;
 
             uint serial = RequireResolvedSerial(Target(action));
-            Item item = world.Items.Get(serial);
-            if (item == null || item.IsDestroyed || !item.ItemData.IsWearable)
+            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
+            if (!_actionIssued)
+            {
+                if (itemHold.Enabled)
+                    itemHold.Clear();
+
+                if (!GameActions.PickUp(world, serial, 0, 0, 1, skipQueue: true))
+                    return;
+
+                _actionIssued = true;
+                _delayUntil = DateTimeOffset.UtcNow.AddMilliseconds(750);
+                return;
+            }
+
+            if (DateTimeOffset.UtcNow < _delayUntil || !itemHold.Enabled ||
+                itemHold.Serial != serial || !itemHold.IsWearable)
                 return;
 
-            // QA plans use the same canonical lift/equip packets as a normal drag to
-            // paperdoll, but do not depend on mutable local cursor state left behind by
-            // an immediately preceding server-driven gump refresh.
-            AsyncNetClient.Socket.Send_PickUpRequest(item, 1);
-            AsyncNetClient.Socket.Send_EquipRequest(serial, (Layer)item.ItemData.Layer, world.Player.Serial);
+            GameActions.Equip(world, world.Player.Serial);
             _emitter.EmitItemEquipped(action.Target);
             CompleteAction(action);
         }
