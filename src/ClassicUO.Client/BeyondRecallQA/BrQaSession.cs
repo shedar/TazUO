@@ -51,6 +51,7 @@ namespace ClassicUO.BeyondRecallQA
         private int _movementAcknowledgements;
         private int _movementBaseline;
         private int _movementIssued;
+        private int _movementStepsIssued;
         private int _pathStepIndex;
         private int _gumpObservations;
         private int _gumpBaseline;
@@ -885,23 +886,25 @@ namespace ClassicUO.BeyondRecallQA
             {
                 _movementBaseline = _movementAcknowledgements;
                 _movementIssued = 0;
+                _movementStepsIssued = 0;
                 _actionIssued = true;
             }
 
             var acknowledged = _movementAcknowledgements - _movementBaseline;
-            if (acknowledged >= steps)
+            if (_movementStepsIssued >= steps && acknowledged >= _movementIssued)
             {
                 CompleteAction(action);
                 return;
             }
-            if (_movementIssued > acknowledged || _movementIssued >= steps || World.Instance?.Player == null)
+            if (_movementIssued > acknowledged || _movementStepsIssued >= steps || World.Instance?.Player == null)
                 return;
 
-            // QA movement is evidence for an exact signed route.  The normal Walk method may
-            // substitute an obstacle-avoidance direction from the user's profile, which would
-            // make an acknowledged route differ from the declared protocol action.
-            if (World.Instance.Player.WalkNotAvoid(ParseDirection(direction), false))
+            if (TryIssueSignedWalk(ParseDirection(direction), out bool moved))
+            {
                 _movementIssued++;
+                if (moved)
+                    _movementStepsIssued++;
+            }
         }
 
         private void WalkPath(BrQaAction action)
@@ -920,10 +923,11 @@ namespace ClassicUO.BeyondRecallQA
             {
                 _movementBaseline = _movementAcknowledgements;
                 _movementIssued = 0;
+                _movementStepsIssued = 0;
                 _actionIssued = true;
             }
             int acknowledged = _movementAcknowledgements - _movementBaseline;
-            if (acknowledged >= step.Steps)
+            if (_movementStepsIssued >= step.Steps && acknowledged >= _movementIssued)
             {
                 _pathStepIndex++;
                 _actionIssued = false;
@@ -931,10 +935,71 @@ namespace ClassicUO.BeyondRecallQA
                     CompleteAction(action);
                 return;
             }
-            if (_movementIssued > acknowledged || _movementIssued >= step.Steps || World.Instance?.Player == null)
+            if (_movementIssued > acknowledged || _movementStepsIssued >= step.Steps || World.Instance?.Player == null)
                 return;
-            if (World.Instance.Player.WalkNotAvoid(ParseDirection(step.Direction), false))
+
+            if (TryIssueSignedWalk(ParseDirection(step.Direction), out bool moved))
+            {
                 _movementIssued++;
+                if (moved)
+                    _movementStepsIssued++;
+            }
+        }
+
+        private static bool TryIssueSignedWalk(Direction direction, out bool moved)
+        {
+            moved = false;
+            PlayerMobile player = World.Instance?.Player;
+            if (player == null)
+                return false;
+
+            int fromX = player.X;
+            int fromY = player.Y;
+            if (player.Steps.Count > 0)
+            {
+                ref Mobile.Step previous = ref player.Steps.Back();
+                fromX = previous.X;
+                fromY = previous.Y;
+            }
+
+            // QA movement is evidence for an exact signed route.  The normal Walk method may
+            // substitute an obstacle-avoidance direction from the user's profile.  WalkNotAvoid
+            // preserves the requested direction, while the projected queue distinguishes a
+            // confirmed facing turn from a confirmed one-tile movement.
+            if (!player.WalkNotAvoid(direction, false))
+                return false;
+
+            ref Mobile.Step queued = ref player.Steps.Back();
+            if (((Direction)queued.Direction & Direction.Mask) != (direction & Direction.Mask))
+                throw new InvalidDataException("The client could not queue the exact signed movement direction.");
+
+            if (queued.X == fromX && queued.Y == fromY)
+                return true;
+
+            int expectedX = fromX;
+            int expectedY = fromY;
+            Offset(direction, ref expectedX, ref expectedY);
+            if (queued.X != expectedX || queued.Y != expectedY)
+                throw new InvalidDataException("The client projected a non-unit signed movement step.");
+
+            moved = true;
+            return true;
+        }
+
+        private static void Offset(Direction direction, ref int x, ref int y)
+        {
+            switch (direction & Direction.Mask)
+            {
+                case Direction.North: y--; break;
+                case Direction.Right: x++; y--; break;
+                case Direction.East: x++; break;
+                case Direction.Down: x++; y++; break;
+                case Direction.South: y++; break;
+                case Direction.Left: x--; y++; break;
+                case Direction.West: x--; break;
+                case Direction.Up: x--; y--; break;
+                default: throw new ArgumentOutOfRangeException(nameof(direction));
+            }
         }
 
         private static Direction ParseDirection(string direction) => direction.ToLowerInvariant() switch
@@ -981,6 +1046,7 @@ namespace ClassicUO.BeyondRecallQA
             _actionDeadline = default;
             _pathStepIndex = 0;
             _movementIssued = 0;
+            _movementStepsIssued = 0;
             _gumpBaseline = _gumpObservations;
             _delayUntil = default;
         }
