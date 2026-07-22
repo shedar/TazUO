@@ -165,6 +165,54 @@ namespace ClassicUO.BeyondRecallQA
         public void EmitMovementAcknowledged(byte sequence) => Emit("movement-acknowledged", "sequence=" + sequence);
         public void EmitGumpOpened(uint gumpId) => Emit("gump-opened", "gumpId=" + gumpId);
         public void EmitJournalObserved(string sha256) => Emit("journal-observed", "matched=true;sha256=" + sha256);
+        public void EmitActionStarted(int index, string type, string target) =>
+            Emit("scenario-action-started", $"index={index};type={type};target={target ?? "none"}");
+        public void EmitActionCompleted(int index, string type, string target) =>
+            Emit("scenario-action-completed", $"index={index};type={type};target={target ?? "none"}");
+        public void EmitSkillUseRequested(int skillIndex) =>
+            Emit("skill-use-requested", "skillIndex=" + skillIndex);
+        public void EmitSkillThresholdObserved(int skillIndex, double minimum) =>
+            Emit("skill-threshold-observed", $"skillIndex={skillIndex};minimum={minimum:R}");
+        public void EmitSpellCastRequested(int spellIndex) =>
+            Emit("spell-cast-requested", "spellIndex=" + spellIndex);
+        public void EmitTargetSent(string target) => Emit("target-sent", "target=" + target);
+        public void EmitContainerOpened(string target) => Emit("container-opened", "target=" + target);
+        public void EmitItemObserved(string target) => Emit("item-observed", "target=" + target);
+        public void EmitMobileObserved(string target) => Emit("mobile-observed", "target=" + target);
+        public void EmitPropertyObserved(string target) => Emit("property-observed", "target=" + target);
+        public void EmitStatusObserved(string field) => Emit("status-observed", "field=" + field);
+        public void EmitGumpResponseSent(uint gumpId, int buttonId) =>
+            Emit("gump-response-sent", $"gumpId={gumpId};buttonId={buttonId}");
+        public void EmitVendorGumpOpened(string target) => Emit("vendor-gump-opened", "target=" + target);
+        public void EmitVendorBuyResponseSent(string vendor, string item, int amount) =>
+            Emit("vendor-buy-response-sent", $"vendor={vendor};item={item};amount={amount}");
+        public void EmitVendorSellResponseSent(string vendor, string item, int amount) =>
+            Emit("vendor-sell-response-sent", $"vendor={vendor};item={item};amount={amount}");
+        public void EmitContextMenuResponseSent(string target, int entry) =>
+            Emit("context-menu-response-sent", $"target={target};entry={entry}");
+        public void EmitCombatActionSent(string target) => Emit("combat-action-sent", "target=" + target);
+        public void EmitCombatDeltaObserved(string target) => Emit("combat-delta-observed", "target=" + target);
+        public void EmitItemDragged(string target, int amount) =>
+            Emit("item-dragged", $"target={target};amount={amount}");
+        public void EmitItemDropped(string target, string container) =>
+            Emit("item-dropped", $"target={target};container={container ?? "ground"}");
+        public void EmitTradeWindowOpened(string target) => Emit("trade-window-opened", "target=" + target);
+        public void EmitTradeResponseSent(bool accepted) =>
+            Emit("trade-response-sent", "accepted=" + accepted.ToString().ToLowerInvariant());
+        public void EmitHouseCustomizationEntered(string target) =>
+            Emit("house-customization-entered", "target=" + target);
+        public void EmitHouseComponentAdded(int graphic, int x, int y) =>
+            Emit("house-component-added", $"graphic={graphic};x={x};y={y}");
+        public void EmitHouseComponentRemoved(int graphic, int x, int y, int z) =>
+            Emit("house-component-removed", $"graphic={graphic};x={x};y={y};z={z}");
+        public void EmitHouseCustomizationOperation(string operation) =>
+            Emit("house-customization-operation", "operation=" + operation);
+        public void EmitHouseCustomizationCommitted() => Emit("house-customization-committed");
+        public void EmitScenarioActionFailed(string code, int actionIndex, string actionType) =>
+            Emit(
+                "scenario-action-failed",
+                $"code={code};actionIndex={actionIndex};actionType={actionType ?? "none"}"
+            );
         public void EmitScenarioCompleted(string name) => Emit("scenario-completed", "name=" + name);
         public void EmitClientExiting() => Emit("client-exiting");
         public void EmitClientExited() => Emit("client-exited");
@@ -184,6 +232,14 @@ namespace ClassicUO.BeyondRecallQA
             "process-started", "settings-loaded", "legal-data-opened", "assets-loaded", "window-ready",
             "network-connected", "account-authenticated", "server-list-received", "character-list-received",
             "character-entered-world", "movement-acknowledged", "gump-opened", "journal-observed",
+            "scenario-action-started", "scenario-action-completed", "skill-use-requested",
+            "spell-cast-requested", "target-sent", "container-opened", "item-observed", "mobile-observed",
+            "property-observed", "status-observed", "gump-response-sent", "vendor-gump-opened",
+            "vendor-buy-response-sent", "vendor-sell-response-sent", "context-menu-response-sent",
+            "combat-action-sent", "combat-delta-observed", "item-dragged", "item-dropped",
+            "trade-window-opened", "trade-response-sent", "skill-threshold-observed",
+            "house-customization-entered", "house-component-added", "house-component-removed",
+            "house-customization-operation", "house-customization-committed", "scenario-action-failed",
             "scenario-completed", "client-exiting", "client-exited", "scenario-failed"
         };
 

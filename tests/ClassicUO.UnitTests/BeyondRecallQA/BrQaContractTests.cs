@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text.Json;
 using ClassicUO.BeyondRecallQA;
 using Xunit;
@@ -77,9 +78,120 @@ public sealed class BrQaContractTests
 
         File.WriteAllText(
             fixture.Plan,
-            "{\"schemaVersion\":1,\"name\":\"contract\",\"timeoutSeconds\":301,\"actions\":[{\"type\":\"exit\"}]}"
+            "{\"schemaVersion\":2,\"name\":\"contract\",\"timeoutSeconds\":901,\"actions\":[{\"type\":\"exit\"}]}"
         );
         Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void PhaseZeroCActionsRequireAliasesAndRejectArbitraryServerCommands()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"phase0c\",\"timeoutSeconds\":60,\"actions\":[" +
+            "{\"type\":\"use-skill\",\"skillIndex\":17}," +
+            "{\"type\":\"wait-target-cursor\"}," +
+            "{\"type\":\"target-serial\",\"target\":\"fixture\"}," +
+            "{\"type\":\"vendor-buy\",\"containerTarget\":\"fixture\",\"target\":\"fixture\",\"amount\":1}," +
+            "{\"type\":\"exit\"}]}"
+        );
+
+        Assert.Equal(5, BrQaPlan.Load(fixture.Plan).Actions.Count);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"phase0c\",\"actions\":[{\"type\":\"target-serial\",\"serial\":1}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"phase0c\",\"actions\":[{\"type\":\"send-server-command\",\"command\":\"[Admin]\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void EveryPhaseZeroCActionShapeIsStrictlyValidated()
+    {
+        var fixture = Fixture.Create();
+        string[] actions =
+        {
+            "{\"type\":\"walk-path\",\"target\":\"fixture\"}",
+            "{\"type\":\"say-to-mobile\",\"target\":\"fixture\",\"message\":\"bank\"}",
+            "{\"type\":\"wait-system-message\",\"contains\":\"accepted\"}",
+            "{\"type\":\"invoke-qa-checkpoint\",\"target\":\"checkpoint-1\"}",
+            "{\"type\":\"wait-gump\",\"target\":\"fixture\"}",
+            "{\"type\":\"double-click-serial\",\"target\":\"fixture\"}",
+            "{\"type\":\"single-click-serial\",\"target\":\"fixture\"}",
+            "{\"type\":\"attack-serial\",\"target\":\"fixture\"}",
+            "{\"type\":\"cast-spell\",\"spellIndex\":42}",
+            "{\"type\":\"use-skill\",\"skillIndex\":17}",
+            "{\"type\":\"wait-target-cursor\"}",
+            "{\"type\":\"target-serial\",\"target\":\"fixture\"}",
+            "{\"type\":\"target-location\",\"target\":\"fixture\"}",
+            "{\"type\":\"open-context-menu\",\"target\":\"fixture\"}",
+            "{\"type\":\"select-context-entry\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-container\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-item\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-mobile\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-property\",\"target\":\"fixture\",\"contains\":\"exceptional\"}",
+            "{\"type\":\"wait-status\",\"field\":\"dead\",\"value\":\"false\"}",
+            "{\"type\":\"wait-combat-delta\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-vendor-gump\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-trade-window\",\"target\":\"fixture\"}",
+            "{\"type\":\"gump-set-text\",\"target\":\"fixture\",\"entryId\":1,\"text\":\"qa\"}",
+            "{\"type\":\"gump-select-switch\",\"target\":\"fixture\",\"switchId\":1}",
+            "{\"type\":\"gump-select-radio\",\"target\":\"fixture\",\"switchId\":1}",
+            "{\"type\":\"gump-select-list-entry\",\"target\":\"fixture\",\"entry\":1}",
+            "{\"type\":\"gump-click-button\",\"target\":\"fixture\"}",
+            "{\"type\":\"drag-item\",\"target\":\"fixture\",\"amount\":1}",
+            "{\"type\":\"drop-item\",\"target\":\"fixture\",\"containerTarget\":\"fixture\"}",
+            "{\"type\":\"vendor-buy\",\"containerTarget\":\"fixture\",\"target\":\"fixture\",\"amount\":1}",
+            "{\"type\":\"vendor-sell\",\"containerTarget\":\"fixture\",\"target\":\"fixture\",\"amount\":1}",
+            "{\"type\":\"accept-trade\",\"target\":\"fixture\",\"accepted\":true}",
+            "{\"type\":\"wait-duration\",\"durationMs\":50}",
+            "{\"type\":\"wait-skill\",\"skillIndex\":17,\"minimum\":20.0}",
+            "{\"type\":\"wait-house-customization\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-house-customization-exited\"}",
+            "{\"type\":\"house-add-component\",\"graphic\":12788,\"x\":0,\"y\":0}",
+            "{\"type\":\"house-remove-component\",\"graphic\":12788,\"x\":0,\"y\":0,\"z\":7}",
+            "{\"type\":\"house-backup\"}",
+            "{\"type\":\"house-restore\"}",
+            "{\"type\":\"house-revert\"}",
+            "{\"type\":\"house-commit\"}",
+            "{\"type\":\"house-exit\"}"
+        };
+
+        foreach (string action in actions)
+        {
+            File.WriteAllText(
+                fixture.Plan,
+                "{\"schemaVersion\":2,\"name\":\"phase0c\",\"timeoutSeconds\":60,\"actions\":[" +
+                action + "]}"
+            );
+            Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+        }
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"phase0c\",\"actions\":[{\"type\":\"wait-gump\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void TargetDataIsHashSessionBuildAndExpiryBound()
+    {
+        var fixture = Fixture.Create();
+        var config = BrQaConfig.Parse(fixture.Arguments());
+        var document = BrQaTargetDocument.Load(config);
+
+        Assert.Equal(1u, document.Require("fixture").Serial);
+
+        File.AppendAllText(fixture.Targets, " ");
+        Assert.Throws<InvalidDataException>(() => BrQaTargetDocument.Load(config));
     }
 
     [Fact]
@@ -114,6 +226,42 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void PhaseZeroCFunctionalEventsAreExplicitAndOrdered()
+    {
+        var fixture = Fixture.Create();
+        var config = BrQaConfig.Parse(fixture.Arguments());
+        using (var emitter = new BrQaEventEmitter(config))
+        {
+            emitter.EmitSkillUseRequested(17);
+            emitter.EmitTargetSent("fixture");
+            emitter.EmitVendorGumpOpened("fixture");
+            emitter.EmitVendorBuyResponseSent("fixture", "fixture", 1);
+            emitter.EmitContextMenuResponseSent("fixture", 1);
+            emitter.EmitCombatActionSent("fixture");
+            emitter.EmitTradeWindowOpened("fixture");
+            emitter.EmitTradeResponseSent(true);
+            emitter.EmitHouseCustomizationEntered("fixture");
+            emitter.EmitHouseComponentAdded(12788, 0, 0);
+            emitter.EmitHouseCustomizationCommitted();
+        }
+
+        string[] types = File.ReadAllLines(Path.Combine(fixture.Output, "qa-events.jsonl"))
+            .Select(line => JsonDocument.Parse(line).RootElement.GetProperty("eventType").GetString())
+            .ToArray();
+        Assert.Equal(
+            new[]
+            {
+                "skill-use-requested", "target-sent", "vendor-gump-opened", "vendor-buy-response-sent",
+                "context-menu-response-sent", "combat-action-sent", "trade-window-opened",
+                "trade-response-sent", "house-customization-entered", "house-component-added",
+                "house-customization-committed"
+            },
+            types
+        );
+        Assert.DoesNotContain("trade-completed", types);
+    }
+
+    [Fact]
     public void SecretParserNeverEchoesSecretMaterialInFailures()
     {
         var fixture = Fixture.Create();
@@ -142,9 +290,17 @@ public sealed class BrQaContractTests
     }
 
     private const string ValidPlan =
-        "{\"schemaVersion\":1,\"name\":\"contract\",\"timeoutSeconds\":30,\"actions\":[{\"type\":\"connect\"},{\"type\":\"exit\"}]}";
+        "{\"schemaVersion\":2,\"name\":\"contract\",\"timeoutSeconds\":30,\"actions\":[{\"type\":\"connect\"},{\"type\":\"exit\"}]}";
 
-    private sealed record Fixture(string Root, string Output, string Plan, string Secrets, string Secret)
+    private sealed record Fixture(
+        string Root,
+        string Output,
+        string Plan,
+        string Secrets,
+        string Secret,
+        string Targets,
+        string TargetIdentity
+    )
     {
         public static Fixture Create()
         {
@@ -155,12 +311,36 @@ public sealed class BrQaContractTests
             Directory.CreateDirectory(output);
             Directory.CreateDirectory(secrets);
             var plan = Path.Combine(output, "plan.json");
+            var targets = Path.Combine(output, "targets.json");
             var secret = Path.Combine(secrets, "qa.secret");
             File.WriteAllText(plan, ValidPlan);
             File.WriteAllText(secret, "{\"schemaVersion\":1,\"username\":\"qa\",\"password\":\"fixture-only\"}");
+            File.WriteAllText(
+                targets,
+                JsonSerializer.Serialize(
+                    new
+                    {
+                        schemaVersion = 1,
+                        sessionToken = new string('a', 32),
+                        deploymentId = new string('d', 64),
+                        sourceIdentity = new string('e', 64),
+                        manifestIdentity = new string('f', 64),
+                        dataIdentity = new string('b', 64),
+                        preparationBuildIdentity = new string('c', 64),
+                        tazuoSourceCommit = BrQaBuildInfo.SourceCommit,
+                        tazuoBuildIdentity = BrQaBuildInfo.BuildIdentity,
+                        expiresAt = DateTimeOffset.UtcNow.AddMinutes(5),
+                        targets = new
+                        {
+                            fixture = new { serial = 1u, type = "Fixture" }
+                        }
+                    }
+                )
+            );
+            string targetIdentity = Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(targets))).ToLowerInvariant();
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(secret, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-            return new Fixture(root, output, plan, secrets, secret);
+            return new Fixture(root, output, plan, secrets, secret, targets, targetIdentity);
         }
 
         public string[] Arguments(string output = null, string plan = null) =>
@@ -176,6 +356,8 @@ public sealed class BrQaContractTests
             "-br-qa-secrets-root", Secrets,
             "-br-qa-data-identity", new string('b', 64),
             "-br-qa-preparation-build-identity", new string('c', 64),
+            "-br-qa-target-data", Targets,
+            "-br-qa-target-identity", TargetIdentity,
             "-br-qa-exit-on-complete"
         };
     }

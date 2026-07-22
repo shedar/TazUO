@@ -17,6 +17,8 @@ namespace ClassicUO.BeyondRecallQA
         public string SecretsRoot { get; private set; }
         public string DataIdentity { get; private set; }
         public string PreparationBuildIdentity { get; private set; }
+        public string TargetDataPath { get; private set; }
+        public string TargetDataIdentity { get; private set; }
         public string ServerEndpoint { get; private set; }
         public string ClientVersion { get; private set; }
         public bool ExitOnComplete { get; private set; }
@@ -64,6 +66,12 @@ namespace ClassicUO.BeyondRecallQA
                     case "-br-qa-preparation-build-identity":
                         config.PreparationBuildIdentity = RequireValue(args, ref i, option);
                         break;
+                    case "-br-qa-target-data":
+                        config.TargetDataPath = RequireValue(args, ref i, option);
+                        break;
+                    case "-br-qa-target-identity":
+                        config.TargetDataIdentity = RequireValue(args, ref i, option);
+                        break;
                     case "-br-qa-exit-on-complete":
                         config.ExitOnComplete = true;
                         break;
@@ -82,6 +90,8 @@ namespace ClassicUO.BeyondRecallQA
             Require(config.SecretsRoot, "-br-qa-secrets-root");
             Require(config.DataIdentity, "-br-qa-data-identity");
             Require(config.PreparationBuildIdentity, "-br-qa-preparation-build-identity");
+            Require(config.TargetDataPath, "-br-qa-target-data");
+            Require(config.TargetDataIdentity, "-br-qa-target-identity");
 
             if (!IsLowerHex(config.SessionToken, 32))
                 throw new ArgumentException("Beyond Recall QA session token must be exactly 32 lowercase hexadecimal characters.");
@@ -89,6 +99,8 @@ namespace ClassicUO.BeyondRecallQA
                 throw new ArgumentException("Beyond Recall QA data identity must be exactly 64 lowercase hexadecimal characters.");
             if (!IsLowerHex(config.PreparationBuildIdentity, 64))
                 throw new ArgumentException("Beyond Recall QA preparation build identity must be exactly 64 lowercase hexadecimal characters.");
+            if (!IsLowerHex(config.TargetDataIdentity, 64))
+                throw new ArgumentException("Beyond Recall QA target identity must be exactly 64 lowercase hexadecimal characters.");
 
             var ip = RequireOrdinaryValue(args, "-ip");
             var port = RequireOrdinaryValue(args, "-port");
@@ -159,14 +171,18 @@ namespace ClassicUO.BeyondRecallQA
             config.OutputDirectory = ValidateAbsolute(config.OutputDirectory, "output directory");
             config.SecretFilePath = ValidateAbsolute(config.SecretFilePath, "secret file");
             config.SecretsRoot = ValidateAbsolute(config.SecretsRoot, "secrets root");
+            config.TargetDataPath = ValidateAbsolute(config.TargetDataPath, "target data");
 
             ValidatePathComponents(config.OutputDirectory, requireLeaf: true, expectDirectory: true, "output directory");
             ValidatePathComponents(config.PlanPath, requireLeaf: true, expectDirectory: false, "plan");
             ValidatePathComponents(config.SecretsRoot, requireLeaf: true, expectDirectory: true, "secrets root");
             ValidatePathComponents(config.SecretFilePath, requireLeaf: true, expectDirectory: false, "secret file");
+            ValidatePathComponents(config.TargetDataPath, requireLeaf: true, expectDirectory: false, "target data");
 
             if (!PathEquals(Path.GetDirectoryName(config.PlanPath), config.OutputDirectory))
                 throw new ArgumentException("Beyond Recall QA plan must be a direct child of the output directory.");
+            if (!PathEquals(Path.GetDirectoryName(config.TargetDataPath), config.OutputDirectory))
+                throw new ArgumentException("Beyond Recall QA target data must be a direct child of the output directory.");
             if (!IsStrictDescendant(config.SecretsRoot, config.SecretFilePath))
                 throw new ArgumentException("Beyond Recall QA secret file must be beneath the declared external secrets root.");
             if (File.Exists(Path.Combine(config.OutputDirectory, "qa-events.jsonl")))
