@@ -323,7 +323,7 @@ public sealed class BrQaContractTests
                         schemaVersion = 1,
                         sessionToken = new string('a', 32),
                         deploymentId = new string('d', 64),
-                        sourceIdentity = new string('e', 64),
+                        sourceIdentity = new string('e', 40),
                         manifestIdentity = new string('f', 64),
                         dataIdentity = new string('b', 64),
                         preparationBuildIdentity = new string('c', 64),

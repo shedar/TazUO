@@ -73,7 +73,7 @@ namespace ClassicUO.BeyondRecallQA
 
             if (document == null || document.SchemaVersion != 1 ||
                 !string.Equals(document.SessionToken, config.SessionToken, StringComparison.Ordinal) ||
-                !IsLowerHex(document.DeploymentId, 64) || !IsLowerHex(document.SourceIdentity, 64) ||
+                !IsLowerHex(document.DeploymentId, 64) || !IsLowerHex(document.SourceIdentity, 40) ||
                 !IsLowerHex(document.ManifestIdentity, 64) ||
                 !string.Equals(document.DataIdentity, config.DataIdentity, StringComparison.Ordinal) ||
                 !string.Equals(document.PreparationBuildIdentity, config.PreparationBuildIdentity, StringComparison.Ordinal) ||
