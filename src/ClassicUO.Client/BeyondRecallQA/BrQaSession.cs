@@ -897,7 +897,10 @@ namespace ClassicUO.BeyondRecallQA
             if (_movementIssued > acknowledged || _movementIssued >= steps || World.Instance?.Player == null)
                 return;
 
-            if (World.Instance.Player.Walk(ParseDirection(direction), false))
+            // QA movement is evidence for an exact signed route.  The normal Walk method may
+            // substitute an obstacle-avoidance direction from the user's profile, which would
+            // make an acknowledged route differ from the declared protocol action.
+            if (World.Instance.Player.WalkNotAvoid(ParseDirection(direction), false))
                 _movementIssued++;
         }
 
@@ -930,7 +933,7 @@ namespace ClassicUO.BeyondRecallQA
             }
             if (_movementIssued > acknowledged || _movementIssued >= step.Steps || World.Instance?.Player == null)
                 return;
-            if (World.Instance.Player.Walk(ParseDirection(step.Direction), false))
+            if (World.Instance.Player.WalkNotAvoid(ParseDirection(step.Direction), false))
                 _movementIssued++;
         }
 
