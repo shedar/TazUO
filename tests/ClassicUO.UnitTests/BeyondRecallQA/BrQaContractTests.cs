@@ -274,6 +274,59 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void ObservedActionsRetryRequestsAtABoundedCadence()
+    {
+        var now = DateTimeOffset.Parse("2026-07-22T00:00:00Z");
+        DateTimeOffset retryAfter = default;
+        var requests = 0;
+
+        Assert.False(
+            BrQaSession.AwaitObservationWithRetry(
+                observed: false,
+                requestIssued: false,
+                now,
+                ref retryAfter,
+                () => requests++
+            )
+        );
+        Assert.Equal(1, requests);
+        Assert.Equal(now.AddSeconds(1), retryAfter);
+
+        Assert.False(
+            BrQaSession.AwaitObservationWithRetry(
+                observed: false,
+                requestIssued: true,
+                now.AddMilliseconds(999),
+                ref retryAfter,
+                () => requests++
+            )
+        );
+        Assert.Equal(1, requests);
+
+        Assert.False(
+            BrQaSession.AwaitObservationWithRetry(
+                observed: false,
+                requestIssued: true,
+                now.AddSeconds(1),
+                ref retryAfter,
+                () => requests++
+            )
+        );
+        Assert.Equal(2, requests);
+
+        Assert.True(
+            BrQaSession.AwaitObservationWithRetry(
+                observed: true,
+                requestIssued: true,
+                now.AddSeconds(2),
+                ref retryAfter,
+                () => requests++
+            )
+        );
+        Assert.Equal(2, requests);
+    }
+
+    [Fact]
     public void SecretParserNeverEchoesSecretMaterialInFailures()
     {
         var fixture = Fixture.Create();

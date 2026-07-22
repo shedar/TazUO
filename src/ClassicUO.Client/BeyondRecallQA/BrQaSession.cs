@@ -59,6 +59,7 @@ namespace ClassicUO.BeyondRecallQA
         private string _expectedJournal;
         private bool _journalObserved;
         private DateTimeOffset _delayUntil;
+        private DateTimeOffset _retryAfter;
 
         public BrQaConfig Config => _config;
         public bool ScenarioCompleted => _scenarioCompleted;
@@ -290,8 +291,7 @@ namespace ClassicUO.BeyondRecallQA
                     }
                     return;
                 case "open-backpack":
-                    if (World.Instance?.Player != null && GameActions.OpenBackpack(World.Instance))
-                        CompleteAction(action);
+                    OpenBackpack(action);
                     return;
                 case "open-skills":
                     if (World.Instance?.Player != null)
@@ -827,6 +827,48 @@ namespace ClassicUO.BeyondRecallQA
             UIManager.GetGump<ContainerGump>(serial) != null ||
             UIManager.GetGump<GridContainer>(serial) != null;
 
+        internal static bool AwaitObservationWithRetry(
+            bool observed,
+            bool requestIssued,
+            DateTimeOffset now,
+            ref DateTimeOffset retryAfter,
+            Action issueRequest
+        )
+        {
+            if (observed)
+                return true;
+
+            if (!requestIssued || now >= retryAfter)
+            {
+                issueRequest();
+                retryAfter = now.AddSeconds(1);
+            }
+
+            return false;
+        }
+
+        private void OpenBackpack(BrQaAction action)
+        {
+            World world = World.Instance;
+            Item backpack = world?.Player?.Backpack;
+            if (backpack == null)
+                return;
+
+            if (AwaitObservationWithRetry(
+                    ContainerIsOpen(backpack.Serial),
+                    _actionIssued,
+                    DateTimeOffset.UtcNow,
+                    ref _retryAfter,
+                    () => GameActions.OpenBackpack(world, ignoreQueue: true)
+                ))
+            {
+                CompleteAction(action);
+                return;
+            }
+
+            _actionIssued = true;
+        }
+
         private static bool VendorGumpIsOpen(uint serial) =>
             UIManager.GetGump<ShopGump>(serial) != null ||
             UIManager.GetGump<ModernShopGump>(serial) != null;
@@ -1106,6 +1148,7 @@ namespace ClassicUO.BeyondRecallQA
             _movementStepsIssued = 0;
             _gumpBaseline = _gumpObservations;
             _delayUntil = default;
+            _retryAfter = default;
         }
 
         private void CompleteScenario()
