@@ -960,17 +960,38 @@ namespace ClassicUO.BeyondRecallQA
 
             int fromX = player.X;
             int fromY = player.Y;
+            sbyte fromZ = player.Z;
+            Direction fromDirection = player.Direction;
             if (player.Steps.Count > 0)
             {
                 ref Mobile.Step previous = ref player.Steps.Back();
                 fromX = previous.X;
                 fromY = previous.Y;
+                fromZ = previous.Z;
+                fromDirection = (Direction)previous.Direction;
             }
 
-            // QA movement is evidence for an exact signed route.  The normal Walk method may
-            // substitute an obstacle-avoidance direction from the user's profile.  WalkNotAvoid
-            // preserves the requested direction, while the projected queue distinguishes a
-            // confirmed facing turn from a confirmed one-tile movement.
+            // QA movement is evidence for an exact signed route. Pathfinder.CanWalk may replace
+            // the requested direction when a dynamic obstacle occupies the signed tile, including
+            // when WalkNotAvoid is used. Wait for that tile to clear instead of emitting an
+            // alternate movement packet. An exact facing turn remains valid beside a blocked tile.
+            Direction projectedDirection = direction;
+            int projectedX = fromX;
+            int projectedY = fromY;
+            sbyte projectedZ = fromZ;
+            bool canWalk = player.Pathfinder.CanWalk(
+                ref projectedDirection,
+                ref projectedX,
+                ref projectedY,
+                ref projectedZ
+            );
+            if ((projectedDirection & Direction.Mask) != (direction & Direction.Mask))
+                return false;
+            if ((fromDirection & Direction.Mask) == (direction & Direction.Mask) && !canWalk)
+                return false;
+
+            // The projected queue distinguishes a confirmed facing turn from a confirmed
+            // one-tile movement and guards against a state change between preflight and send.
             if (!player.WalkNotAvoid(direction, false))
                 return false;
 
