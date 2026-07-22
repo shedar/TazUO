@@ -113,6 +113,26 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void FoundationCommandUsesModernUoPrefixSyntaxWithoutClosingBracket()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"foundation\",\"actions\":[" +
+            "{\"type\":\"send-server-command\",\"command\":\"[BrQaGump\"}]}"
+        );
+
+        Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"foundation\",\"actions\":[" +
+            "{\"type\":\"send-server-command\",\"command\":\"[BrQaGump]\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
     public void EveryPhaseZeroCActionShapeIsStrictlyValidated()
     {
         var fixture = Fixture.Create();

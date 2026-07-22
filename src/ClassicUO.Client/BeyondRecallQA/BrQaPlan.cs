@@ -108,7 +108,7 @@ namespace ClassicUO.BeyondRecallQA
                     RequireOnly(action, index, nameof(action.Contains));
                     break;
                 case "send-server-command":
-                    if (!string.Equals(action.Command, "[BrQaGump]", StringComparison.Ordinal))
+                    if (!string.Equals(action.Command, "[BrQaGump", StringComparison.Ordinal))
                         throw Error(index, "send-server-command is restricted to the foundation BrQaGump command");
                     RequireOnly(action, index, nameof(action.Command));
                     break;
