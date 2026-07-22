@@ -290,6 +290,7 @@ public sealed class BrQaContractTests
             emitter.EmitVendorBuyResponseSent("fixture", "fixture", 1);
             emitter.EmitContextMenuResponseSent("fixture", 1);
             emitter.EmitCombatActionSent("fixture");
+            emitter.EmitItemEquipped("fixture");
             emitter.EmitTradeWindowOpened("fixture");
             emitter.EmitTradeResponseSent(true);
             emitter.EmitHouseCustomizationEntered("fixture");
@@ -304,7 +305,7 @@ public sealed class BrQaContractTests
             new[]
             {
                 "skill-use-requested", "target-sent", "vendor-gump-opened", "vendor-buy-response-sent",
-                "context-menu-response-sent", "combat-action-sent", "trade-window-opened",
+                "context-menu-response-sent", "combat-action-sent", "item-equipped", "trade-window-opened",
                 "trade-response-sent", "house-customization-entered", "house-component-added",
                 "house-customization-committed"
             },

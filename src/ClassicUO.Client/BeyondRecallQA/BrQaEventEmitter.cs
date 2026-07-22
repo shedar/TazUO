@@ -237,7 +237,7 @@ namespace ClassicUO.BeyondRecallQA
             "spell-cast-requested", "target-sent", "container-opened", "item-observed", "mobile-observed",
             "property-observed", "status-observed", "gump-response-sent", "vendor-gump-opened",
             "vendor-buy-response-sent", "vendor-sell-response-sent", "context-menu-response-sent",
-            "combat-action-sent", "combat-delta-observed", "item-dragged", "item-dropped",
+            "combat-action-sent", "combat-delta-observed", "item-dragged", "item-equipped", "item-dropped",
             "trade-window-opened", "trade-response-sent", "skill-threshold-observed",
             "house-customization-entered", "house-component-added", "house-component-removed",
             "house-customization-operation", "house-customization-committed", "scenario-action-failed",
