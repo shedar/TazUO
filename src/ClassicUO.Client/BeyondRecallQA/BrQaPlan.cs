@@ -138,6 +138,11 @@ namespace ClassicUO.BeyondRecallQA
                     RequireAlias(action.Target, index);
                     RequireOnly(action, index, nameof(action.Target));
                     break;
+                case "wait-item-parent":
+                    RequireAlias(action.Target, index);
+                    RequireAlias(action.ContainerTarget, index);
+                    RequireOnly(action, index, nameof(action.Target), nameof(action.ContainerTarget));
+                    break;
                 case "use-skill":
                     if (action.SkillIndex is null or < 0 or > 57)
                         throw Error(index, "skillIndex must be between 0 and 57");

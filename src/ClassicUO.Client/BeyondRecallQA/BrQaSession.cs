@@ -378,6 +378,16 @@ namespace ClassicUO.BeyondRecallQA
                         CompleteAction(action);
                     }
                     return;
+                case "wait-item-parent":
+                    if (TryResolveSerial(Target(action), out uint childSerial) &&
+                        TryResolveSerial(_targets.Require(action.ContainerTarget), out uint expectedParent) &&
+                        World.Instance?.Items.Get(childSerial) is Item child &&
+                        (child.Container == expectedParent || child.BackpackOrRootContainer == expectedParent))
+                    {
+                        _emitter.EmitItemObserved(action.Target);
+                        CompleteAction(action);
+                    }
+                    return;
                 case "wait-mobile":
                     if (TryResolveSerial(Target(action), out uint mobileSerial) && World.Instance?.Mobiles.Get(mobileSerial) != null)
                     {

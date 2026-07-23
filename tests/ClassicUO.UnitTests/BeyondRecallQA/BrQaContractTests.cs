@@ -155,6 +155,7 @@ public sealed class BrQaContractTests
             "{\"type\":\"select-context-entry\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-container\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-item\",\"target\":\"fixture\"}",
+            "{\"type\":\"wait-item-parent\",\"target\":\"fixture\",\"containerTarget\":\"fixture\"}",
             "{\"type\":\"wait-mobile\",\"target\":\"fixture\"}",
             "{\"type\":\"wait-property\",\"target\":\"fixture\",\"contains\":\"exceptional\"}",
             "{\"type\":\"wait-status\",\"field\":\"dead\",\"value\":\"false\"}",
@@ -201,6 +202,13 @@ public sealed class BrQaContractTests
         File.WriteAllText(
             fixture.Plan,
             "{\"schemaVersion\":2,\"name\":\"phase0c\",\"actions\":[{\"type\":\"wait-gump\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"phase0c\",\"actions\":[" +
+            "{\"type\":\"wait-item-parent\",\"target\":\"fixture\"}]}"
         );
         Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
     }
