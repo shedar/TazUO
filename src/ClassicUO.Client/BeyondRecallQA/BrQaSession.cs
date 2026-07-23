@@ -643,22 +643,15 @@ namespace ClassicUO.BeyondRecallQA
                 return;
 
             uint serial = RequireResolvedSerial(Target(action));
-            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
-            if (!_actionIssued)
-            {
-                if (itemHold.Enabled)
-                    itemHold.Clear();
-
-                if (!GameActions.PickUp(world, serial, 0, 0, 1, skipQueue: true))
-                    return;
-
-                _actionIssued = true;
-                _delayUntil = DateTimeOffset.UtcNow.AddMilliseconds(750);
+            Item item = world.Items.Get(serial);
+            if (item == null || item.IsDestroyed || !item.ItemData.IsWearable)
                 return;
-            }
 
-            if (DateTimeOffset.UtcNow < _delayUntil || !itemHold.Enabled ||
-                itemHold.Serial != serial || !itemHold.IsWearable)
+            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
+            if (itemHold.Enabled)
+                itemHold.Clear();
+
+            if (!GameActions.PickUp(world, serial, 0, 0, 1, skipQueue: true))
                 return;
 
             GameActions.Equip(world, world.Player.Serial);
