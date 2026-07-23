@@ -247,6 +247,49 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void SecureTradeAliasBindsExactlyOneObservedWindow()
+    {
+        var target = new BrQaTarget { GumpId = 1, Type = "secure_trade" };
+
+        Assert.False(BrQaSession.TryBindSingleTradeSerial(target, Array.Empty<uint>(), out _));
+        Assert.True(BrQaSession.TryBindSingleTradeSerial(target, new uint[] { 0x40000001 }, out uint serial));
+        Assert.Equal(0x40000001u, serial);
+        Assert.Equal(serial, target.Serial);
+
+        var ambiguous = new BrQaTarget { GumpId = 1, Type = "secure_trade" };
+        Assert.Throws<InvalidDataException>(
+            () => BrQaSession.TryBindSingleTradeSerial(
+                ambiguous,
+                new uint[] { 0x40000001, 0x40000002 },
+                out _
+            )
+        );
+    }
+
+    [Fact]
+    public void LogoutClearsHandshakeStateForRoleBoundReconnect()
+    {
+        bool authenticated = true;
+        bool serverSelected = true;
+        bool enteredWorld = true;
+
+        BrQaSession.ResetLoginStateAfterLogout(ref authenticated, ref serverSelected, ref enteredWorld);
+
+        Assert.False(authenticated);
+        Assert.False(serverSelected);
+        Assert.False(enteredWorld);
+    }
+
+    [Fact]
+    public void JournalBarriersCannotReuseACompletedObservation()
+    {
+        Assert.True(BrQaSession.ClearsJournalExpectation("wait-journal"));
+        Assert.True(BrQaSession.ClearsJournalExpectation("wait-system-message"));
+        Assert.False(BrQaSession.ClearsJournalExpectation("speak"));
+        Assert.False(BrQaSession.ClearsJournalExpectation("invoke-qa-checkpoint"));
+    }
+
+    [Fact]
     public void EventsAreOrderedAtomicAndDoNotFabricateMilestones()
     {
         var fixture = Fixture.Create();

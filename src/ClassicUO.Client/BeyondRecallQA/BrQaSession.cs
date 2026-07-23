@@ -413,7 +413,7 @@ namespace ClassicUO.BeyondRecallQA
                     }
                     return;
                 case "wait-trade-window":
-                    if (UIManager.GetTradingGump(RequireResolvedSerial(Target(action))) != null)
+                    if (ResolveTradingGump(Target(action)) != null)
                     {
                         _emitter.EmitTradeWindowOpened(action.Target);
                         CompleteAction(action);
@@ -464,7 +464,10 @@ namespace ClassicUO.BeyondRecallQA
                     VendorTransaction(action);
                     return;
                 case "accept-trade":
-                    GameActions.AcceptTrade(RequireResolvedSerial(Target(action)), action.Accepted.Value);
+                    TradingGump trading = ResolveTradingGump(Target(action));
+                    if (trading == null)
+                        return;
+                    GameActions.AcceptTrade(trading.LocalSerial, action.Accepted.Value);
                     _emitter.EmitTradeResponseSent(action.Accepted.Value);
                     CompleteAction(action);
                     return;
@@ -603,6 +606,43 @@ namespace ClassicUO.BeyondRecallQA
 
             target.Serial = best.Serial;
             serial = best.Serial;
+            return true;
+        }
+
+        private static TradingGump ResolveTradingGump(BrQaTarget target)
+        {
+            if (target?.Serial is > 0)
+                return UIManager.GetTradingGump(target.Serial.Value);
+
+            uint[] active = UIManager.Gumps
+                .OfType<TradingGump>()
+                .Where(gump => !gump.IsDisposed && gump.LocalSerial > 0)
+                .Select(gump => gump.LocalSerial)
+                .Distinct()
+                .ToArray();
+            if (!TryBindSingleTradeSerial(target, active, out uint serial))
+                return null;
+            return UIManager.GetTradingGump(serial);
+        }
+
+        internal static bool TryBindSingleTradeSerial(
+            BrQaTarget target,
+            IEnumerable<uint> activeSerials,
+            out uint serial
+        )
+        {
+            serial = target?.Serial ?? 0;
+            if (serial > 0)
+                return true;
+
+            uint[] candidates = activeSerials?.Where(value => value > 0).Distinct().ToArray() ?? Array.Empty<uint>();
+            if (candidates.Length > 1)
+                throw new InvalidDataException("Beyond Recall QA observed multiple unbound secure-trade windows.");
+            if (target == null || candidates.Length == 0)
+                return false;
+
+            serial = candidates[0];
+            target.Serial = serial;
             return true;
         }
 
@@ -1164,12 +1204,35 @@ namespace ClassicUO.BeyondRecallQA
                 _actionIssued = true;
             }
             if (Client.Game?.Scene is LoginScene)
+            {
+                ResetLoginStateAfterLogout(
+                    ref _accountAuthenticated,
+                    ref _serverSelected,
+                    ref _characterEnteredWorld
+                );
                 CompleteAction(action);
+            }
+        }
+
+        internal static void ResetLoginStateAfterLogout(
+            ref bool accountAuthenticated,
+            ref bool serverSelected,
+            ref bool characterEnteredWorld
+        )
+        {
+            accountAuthenticated = false;
+            serverSelected = false;
+            characterEnteredWorld = false;
         }
 
         private void CompleteAction(BrQaAction action)
         {
             _emitter.EmitActionCompleted(_actionIndex, action.Type, action.Target);
+            if (ClearsJournalExpectation(action.Type))
+            {
+                _expectedJournal = null;
+                _journalObserved = false;
+            }
             _actionIndex++;
             _actionIssued = false;
             _actionDeadline = default;
@@ -1180,6 +1243,9 @@ namespace ClassicUO.BeyondRecallQA
             _delayUntil = default;
             _retryAfter = default;
         }
+
+        internal static bool ClearsJournalExpectation(string actionType) =>
+            actionType is "wait-journal" or "wait-system-message";
 
         private void CompleteScenario()
         {
