@@ -275,6 +275,22 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void SecureTradeResponseUsesLocalContainerInsteadOfWindowAlias()
+    {
+        const uint peerMobileWindowSerial = 0x00011395;
+        const uint localTradeContainerSerial = 0x40054321;
+
+        Assert.Equal(
+            localTradeContainerSerial,
+            BrQaSession.TradeResponseContainerSerial(peerMobileWindowSerial, localTradeContainerSerial)
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaSession.TradeResponseContainerSerial(0, localTradeContainerSerial));
+        Assert.Throws<InvalidDataException>(
+            () => BrQaSession.TradeResponseContainerSerial(peerMobileWindowSerial, 0)
+        );
+    }
+
+    [Fact]
     public void LogoutClearsHandshakeStateForRoleBoundReconnect()
     {
         bool authenticated = true;

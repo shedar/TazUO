@@ -477,7 +477,10 @@ namespace ClassicUO.BeyondRecallQA
                     TradingGump trading = ResolveTradingGump(Target(action));
                     if (trading == null)
                         return;
-                    GameActions.AcceptTrade(trading.LocalSerial, action.Accepted.Value);
+                    GameActions.AcceptTrade(
+                        TradeResponseContainerSerial(trading.LocalSerial, trading.ID1),
+                        action.Accepted.Value
+                    );
                     _emitter.EmitTradeResponseSent(action.Accepted.Value);
                     CompleteAction(action);
                     return;
@@ -654,6 +657,14 @@ namespace ClassicUO.BeyondRecallQA
             serial = candidates[0];
             target.Serial = serial;
             return true;
+        }
+
+        internal static uint TradeResponseContainerSerial(uint windowSerial, uint localContainerSerial)
+        {
+            if (windowSerial == 0 || localContainerSerial == 0)
+                throw new InvalidDataException("Secure-trade window and local container serials must both be nonzero.");
+
+            return localContainerSerial;
         }
 
         private static void RequireHouseCustomization()
