@@ -643,20 +643,24 @@ namespace ClassicUO.BeyondRecallQA
                 return;
 
             uint serial = RequireResolvedSerial(Target(action));
+            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
+            if (itemHold.Enabled && itemHold.Serial == serial && itemHold.IsWearable)
+            {
+                GameActions.Equip(world, world.Player.Serial);
+                _emitter.EmitItemEquipped(action.Target);
+                CompleteAction(action);
+                return;
+            }
+
             Item item = world.Items.Get(serial);
             if (item == null || item.IsDestroyed || !item.ItemData.IsWearable)
                 return;
 
-            ItemHold itemHold = Client.Game.UO.GameCursor.ItemHold;
             if (itemHold.Enabled)
                 itemHold.Clear();
 
             if (!GameActions.PickUp(world, serial, 0, 0, 1, skipQueue: true))
                 return;
-
-            GameActions.Equip(world, world.Player.Serial);
-            _emitter.EmitItemEquipped(action.Target);
-            CompleteAction(action);
         }
 
         private void Attack(BrQaAction action)
