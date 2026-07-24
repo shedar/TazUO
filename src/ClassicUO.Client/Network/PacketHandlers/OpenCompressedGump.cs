@@ -48,6 +48,11 @@ internal static class OpenCompressedGump
         }
         catch (Exception ex)
         {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "packet-handler-exception",
+                    "0xDD"
+                );
             Log.Error($"Failed to decompress or decode gump layout: {ex.Message}");
             return;
         }
@@ -144,6 +149,11 @@ internal static class OpenCompressedGump
         }
         catch (Exception e)
         {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "packet-handler-exception",
+                    "0xDD"
+                );
             HtmlCrashLogGen.Generate(e.ToString(),
                 description:
                 "TazUO almost crashed, it was prevented but this was put in place for debugging, please post this on our discord.");

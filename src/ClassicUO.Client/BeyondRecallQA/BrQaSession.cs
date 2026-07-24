@@ -94,6 +94,15 @@ namespace ClassicUO.BeyondRecallQA
 
         public void FailUnhandledException() => FailScenario("unhandled-exception");
 
+        public void FailProtocolDiagnostic(string kind, string packetId)
+        {
+            if (_scenarioFailed || _scenarioCompleted)
+                return;
+
+            _emitter.EmitProtocolDiagnostic(kind, packetId);
+            FailScenario(kind);
+        }
+
         public void EmitSettingsLoaded()
         {
             if (_settingsLoaded || _scenarioFailed)
@@ -490,6 +499,12 @@ namespace ClassicUO.BeyondRecallQA
                         : _delayUntil;
                     if (DateTimeOffset.UtcNow >= _delayUntil)
                         CompleteAction(action);
+                    return;
+                case "capture-frame":
+                    var frame = Client.Game?.CaptureBeyondRecallQaFrame(_config.OutputDirectory)
+                        ?? throw new InvalidOperationException("TazUO game controller is unavailable for QA frame capture.");
+                    _emitter.EmitFrameCaptured(frame.Width, frame.Height, frame.Sha256);
+                    CompleteAction(action);
                     return;
                 case "wait-skill":
                     if (World.Instance?.Player?.Skills[action.SkillIndex.Value].Value >= action.Minimum.Value)

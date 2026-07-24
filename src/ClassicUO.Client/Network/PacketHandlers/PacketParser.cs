@@ -138,12 +138,31 @@ internal sealed class PacketParser
 
         PacketHandler handler = _handlers[data[0]];
 
-        if (handler != null)
+        if (handler == null)
+        {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "unknown-required-packet",
+                    $"0x{data[0]:X2}"
+                );
+            return;
+        }
+
+        try
         {
             var buffer = new StackDataReader(data);
             buffer.Seek(offset);
 
             handler(world, ref buffer);
+        }
+        catch (Exception)
+        {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "packet-handler-exception",
+                    $"0x{data[0]:X2}"
+                );
+            throw;
         }
     }
 
