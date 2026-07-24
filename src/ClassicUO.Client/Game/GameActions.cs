@@ -546,7 +546,7 @@ internal static class GameActions
         return false;
     }
 
-    internal static bool OpenBackpack(World world)
+    internal static bool OpenBackpack(World world, bool ignoreQueue = false)
     {
         Item backpack = world.Player.Backpack;
 
@@ -561,7 +561,7 @@ internal static class GameActions
             backpackGump = UIManager.GetGump<GridContainer>(backpack);
             if (backpackGump == null)
             {
-                DoubleClick(world, backpack);
+                DoubleClick(world, backpack, ignoreWarMode: true, ignoreQueue: ignoreQueue);
                 return true;
             }
             else

@@ -15,6 +15,8 @@ namespace ClassicUO.Game.UI.Gumps
         private ushort _selectedItem;
         private readonly PopupMenuData _data;
 
+        public uint Serial => _data.Serial;
+
         public PopupMenuGump(World world, PopupMenuData data) : base(world, 0, 0)
         {
             if (CloseNext != uint.MaxValue && data.Serial == CloseNext)
