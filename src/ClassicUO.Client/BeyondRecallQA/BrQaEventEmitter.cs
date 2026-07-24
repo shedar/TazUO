@@ -76,6 +76,7 @@ namespace ClassicUO.BeyondRecallQA
         private readonly string _processStartTime;
         private readonly object _lock = new object();
         private long _sequence;
+        private DateTimeOffset _lastTimestamp;
         private bool _disposed;
 
         public string EventsPath => _eventsPath;
@@ -107,12 +108,13 @@ namespace ClassicUO.BeyondRecallQA
 
             lock (_lock)
             {
+                _lastTimestamp = NextTimestamp(_lastTimestamp, DateTimeOffset.UtcNow);
                 var qaEvent = new BrQaEvent
                 {
                     Sequence = ++_sequence,
                     EventId = Guid.NewGuid().ToString("N"),
                     EventType = eventType,
-                    Timestamp = DateTimeOffset.UtcNow.ToString("O"),
+                    Timestamp = _lastTimestamp.ToString("O"),
                     SessionToken = _config.SessionToken,
                     TazUoSourceCommit = BrQaBuildInfo.SourceCommit,
                     TazUoBuildIdentity = BrQaBuildInfo.BuildIdentity,
@@ -150,6 +152,16 @@ namespace ClassicUO.BeyondRecallQA
                         File.Delete(temporary);
                 }
             }
+        }
+
+        internal static DateTimeOffset NextTimestamp(DateTimeOffset previous, DateTimeOffset observed)
+        {
+            if (observed > previous)
+                return observed;
+            if (previous == DateTimeOffset.MaxValue)
+                return previous;
+
+            return previous.AddTicks(1);
         }
 
         public void EmitProcessStarted() => Emit("process-started");

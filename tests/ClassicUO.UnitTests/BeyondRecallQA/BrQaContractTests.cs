@@ -339,9 +339,29 @@ public sealed class BrQaContractTests
         Assert.Equal(2, second.RootElement.GetProperty("sequence").GetInt64());
         Assert.Equal("settings-loaded", second.RootElement.GetProperty("eventType").GetString());
         Assert.Equal("scenario-failed", third.RootElement.GetProperty("eventType").GetString());
+        Assert.True(
+            DateTimeOffset.Parse(second.RootElement.GetProperty("timestamp").GetString()!) >
+            DateTimeOffset.Parse(first.RootElement.GetProperty("timestamp").GetString()!)
+        );
+        Assert.True(
+            DateTimeOffset.Parse(third.RootElement.GetProperty("timestamp").GetString()!) >
+            DateTimeOffset.Parse(second.RootElement.GetProperty("timestamp").GetString()!)
+        );
         Assert.DoesNotContain("assets-loaded", string.Join('\n', lines), StringComparison.Ordinal);
         Assert.DoesNotContain("account-authenticated", string.Join('\n', lines), StringComparison.Ordinal);
         Assert.Empty(Directory.EnumerateFiles(fixture.Output, "*.tmp-*"));
+    }
+
+    [Fact]
+    public void EvidenceTimestampRemainsStrictlyIncreasingAcrossWallClockRegression()
+    {
+        var previous = DateTimeOffset.Parse("2026-07-24T14:57:38.8559050Z");
+        var regressed = DateTimeOffset.Parse("2026-07-24T14:57:38.7946670Z");
+        var advanced = previous.AddMilliseconds(10);
+
+        Assert.Equal(previous.AddTicks(1), BrQaEventEmitter.NextTimestamp(previous, regressed));
+        Assert.Equal(advanced, BrQaEventEmitter.NextTimestamp(previous, advanced));
+        Assert.Equal(DateTimeOffset.MaxValue, BrQaEventEmitter.NextTimestamp(DateTimeOffset.MaxValue, regressed));
     }
 
     [Fact]
