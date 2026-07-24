@@ -350,6 +350,13 @@ namespace ClassicUO.BeyondRecallQA
                     if (World.Instance?.TargetManager?.IsTargeting == true)
                         CompleteAction(action);
                     return;
+                case "cancel-target":
+                    if (World.Instance?.TargetManager?.IsTargeting != true)
+                        throw new InvalidOperationException("Beyond Recall QA cannot cancel an inactive target cursor.");
+                    World.Instance.TargetManager.CancelTarget();
+                    _emitter.EmitTargetCancelled();
+                    CompleteAction(action);
+                    return;
                 case "target-serial":
                     TargetSerial(action);
                     return;

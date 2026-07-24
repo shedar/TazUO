@@ -152,6 +152,25 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void TargetCancelIsAParameterlessOptInQaAction()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"target-cancel\",\"actions\":[{\"type\":\"cancel-target\"}]}"
+        );
+
+        Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"target-cancel\",\"actions\":[" +
+            "{\"type\":\"cancel-target\",\"target\":\"fixture\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
     public void EveryPhaseZeroCActionShapeIsStrictlyValidated()
     {
         var fixture = Fixture.Create();
@@ -392,6 +411,7 @@ public sealed class BrQaContractTests
         {
             emitter.EmitSkillUseRequested(17);
             emitter.EmitTargetSent("fixture");
+            emitter.EmitTargetCancelled();
             emitter.EmitVendorGumpOpened("fixture");
             emitter.EmitVendorBuyResponseSent("fixture", "fixture", 1);
             emitter.EmitContextMenuResponseSent("fixture", 1);
@@ -410,7 +430,7 @@ public sealed class BrQaContractTests
         Assert.Equal(
             new[]
             {
-                "skill-use-requested", "target-sent", "vendor-gump-opened", "vendor-buy-response-sent",
+                "skill-use-requested", "target-sent", "target-cancel-sent", "vendor-gump-opened", "vendor-buy-response-sent",
                 "context-menu-response-sent", "combat-action-sent", "item-equipped", "trade-window-opened",
                 "trade-response-sent", "house-customization-entered", "house-component-added",
                 "house-customization-committed"
