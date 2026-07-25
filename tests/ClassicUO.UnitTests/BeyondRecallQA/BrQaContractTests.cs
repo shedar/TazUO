@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ClassicUO.BeyondRecallQA;
+using ClassicUO.Network.PacketHandlers;
 using Xunit;
 
 namespace ClassicUO.UnitTests.BeyondRecallQA;
@@ -168,6 +169,15 @@ public sealed class BrQaContractTests
             "{\"type\":\"cancel-target\",\"target\":\"fixture\"}]}"
         );
         Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void ModernUoServerChangePacketHasAnExplicitHandler()
+    {
+        Assert.Contains(
+            PacketHandlerRegistry.GetHandlers(),
+            entry => entry.Id == 0x76 && entry.Handler.Method.DeclaringType == typeof(ServerChange)
+        );
     }
 
     [Fact]
@@ -349,6 +359,26 @@ public sealed class BrQaContractTests
         Assert.True(BrQaSession.ClearsJournalExpectation("wait-system-message"));
         Assert.False(BrQaSession.ClearsJournalExpectation("speak"));
         Assert.False(BrQaSession.ClearsJournalExpectation("invoke-qa-checkpoint"));
+    }
+
+    [Fact]
+    public void JournalHistoryBridgesCrossClientRacesWithoutReusingAMatch()
+    {
+        var history = new BrQaJournalHistory(capacity: 3);
+        history.Add("unrelated");
+        history.Add("br-qa-housing-door-ready");
+
+        Assert.True(history.TryConsumeMatch("br-qa-housing-door-ready", out string match));
+        Assert.Equal("br-qa-housing-door-ready", match);
+        Assert.False(history.TryConsumeMatch("br-qa-housing-door-ready", out _));
+
+        history.Add("first");
+        history.Add("second");
+        history.Add("third");
+        history.Add("bounded");
+        Assert.False(history.TryConsumeMatch("first", out _));
+        history.Add("bounded");
+        Assert.True(history.TryConsumeMatch("bounded", out _));
     }
 
     [Fact]

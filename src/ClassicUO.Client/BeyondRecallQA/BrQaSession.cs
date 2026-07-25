@@ -36,6 +36,7 @@ namespace ClassicUO.BeyondRecallQA
             new Dictionary<string, ushort>(StringComparer.Ordinal);
         private readonly List<uint> _gumpSwitches = new List<uint>();
         private readonly Dictionary<ushort, string> _gumpEntries = new Dictionary<ushort, string>();
+        private readonly BrQaJournalHistory _journalHistory = new BrQaJournalHistory();
         private DateTimeOffset _actionDeadline;
         private int _actionIndex;
         private bool _actionIssued;
@@ -205,14 +206,21 @@ namespace ClassicUO.BeyondRecallQA
 
         public void ObserveJournal(string text)
         {
-            if (_scenarioFailed || _expectedJournal == null || text == null ||
-                !text.Contains(_expectedJournal, StringComparison.Ordinal))
-            {
+            if (_scenarioFailed || text == null)
                 return;
-            }
 
-            _journalObserved = true;
+            _journalHistory.Add(text);
+            TryObserveExpectedJournal();
+        }
+
+        private void TryObserveExpectedJournal()
+        {
+            if (_journalObserved || _expectedJournal == null ||
+                !_journalHistory.TryConsumeMatch(_expectedJournal, out string text))
+                return;
+
             var sha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
+            _journalObserved = true;
             _emitter.EmitJournalObserved(sha256);
         }
 
@@ -289,6 +297,7 @@ namespace ClassicUO.BeyondRecallQA
                 case "wait-journal":
                 case "wait-system-message":
                     _expectedJournal ??= action.Contains;
+                    TryObserveExpectedJournal();
                     if (_journalObserved)
                         CompleteAction(action);
                     return;
