@@ -4,6 +4,7 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ClassicUO.BeyondRecallQA;
+using ClassicUO.Configuration;
 using ClassicUO.Network.PacketHandlers;
 using Xunit;
 
@@ -17,6 +18,21 @@ public sealed class BrQaContractTests
         var config = BrQaConfig.Parse(new[] { "-settings", "/tmp/settings.json", "-reconnect", "false" });
 
         Assert.False(config.Enabled);
+    }
+
+    [Fact]
+    public void QaProfileDisablesBackgroundCorpseOpening()
+    {
+        var profile = new Profile
+        {
+            AutoOpenCorpses = true,
+            AutoOpenOwnCorpse = true
+        };
+
+        BrQaSession.ApplyDeterministicProfileSettings(profile);
+
+        Assert.False(profile.AutoOpenCorpses);
+        Assert.False(profile.AutoOpenOwnCorpse);
     }
 
     [Fact]

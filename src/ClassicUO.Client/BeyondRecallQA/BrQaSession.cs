@@ -181,8 +181,21 @@ namespace ClassicUO.BeyondRecallQA
             if (_characterEnteredWorld || _scenarioFailed)
                 return;
 
+            ApplyDeterministicProfileSettings(ProfileManager.CurrentProfile);
             _characterEnteredWorld = true;
             _emitter.EmitCharacterEnteredWorld();
+        }
+
+        internal static void ApplyDeterministicProfileSettings(Profile profile)
+        {
+            if (profile == null)
+                throw new InvalidOperationException("Beyond Recall QA requires an active isolated client profile.");
+
+            // Corpse auto-open is a background convenience action whose timing depends on the
+            // render/update loop. QA scenarios drive every corpse interaction explicitly so the
+            // resulting item/container observations remain ordered and reproducible.
+            profile.AutoOpenCorpses = false;
+            profile.AutoOpenOwnCorpse = false;
         }
 
         public void EmitMovementAcknowledged(byte sequence)
