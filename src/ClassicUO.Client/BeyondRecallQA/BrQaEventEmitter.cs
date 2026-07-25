@@ -188,6 +188,7 @@ namespace ClassicUO.BeyondRecallQA
         public void EmitSpellCastRequested(int spellIndex) =>
             Emit("spell-cast-requested", "spellIndex=" + spellIndex);
         public void EmitTargetSent(string target) => Emit("target-sent", "target=" + target);
+        public void EmitTargetCancelled() => Emit("target-cancel-sent");
         public void EmitContainerOpened(string target) => Emit("container-opened", "target=" + target);
         public void EmitItemObserved(string target) => Emit("item-observed", "target=" + target);
         public void EmitMobileObserved(string target) => Emit("mobile-observed", "target=" + target);
@@ -221,6 +222,10 @@ namespace ClassicUO.BeyondRecallQA
         public void EmitHouseCustomizationOperation(string operation) =>
             Emit("house-customization-operation", "operation=" + operation);
         public void EmitHouseCustomizationCommitted() => Emit("house-customization-committed");
+        public void EmitFrameCaptured(int width, int height, string sha256) =>
+            Emit("frame-captured", $"width={width};height={height};sha256={sha256}");
+        public void EmitProtocolDiagnostic(string kind, string packetId) =>
+            Emit("protocol-diagnostic", $"kind={kind};packetId={packetId ?? "none"}");
         public void EmitScenarioActionFailed(string code, int actionIndex, string actionType) =>
             Emit(
                 "scenario-action-failed",
@@ -246,13 +251,14 @@ namespace ClassicUO.BeyondRecallQA
             "network-connected", "account-authenticated", "server-list-received", "character-list-received",
             "character-entered-world", "movement-acknowledged", "gump-opened", "journal-observed",
             "scenario-action-started", "scenario-action-completed", "skill-use-requested",
-            "spell-cast-requested", "target-sent", "container-opened", "item-observed", "mobile-observed",
+            "spell-cast-requested", "target-sent", "target-cancel-sent", "container-opened", "item-observed", "mobile-observed",
             "property-observed", "status-observed", "gump-response-sent", "vendor-gump-opened",
             "vendor-buy-response-sent", "vendor-sell-response-sent", "context-menu-response-sent",
             "combat-action-sent", "combat-delta-observed", "item-dragged", "item-equipped", "item-dropped",
             "trade-window-opened", "trade-response-sent", "skill-threshold-observed",
             "house-customization-entered", "house-component-added", "house-component-removed",
-            "house-customization-operation", "house-customization-committed", "scenario-action-failed",
+            "house-customization-operation", "house-customization-committed", "frame-captured",
+            "protocol-diagnostic", "scenario-action-failed",
             "scenario-completed", "client-exiting", "client-exited", "scenario-failed"
         };
 

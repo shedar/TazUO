@@ -21,6 +21,11 @@ internal static class PacketList
                 UpdateItemSA.Receive(world, ref p);
             else
             {
+                if (BeyondRecallQA.BrQaSession.IsActive)
+                    BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                        "unknown-required-packet",
+                        $"0xF7/0x{id:X2}"
+                    );
                 Log.Warn($"Unknown packet ID: [0x{id:X2}] in 0xF7");
                 break;
             }

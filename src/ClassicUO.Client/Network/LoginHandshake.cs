@@ -173,6 +173,14 @@ namespace ClassicUO.Network
 
                 _reconnectTime = (long)Time.Ticks + reconnectTime;
                 _reconnectTryCounter++;
+                if (_reconnectTryCounter > 3 && BeyondRecallQA.BrQaSession.IsActive)
+                {
+                    BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                        "reconnect-loop",
+                        null
+                    );
+                    Reconnect = false;
+                }
             }
         }
 

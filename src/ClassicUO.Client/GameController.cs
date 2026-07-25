@@ -25,6 +25,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Threading;
 using ClassicUO.Network.PacketHandlers;
 using Myra;
@@ -1236,6 +1237,60 @@ namespace ClassicUO
                 {
                     GameActions.Print(UO.World, message, 0x44, MessageType.System);
                 }
+            }
+        }
+
+        internal (int Width, int Height, string Sha256) CaptureBeyondRecallQaFrame(string outputDirectory)
+        {
+            if (!BeyondRecallQA.BrQaSession.IsActive)
+                throw new InvalidOperationException("Beyond Recall frame capture is restricted to an active QA session.");
+            if (string.IsNullOrWhiteSpace(outputDirectory) || !Path.IsPathFullyQualified(outputDirectory))
+                throw new ArgumentException("Beyond Recall QA frame output must be an absolute directory.");
+
+            string path = Path.Combine(outputDirectory, "frame.png");
+            string temporary = path + ".tmp-" + Guid.NewGuid().ToString("N");
+            if (File.Exists(path))
+                throw new InvalidOperationException("Beyond Recall QA frame output already exists.");
+
+            Color[] colors;
+            int width;
+            int height;
+            if (_useScreenRenderTarget && _screenRenderTarget != null && !_screenRenderTarget.IsDisposed)
+            {
+                width = _screenRenderTarget.Width;
+                height = _screenRenderTarget.Height;
+                colors = new Color[width * height];
+                _screenRenderTarget.GetData(colors);
+            }
+            else
+            {
+                width = GraphicManager.PreferredBackBufferWidth;
+                height = GraphicManager.PreferredBackBufferHeight;
+                colors = new Color[width * height];
+                GraphicsDevice.GetBackBufferData(colors);
+            }
+
+            try
+            {
+                using (var texture = new Texture2D(GraphicsDevice, width, height, false, SurfaceFormat.Color))
+                using (var stream = new FileStream(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    texture.SetData(colors);
+                    texture.SaveAsPng(stream, width, height);
+                    stream.Flush(flushToDisk: true);
+                }
+
+                File.Move(temporary, path);
+                return (
+                    width,
+                    height,
+                    Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path))).ToLowerInvariant()
+                );
+            }
+            finally
+            {
+                if (File.Exists(temporary))
+                    File.Delete(temporary);
             }
         }
 

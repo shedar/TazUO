@@ -36,6 +36,7 @@ namespace ClassicUO.BeyondRecallQA
             new Dictionary<string, ushort>(StringComparer.Ordinal);
         private readonly List<uint> _gumpSwitches = new List<uint>();
         private readonly Dictionary<ushort, string> _gumpEntries = new Dictionary<ushort, string>();
+        private readonly BrQaJournalHistory _journalHistory = new BrQaJournalHistory();
         private DateTimeOffset _actionDeadline;
         private int _actionIndex;
         private bool _actionIssued;
@@ -93,6 +94,15 @@ namespace ClassicUO.BeyondRecallQA
         private static void OnProcessExit(object sender, EventArgs eventArgs) => _instance?.Dispose();
 
         public void FailUnhandledException() => FailScenario("unhandled-exception");
+
+        public void FailProtocolDiagnostic(string kind, string packetId)
+        {
+            if (_scenarioFailed || _scenarioCompleted)
+                return;
+
+            _emitter.EmitProtocolDiagnostic(kind, packetId);
+            FailScenario(kind);
+        }
 
         public void EmitSettingsLoaded()
         {
@@ -171,8 +181,21 @@ namespace ClassicUO.BeyondRecallQA
             if (_characterEnteredWorld || _scenarioFailed)
                 return;
 
+            ApplyDeterministicProfileSettings(ProfileManager.CurrentProfile);
             _characterEnteredWorld = true;
             _emitter.EmitCharacterEnteredWorld();
+        }
+
+        internal static void ApplyDeterministicProfileSettings(Profile profile)
+        {
+            if (profile == null)
+                throw new InvalidOperationException("Beyond Recall QA requires an active isolated client profile.");
+
+            // Corpse auto-open is a background convenience action whose timing depends on the
+            // render/update loop. QA scenarios drive every corpse interaction explicitly so the
+            // resulting item/container observations remain ordered and reproducible.
+            profile.AutoOpenCorpses = false;
+            profile.AutoOpenOwnCorpse = false;
         }
 
         public void EmitMovementAcknowledged(byte sequence)
@@ -196,14 +219,21 @@ namespace ClassicUO.BeyondRecallQA
 
         public void ObserveJournal(string text)
         {
-            if (_scenarioFailed || _expectedJournal == null || text == null ||
-                !text.Contains(_expectedJournal, StringComparison.Ordinal))
-            {
+            if (_scenarioFailed || text == null)
                 return;
-            }
 
-            _journalObserved = true;
+            _journalHistory.Add(text);
+            TryObserveExpectedJournal();
+        }
+
+        private void TryObserveExpectedJournal()
+        {
+            if (_journalObserved || _expectedJournal == null ||
+                !_journalHistory.TryConsumeMatch(_expectedJournal, out string text))
+                return;
+
             var sha256 = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
+            _journalObserved = true;
             _emitter.EmitJournalObserved(sha256);
         }
 
@@ -280,6 +310,7 @@ namespace ClassicUO.BeyondRecallQA
                 case "wait-journal":
                 case "wait-system-message":
                     _expectedJournal ??= action.Contains;
+                    TryObserveExpectedJournal();
                     if (_journalObserved)
                         CompleteAction(action);
                     return;
@@ -340,6 +371,13 @@ namespace ClassicUO.BeyondRecallQA
                 case "wait-target-cursor":
                     if (World.Instance?.TargetManager?.IsTargeting == true)
                         CompleteAction(action);
+                    return;
+                case "cancel-target":
+                    if (World.Instance?.TargetManager?.IsTargeting != true)
+                        throw new InvalidOperationException("Beyond Recall QA cannot cancel an inactive target cursor.");
+                    World.Instance.TargetManager.CancelTarget();
+                    _emitter.EmitTargetCancelled();
+                    CompleteAction(action);
                     return;
                 case "target-serial":
                     TargetSerial(action);
@@ -490,6 +528,12 @@ namespace ClassicUO.BeyondRecallQA
                         : _delayUntil;
                     if (DateTimeOffset.UtcNow >= _delayUntil)
                         CompleteAction(action);
+                    return;
+                case "capture-frame":
+                    var frame = Client.Game?.CaptureBeyondRecallQaFrame(_config.OutputDirectory)
+                        ?? throw new InvalidOperationException("TazUO game controller is unavailable for QA frame capture.");
+                    _emitter.EmitFrameCaptured(frame.Width, frame.Height, frame.Sha256);
+                    CompleteAction(action);
                     return;
                 case "wait-skill":
                     if (World.Instance?.Player?.Skills[action.SkillIndex.Value].Value >= action.Minimum.Value)

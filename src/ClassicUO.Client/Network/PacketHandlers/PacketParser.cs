@@ -37,8 +37,20 @@ internal sealed class PacketParser
 
     public int ParsePackets(World world, Span<byte> data)
     {
-        Append(data, false);
-        return ParsePackets(world, _buffer, true) + ParsePackets(world, _pluginsBuffer, false);
+        try
+        {
+            Append(data, false);
+            return ParsePackets(world, _buffer, true) + ParsePackets(world, _pluginsBuffer, false);
+        }
+        catch (Exception)
+        {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "packet-parser-exception",
+                    null
+                );
+            throw;
+        }
     }
 
     public void AddHandler(uint id, PacketHandler handler, bool allowOverride = true)
@@ -138,12 +150,31 @@ internal sealed class PacketParser
 
         PacketHandler handler = _handlers[data[0]];
 
-        if (handler != null)
+        if (handler == null)
+        {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "unknown-required-packet",
+                    $"0x{data[0]:X2}"
+                );
+            return;
+        }
+
+        try
         {
             var buffer = new StackDataReader(data);
             buffer.Seek(offset);
 
             handler(world, ref buffer);
+        }
+        catch (Exception)
+        {
+            if (BeyondRecallQA.BrQaSession.IsActive)
+                BeyondRecallQA.BrQaSession.Instance.FailProtocolDiagnostic(
+                    "packet-handler-exception",
+                    $"0x{data[0]:X2}"
+                );
+            throw;
         }
     }
 

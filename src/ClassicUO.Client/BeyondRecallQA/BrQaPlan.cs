@@ -72,6 +72,8 @@ namespace ClassicUO.BeyondRecallQA
                 case "open-backpack":
                 case "open-skills":
                 case "wait-target-cursor":
+                case "cancel-target":
+                case "capture-frame":
                 case "logout":
                 case "exit":
                     RequireOnly(action, index);

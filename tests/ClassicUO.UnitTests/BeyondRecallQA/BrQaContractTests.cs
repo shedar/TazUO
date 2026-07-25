@@ -4,6 +4,8 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
 using ClassicUO.BeyondRecallQA;
+using ClassicUO.Configuration;
+using ClassicUO.Network.PacketHandlers;
 using Xunit;
 
 namespace ClassicUO.UnitTests.BeyondRecallQA;
@@ -16,6 +18,21 @@ public sealed class BrQaContractTests
         var config = BrQaConfig.Parse(new[] { "-settings", "/tmp/settings.json", "-reconnect", "false" });
 
         Assert.False(config.Enabled);
+    }
+
+    [Fact]
+    public void QaProfileDisablesBackgroundCorpseOpening()
+    {
+        var profile = new Profile
+        {
+            AutoOpenCorpses = true,
+            AutoOpenOwnCorpse = true
+        };
+
+        BrQaSession.ApplyDeterministicProfileSettings(profile);
+
+        Assert.False(profile.AutoOpenCorpses);
+        Assert.False(profile.AutoOpenOwnCorpse);
     }
 
     [Fact]
@@ -130,6 +147,53 @@ public sealed class BrQaContractTests
             "{\"type\":\"send-server-command\",\"command\":\"[BrQaGump]\"}]}"
         );
         Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void ReportFrameCaptureIsAParameterlessOptInQaAction()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"capture\",\"actions\":[{\"type\":\"capture-frame\"}]}"
+        );
+
+        Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"capture\",\"actions\":[" +
+            "{\"type\":\"capture-frame\",\"target\":\"fixture\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void TargetCancelIsAParameterlessOptInQaAction()
+    {
+        var fixture = Fixture.Create();
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"target-cancel\",\"actions\":[{\"type\":\"cancel-target\"}]}"
+        );
+
+        Assert.Single(BrQaPlan.Load(fixture.Plan).Actions);
+
+        File.WriteAllText(
+            fixture.Plan,
+            "{\"schemaVersion\":2,\"name\":\"target-cancel\",\"actions\":[" +
+            "{\"type\":\"cancel-target\",\"target\":\"fixture\"}]}"
+        );
+        Assert.Throws<InvalidDataException>(() => BrQaPlan.Load(fixture.Plan));
+    }
+
+    [Fact]
+    public void ModernUoServerChangePacketHasAnExplicitHandler()
+    {
+        Assert.Contains(
+            PacketHandlerRegistry.GetHandlers(),
+            entry => entry.Id == 0x76 && entry.Handler.Method.DeclaringType == typeof(ServerChange)
+        );
     }
 
     [Fact]
@@ -314,6 +378,26 @@ public sealed class BrQaContractTests
     }
 
     [Fact]
+    public void JournalHistoryBridgesCrossClientRacesWithoutReusingAMatch()
+    {
+        var history = new BrQaJournalHistory(capacity: 3);
+        history.Add("unrelated");
+        history.Add("br-qa-housing-door-ready");
+
+        Assert.True(history.TryConsumeMatch("br-qa-housing-door-ready", out string match));
+        Assert.Equal("br-qa-housing-door-ready", match);
+        Assert.False(history.TryConsumeMatch("br-qa-housing-door-ready", out _));
+
+        history.Add("first");
+        history.Add("second");
+        history.Add("third");
+        history.Add("bounded");
+        Assert.False(history.TryConsumeMatch("first", out _));
+        history.Add("bounded");
+        Assert.True(history.TryConsumeMatch("bounded", out _));
+    }
+
+    [Fact]
     public void EventsAreOrderedAtomicAndDoNotFabricateMilestones()
     {
         var fixture = Fixture.Create();
@@ -373,6 +457,7 @@ public sealed class BrQaContractTests
         {
             emitter.EmitSkillUseRequested(17);
             emitter.EmitTargetSent("fixture");
+            emitter.EmitTargetCancelled();
             emitter.EmitVendorGumpOpened("fixture");
             emitter.EmitVendorBuyResponseSent("fixture", "fixture", 1);
             emitter.EmitContextMenuResponseSent("fixture", 1);
@@ -391,7 +476,7 @@ public sealed class BrQaContractTests
         Assert.Equal(
             new[]
             {
-                "skill-use-requested", "target-sent", "vendor-gump-opened", "vendor-buy-response-sent",
+                "skill-use-requested", "target-sent", "target-cancel-sent", "vendor-gump-opened", "vendor-buy-response-sent",
                 "context-menu-response-sent", "combat-action-sent", "item-equipped", "trade-window-opened",
                 "trade-response-sent", "house-customization-entered", "house-component-added",
                 "house-customization-committed"
@@ -399,6 +484,26 @@ public sealed class BrQaContractTests
             types
         );
         Assert.DoesNotContain("trade-completed", types);
+    }
+
+    [Fact]
+    public void CaptureAndProtocolDiagnosticsAreBoundedTypedEvents()
+    {
+        var fixture = Fixture.Create();
+        var config = BrQaConfig.Parse(fixture.Arguments());
+        using (var emitter = new BrQaEventEmitter(config))
+        {
+            emitter.EmitFrameCaptured(800, 600, new string('a', 64));
+            emitter.EmitProtocolDiagnostic("packet-handler-exception", "0xDD");
+        }
+
+        string[] lines = File.ReadAllLines(Path.Combine(fixture.Output, "qa-events.jsonl"));
+        Assert.Equal(2, lines.Length);
+        Assert.Contains("\"eventType\":\"frame-captured\"", lines[0], StringComparison.Ordinal);
+        Assert.Contains("width=800;height=600;sha256=", lines[0], StringComparison.Ordinal);
+        Assert.Contains("\"eventType\":\"protocol-diagnostic\"", lines[1], StringComparison.Ordinal);
+        Assert.Contains("kind=packet-handler-exception;packetId=0xDD", lines[1], StringComparison.Ordinal);
+        Assert.DoesNotContain("password", string.Join('\n', lines), StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
