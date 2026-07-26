@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
+using ClassicUO.LegionScripting;
 using ClassicUO.Utility.Logging;
 using System;
 using System.IO;
@@ -80,13 +81,13 @@ namespace ClassicUO
                     if (noSuitableGraphicsDeviceException.Message.Contains("Could not create swapchain!"))
                     {
                         string dataPath = Path.Join(CUOEnviroment.ExecutablePath, "Data");
-                        string scriptsPath = Path.Join(CUOEnviroment.ExecutablePath, "LegionScripts");
+                        string scriptsPath = LegionWorkspacePaths.Current.ScriptsDirectory;
                         var sb = new StringBuilder();
                         sb.AppendLine("Issue analysis indicates a potential conflict with your TazUO installation.");
                         sb.AppendLine("The client does not support side-by-side installation of both legacy and modern builds.");
                         sb.AppendLine($"Please backup your data ('{dataPath}') and script ('{scriptsPath}') folders and delete everything else.");
                         sb.AppendLine("Re-download *only* your selected channel (Legacy or Modern) from the launcher.");
-                        sb.AppendLine("Copy your backed up Data and LegionScripts folders back to where they were.");
+                        sb.AppendLine("Restore the backed-up Data folder if needed. Keep the configured Legion workspace at its existing path.");
                         return sb.ToString();
                     }
                 }

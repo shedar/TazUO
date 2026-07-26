@@ -103,13 +103,9 @@ public partial class ScriptFile : IDisposable
 
     public virtual void OverrideFileContents(string contents)
     {
-        string temp = System.IO.Path.GetTempFileName();
-
         try
         {
-            File.WriteAllText(temp, contents);
-            File.Move(temp, FullPath, true);
-
+            LegionWorkspaceFileSystem.WriteAllText(FullPath, contents);
             GameActions.Print(World, $"Saved {FileName}.");
         }
         catch (Exception ex)
@@ -157,9 +153,9 @@ public partial class ScriptFile : IDisposable
         string dir = System.IO.Path.GetDirectoryName(FullPath);
         ICollection<string> paths = PythonEngine.GetSearchPaths();
         paths.Add(System.IO.Path.Combine(CUOEnviroment.ExecutablePath, "iplib"));
-        paths.Add(System.IO.Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts"));
+        paths.Add(LegionScripting.ScriptPath);
 
-        paths.Add(!string.IsNullOrWhiteSpace(dir) ? dir : Environment.CurrentDirectory);
+        paths.Add(!string.IsNullOrWhiteSpace(dir) ? dir : LegionScripting.ScriptPath);
 
         PythonEngine.SetSearchPaths(paths);
     }
