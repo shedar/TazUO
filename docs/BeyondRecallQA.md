@@ -2,6 +2,12 @@
 
 TazUO includes a narrow opt-in protocol used by Beyond Recall's local `ShardTool`. It is disabled when no `-br-qa-*` option is present and is not a general automation or remote-control interface.
 
+Every QA launch also passes the external Legion path options documented in
+[`LegionWorkspace.md`](LegionWorkspace.md), but points them at a new empty
+directory and settings file inside that QA run's output. It never uses the
+operator's persistent Legion script or settings paths. ShardTool deletes the
+isolated workspace after the client exits and retains path/cleanup evidence.
+
 The complete launch contract is:
 
 ```text
