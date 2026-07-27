@@ -4,6 +4,7 @@ using ClassicUO.Configuration;
 using ClassicUO.Game;
 using ClassicUO.Game.Managers;
 using ClassicUO.IO;
+using ClassicUO.LegionScripting;
 using ClassicUO.Network;
 using ClassicUO.Resources;
 using ClassicUO.Utility;
@@ -45,6 +46,7 @@ namespace ClassicUO
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
             TazLang.Load();
             Log.Start(LogTypes.All);
+            LegionWorkspacePaths.Initialize(args);
 
             //DllMap.Init();
 

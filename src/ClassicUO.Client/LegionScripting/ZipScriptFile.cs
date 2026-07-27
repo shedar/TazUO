@@ -70,12 +70,7 @@ public class ZipScriptFile : ScriptFile
     {
         try
         {
-            using var archive = ZipFile.Open(ZipPath, ZipArchiveMode.Update);
-            archive.GetEntry(EntryPath)?.Delete();
-            ZipArchiveEntry newEntry = archive.CreateEntry(EntryPath);
-            using var writer = new StreamWriter(newEntry.Open(), Encoding.UTF8);
-            writer.Write(contents);
-
+            LegionWorkspaceFileSystem.WriteZipEntry(ZipPath, EntryPath, contents);
             GameActions.Print(World, $"Saved {FileName}.");
         }
         catch (Exception ex)
@@ -93,9 +88,9 @@ public class ZipScriptFile : ScriptFile
 
         ICollection<string> paths = PythonEngine.GetSearchPaths();
         paths.Add(System.IO.Path.Combine(CUOEnviroment.ExecutablePath, "iplib"));
-        paths.Add(System.IO.Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts"));
+        paths.Add(LegionScripting.ScriptPath);
         paths.Add(ZipPath);
-        paths.Add(System.IO.Path.GetDirectoryName(ZipPath) ?? Environment.CurrentDirectory);
+        paths.Add(System.IO.Path.GetDirectoryName(ZipPath) ?? LegionScripting.ScriptPath);
 
         PythonEngine.SetSearchPaths(paths);
     }

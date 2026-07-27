@@ -20,8 +20,8 @@ namespace ClassicUO.LegionScripting
         private static string _serverScopeKey = "";
 
         private static readonly SemaphoreSlim _dbLock = new SemaphoreSlim(1, 1);
-        private static string DataPath => Path.Combine(CUOEnviroment.ExecutablePath, "Data", DB_FILE);
-        private static string OldDataPath => Path.Combine(CUOEnviroment.ExecutablePath, "Data", OLD_DATA_FILE);
+        private static string DataPath => Path.Combine(LegionWorkspacePaths.Current.StateDirectory, DB_FILE);
+        private static string OldDataPath => Path.Combine(LegionWorkspacePaths.Current.StateDirectory, OLD_DATA_FILE);
 
         private static string ConnectionString => new SqliteConnectionStringBuilder
         {

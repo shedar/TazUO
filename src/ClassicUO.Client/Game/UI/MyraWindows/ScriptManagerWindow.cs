@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Xml;
 using ClassicUO.Common.Enums;
 using ClassicUO.Configuration;
@@ -530,7 +529,7 @@ public class ScriptManagerWindow : MyraControl
 
             if (!File.Exists(targetFileFull))
             {
-                File.WriteAllText(targetFileFull, SCRIPT_HEADER);
+                LegionWorkspaceFileSystem.WriteAllText(targetFileFull, SCRIPT_HEADER);
                 _pendingReload = true;
                 GameActions.Print(World.Instance, $"Created script '{sanitizedName}'", 66);
             }
@@ -581,7 +580,7 @@ public class ScriptManagerWindow : MyraControl
             }
 
             if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
-            File.WriteAllText(Path.Combine(targetPath, "Example.py"), "import API");
+            LegionWorkspaceFileSystem.WriteAllText(Path.Combine(targetPath, "Example.py"), "import API");
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Created group '{sanitizedName}'", 66);
         }
@@ -611,7 +610,7 @@ public class ScriptManagerWindow : MyraControl
 
             if (!string.Equals(script.FullPath, newPath))
             {
-                File.Move(script.FullPath, newPath);
+                LegionWorkspaceFileSystem.MoveFile(script.FullPath, newPath);
                 script.FullPath  = newPath;
                 script.FileName  = newName;
                 _pendingReload   = true;
@@ -649,7 +648,7 @@ public class ScriptManagerWindow : MyraControl
             }
             if (!string.Equals(currentPath, newPath, StringComparison.OrdinalIgnoreCase))
             {
-                Directory.Move(currentPath, newPath);
+                LegionWorkspaceFileSystem.MoveDirectory(currentPath, newPath);
                 _pendingReload = true;
                 GameActions.Print(World.Instance, $"Renamed group '{groupName}' to '{newName}'", 66);
             }
@@ -671,8 +670,7 @@ public class ScriptManagerWindow : MyraControl
     {
         try
         {
-            using ZipArchive archive = ZipFile.Open(script.ZipPath, ZipArchiveMode.Update);
-            archive.GetEntry(script.EntryPath)?.Delete();
+            LegionWorkspaceFileSystem.DeleteZipEntry(script.ZipPath, script.EntryPath);
             LegionScripting.LegionScripting.LoadedScripts.Remove(script);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted '{script.FileName}' from zip.", 66);
@@ -685,7 +683,7 @@ public class ScriptManagerWindow : MyraControl
         try
         {
             string zipPath = script.ZipPath;
-            File.Delete(zipPath);
+            LegionWorkspaceFileSystem.DeleteFile(zipPath);
             LegionScripting.LegionScripting.LoadedScripts.RemoveAll(s => s is ZipScriptFile z && z.ZipPath == zipPath);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted zip '{Path.GetFileName(zipPath)}'.", 66);
@@ -697,7 +695,7 @@ public class ScriptManagerWindow : MyraControl
     {
         try
         {
-            File.Delete(script.FullPath);
+            LegionWorkspaceFileSystem.DeleteFile(script.FullPath);
             LegionScripting.LegionScripting.LoadedScripts.Remove(script);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted script '{script.FileName}'", 66);
@@ -718,7 +716,7 @@ public class ScriptManagerWindow : MyraControl
                 return;
             }
 
-            Directory.Delete(gPath, true);
+            LegionWorkspaceFileSystem.DeleteDirectory(gPath, recursive: true);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted group '{groupName}' and all its contents", 66);
         }

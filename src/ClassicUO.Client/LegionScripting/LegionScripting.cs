@@ -31,7 +31,8 @@ namespace ClassicUO.LegionScripting
 
     internal static class LegionScripting
     {
-        public static string ScriptPath;
+        public static string ScriptPath => LegionWorkspacePaths.Current.ScriptsDirectory;
+        public static string SettingsPath => LegionWorkspacePaths.Current.SettingsFile;
         public static LScriptSettings LScriptSettings { get; private set; }
         public static readonly List<ScriptFile> LoadedScripts = [];
         public static List<ScriptFile> RunningScripts { get; } = [];
@@ -47,7 +48,6 @@ namespace ClassicUO.LegionScripting
         {
             _world = world;
             Task.Factory.StartNew(Python.CreateEngine); //This is to preload engine stuff, helps with faster script startup later
-            ScriptPath = Path.GetFullPath(Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts"));
 
             if (!_loaded)
             {
@@ -295,15 +295,16 @@ namespace ClassicUO.LegionScripting
 
         public static void SetAutoPlay(ScriptFile script, bool global, bool enabled)
         {
+            string scriptId = script.RelativePath;
             if (global)
             {
                 if (enabled)
                 {
-                    if (!LScriptSettings.GlobalAutoStartScripts.Contains(script.FileName))
-                        LScriptSettings.GlobalAutoStartScripts.Add(script.FileName);
+                    if (!LScriptSettings.GlobalAutoStartScripts.Contains(scriptId))
+                        LScriptSettings.GlobalAutoStartScripts.Add(scriptId);
                 }
                 else
-                    LScriptSettings.GlobalAutoStartScripts.Remove(script.FileName);
+                    LScriptSettings.GlobalAutoStartScripts.Remove(scriptId);
             }
             else
             {
@@ -311,18 +312,18 @@ namespace ClassicUO.LegionScripting
                 {
                     if (enabled)
                     {
-                        if (!LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Contains(script.FileName))
-                            LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Add(script.FileName);
+                        if (!LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Contains(scriptId))
+                            LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Add(scriptId);
                     }
                     else
-                        LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Remove(script.FileName);
+                        LScriptSettings.CharAutoStartScripts[GetAccountCharName()].Remove(scriptId);
                 }
                 else
                 {
                     if (enabled)
                         LScriptSettings.CharAutoStartScripts.Add
                         (
-                            GetAccountCharName(), [script.FileName]
+                            GetAccountCharName(), [scriptId]
                         );
                 }
             }
@@ -334,9 +335,9 @@ namespace ClassicUO.LegionScripting
                 return false;
 
             if (global)
-                return LScriptSettings.GlobalAutoStartScripts.Contains(script.FileName);
+                return LScriptSettings.GlobalAutoStartScripts.Contains(script.RelativePath);
 
-            if (LScriptSettings.CharAutoStartScripts.TryGetValue(GetAccountCharName(), out List<string> scripts)) return scripts.Contains(script.FileName);
+            if (LScriptSettings.CharAutoStartScripts.TryGetValue(GetAccountCharName(), out List<string> scripts)) return scripts.Contains(script.RelativePath);
 
             return false;
         }
@@ -345,7 +346,7 @@ namespace ClassicUO.LegionScripting
         {
             foreach (string script in LScriptSettings.GlobalAutoStartScripts)
                 foreach (ScriptFile f in LoadedScripts)
-                    if (f.FileName == script)
+                    if (f.RelativePath == script)
                         PlayScript(f);
         }
 
@@ -357,7 +358,7 @@ namespace ClassicUO.LegionScripting
             if (!LScriptSettings.CharAutoStartScripts.TryGetValue(GetAccountCharName(), out List<string> scripts)) return;
 
             foreach (ScriptFile f in LoadedScripts)
-                if (scripts.Contains(f.FileName))
+                if (scripts.Contains(f.RelativePath))
                     PlayScript(f);
         }
 
@@ -385,46 +386,62 @@ namespace ClassicUO.LegionScripting
 
         private static void LoadLScriptSettings()
         {
-            string path = Path.Combine(CUOEnviroment.ExecutablePath, "Data", "lscript.json");
-
             try
             {
-                if (File.Exists(path))
+                LScriptSettings = LegionSettingsPersistence.Load(SettingsPath);
+                for (int i = 0; i < LScriptSettings.CharAutoStartScripts.Count; i++)
                 {
-                    LScriptSettings = JsonSerializer.Deserialize(File.ReadAllText(path), LScriptJsonContext.Default.LScriptSettings);
-
-                    for (int i = 0; i < LScriptSettings.CharAutoStartScripts.Count; i++)
-                    {
-                        KeyValuePair<string, List<string>> val = LScriptSettings.CharAutoStartScripts.ElementAt(i);
-                        val.Value.RemoveAll(script => LoadedScripts.All(s => s.FileName != script));
-                    }
-
-                    LScriptSettings.GlobalAutoStartScripts.RemoveAll(script => LoadedScripts.All(s => s.FileName != script));
-
-                    return;
+                    KeyValuePair<string, List<string>> val = LScriptSettings.CharAutoStartScripts.ElementAt(i);
+                    NormalizeAutoStartIds(val.Value);
                 }
+
+                NormalizeAutoStartIds(LScriptSettings.GlobalAutoStartScripts);
+                return;
             }
             catch (Exception ex)
             {
-                Log.Error($"Unexpected error: {ex}");
+                Log.Error($"Unable to load Legion settings from '{SettingsPath}': {ex}");
             }
 
             LScriptSettings = new LScriptSettings();
         }
 
+        private static void NormalizeAutoStartIds(List<string> storedIds)
+        {
+            for (int i = storedIds.Count - 1; i >= 0; i--)
+            {
+                string stored = storedIds[i];
+                ScriptFile exact = LoadedScripts.FirstOrDefault(
+                    script => script.RelativePath.Equals(stored, StringComparison.Ordinal)
+                );
+                if (exact != null)
+                {
+                    storedIds[i] = exact.RelativePath;
+                    continue;
+                }
+
+                ScriptFile[] legacyMatches = LoadedScripts.Where(
+                    script => script.FileName.Equals(stored, StringComparison.Ordinal)
+                ).ToArray();
+                if (legacyMatches.Length == 1)
+                    storedIds[i] = legacyMatches[0].RelativePath;
+                else
+                    storedIds.RemoveAt(i);
+            }
+
+            var unique = new HashSet<string>(StringComparer.Ordinal);
+            storedIds.RemoveAll(id => !unique.Add(id));
+        }
+
         private static void SaveScriptSettings()
         {
-            string path = Path.Combine(CUOEnviroment.ExecutablePath, "Data", "lscript.json");
-
-            string json = JsonSerializer.Serialize(LScriptSettings, LScriptJsonContext.Default.LScriptSettings);
-
             try
             {
-                File.WriteAllText(path, json);
+                LegionSettingsPersistence.Save(SettingsPath, LScriptSettings);
             }
             catch (Exception e)
             {
-                Log.Error($"Error saving lscript settings: {e}");
+                Log.Error($"Error saving Legion settings to '{SettingsPath}': {e}");
             }
         }
 
@@ -806,7 +823,7 @@ namespace ClassicUO.LegionScripting
                     {
                         var client = new System.Net.WebClient();
                         string api = client.DownloadString(new Uri("https://raw.githubusercontent.com/PlayTazUO/TazUO/refs/heads/dev/src/ClassicUO.Client/LegionScripting/docs/API.py"));
-                        File.WriteAllText(Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts", "API.py"), api);
+                        LegionWorkspaceFileSystem.WriteAllText(Path.Combine(ScriptPath, "API.py"), api);
                         MainThreadQueue.EnqueueAction(() => { GameActions.Print(_world, "Updated API!"); });
                     }
                     catch (Exception ex)
@@ -815,12 +832,12 @@ namespace ClassicUO.LegionScripting
                         Log.Error(ex.ToString());
                     }
 
-                    string pybuiltins = Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts", "__builtins__.py");
+                    string pybuiltins = Path.Combine(ScriptPath, "__builtins__.py");
                     if (!File.Exists(pybuiltins))
                     {
                         try
                         {
-                            File.WriteAllText(pybuiltins, "import API");
+                            LegionWorkspaceFileSystem.WriteAllText(pybuiltins, "import API");
                         }
                         catch
                         {
@@ -851,7 +868,15 @@ namespace ClassicUO.LegionScripting
                                        public static LegionAPI API { get; } = null!;
                                    }
                                    """;
-            const string csProj = """
+            string tazUoReference = Path.GetRelativePath(
+                ScriptPath,
+                Path.Combine(CUOEnviroment.ExecutablePath, "TazUO.dll")
+            ).Replace(Path.DirectorySeparatorChar, '/');
+            string fnaReference = Path.GetRelativePath(
+                ScriptPath,
+                Path.Combine(CUOEnviroment.ExecutablePath, "FNA.dll")
+            ).Replace(Path.DirectorySeparatorChar, '/');
+            string csProj = $$"""
                                   <Project Sdk="Microsoft.NET.Sdk">
 
                                     <!--
@@ -872,11 +897,11 @@ namespace ClassicUO.LegionScripting
                                     <!-- Reference game assemblies for API IntelliSense -->
                                     <ItemGroup>
                                       <Reference Include="TazUO">
-                                        <HintPath>../TazUO.dll</HintPath>
+                                        <HintPath>{{System.Security.SecurityElement.Escape(tazUoReference)}}</HintPath>
                                         <Private>false</Private>
                                       </Reference>
                                       <Reference Include="FNA">
-                                        <HintPath>../FNA.dll</HintPath>
+                                        <HintPath>{{System.Security.SecurityElement.Escape(fnaReference)}}</HintPath>
                                         <Private>false</Private>
                                       </Reference>
                                     </ItemGroup>
@@ -902,8 +927,8 @@ namespace ClassicUO.LegionScripting
 
             try
             {
-                File.WriteAllText(Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts", "_ScriptContext.cs"), scriptContext);
-                File.WriteAllText(Path.Combine(CUOEnviroment.ExecutablePath, "LegionScripts", "LegionScripts.csproj"), csProj);
+                LegionWorkspaceFileSystem.WriteAllText(Path.Combine(ScriptPath, "_ScriptContext.cs"), scriptContext);
+                LegionWorkspaceFileSystem.WriteAllText(Path.Combine(ScriptPath, "LegionScripts.csproj"), csProj);
             }
             catch (Exception ex)
             {
