@@ -16,6 +16,8 @@ internal static class EquipItem
 
         uint serial = p.ReadUInt32BE();
 
+        world.CancelPendingItemRemoval(serial);
+
         Item item = world.GetOrCreateItem(serial);
 
         if (item.Graphic != 0 && item.Layer != Layer.Backpack)
