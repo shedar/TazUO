@@ -52,7 +52,7 @@ public sealed class BrQaContractTests
 
         Assert.True(config.Enabled);
         Assert.Equal(fixture.Output, config.OutputDirectory);
-        Assert.Equal("127.0.0.1:2593", config.ServerEndpoint);
+        Assert.Equal("127.0.0.1:2596", config.ServerEndpoint);
         Assert.Equal("7.0.116.0", config.ClientVersion);
 
         if (!OperatingSystem.IsWindows())
@@ -60,6 +60,18 @@ public sealed class BrQaContractTests
             File.SetUnixFileMode(fixture.Secret, UnixFileMode.UserRead | UnixFileMode.GroupRead);
             Assert.Throws<ArgumentException>(() => BrQaConfig.Parse(fixture.Arguments()));
         }
+    }
+
+    [Theory]
+    [InlineData("2596")]
+    [InlineData("2597")]
+    public void QaConfigAcceptsExplicitNonzeroLoopbackPorts(string port)
+    {
+        var fixture = Fixture.Create();
+
+        var config = BrQaConfig.Parse(fixture.Arguments(port: port));
+
+        Assert.Equal($"127.0.0.1:{port}", config.ServerEndpoint);
     }
 
     [Fact]
@@ -404,7 +416,7 @@ public sealed class BrQaContractTests
         var config = BrQaConfig.Parse(fixture.Arguments());
         using (var emitter = new BrQaEventEmitter(config))
         {
-            emitter.ServerEndpoint = "127.0.0.1:2593";
+            emitter.ServerEndpoint = "127.0.0.1:2596";
             emitter.ClientVersion = "7.0.116.0";
             emitter.EmitProcessStarted();
             emitter.EmitSettingsLoaded();
@@ -418,7 +430,7 @@ public sealed class BrQaContractTests
         using var third = JsonDocument.Parse(lines[2]);
         Assert.Equal(1, first.RootElement.GetProperty("sequence").GetInt64());
         Assert.Equal("process-started", first.RootElement.GetProperty("eventType").GetString());
-        Assert.Equal("127.0.0.1:2593", first.RootElement.GetProperty("serverEndpoint").GetString());
+        Assert.Equal("127.0.0.1:2596", first.RootElement.GetProperty("serverEndpoint").GetString());
         Assert.Equal("7.0.116.0", first.RootElement.GetProperty("clientVersion").GetString());
         Assert.Equal(2, second.RootElement.GetProperty("sequence").GetInt64());
         Assert.Equal("settings-loaded", second.RootElement.GetProperty("eventType").GetString());
@@ -641,11 +653,11 @@ public sealed class BrQaContractTests
             return new Fixture(root, output, plan, secrets, secret, targets, targetIdentity);
         }
 
-        public string[] Arguments(string output = null, string plan = null) =>
+        public string[] Arguments(string output = null, string plan = null, string port = "2596") =>
         new[]
         {
             "-ip", "127.0.0.1",
-            "-port", "2593",
+            "-port", port,
             "-clientversion", "7.0.116.0",
             "-br-qa-plan", plan ?? Plan,
             "-br-qa-output", output ?? Output,
