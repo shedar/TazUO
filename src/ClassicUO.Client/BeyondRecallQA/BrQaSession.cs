@@ -110,7 +110,7 @@ namespace ClassicUO.BeyondRecallQA
                 return;
 
             var settings = Settings.GlobalSettings;
-            if (settings == null || settings.IP != "127.0.0.1" || settings.Port != 2593 ||
+            if (settings == null || settings.IP != "127.0.0.1" || settings.Port == 0 ||
                 string.IsNullOrWhiteSpace(settings.ClientVersion) || settings.SaveAccount || settings.AutoLogin ||
                 settings.Reconnect || !string.IsNullOrEmpty(settings.Password) ||
                 !string.Equals(settings.IP + ":" + settings.Port, _config.ServerEndpoint, StringComparison.Ordinal) ||
