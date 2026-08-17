@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: BSD-2-Clause
 
 using ClassicUO.Configuration;
+using ClassicUO.Frontend;
 using ClassicUO.Game;
 using ClassicUO.Game.Managers;
 using ClassicUO.IO;
@@ -47,6 +48,7 @@ namespace ClassicUO
             TazLang.Load();
             Log.Start(LogTypes.All);
             LegionWorkspacePaths.Initialize(args);
+            FrontendConfiguration.Initialize(args);
 
             //DllMap.Init();
 

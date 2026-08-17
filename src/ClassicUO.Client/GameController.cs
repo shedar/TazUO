@@ -2,6 +2,7 @@
 
 using ClassicUO.Assets;
 using ClassicUO.Configuration;
+using ClassicUO.Frontend;
 using ClassicUO.Game;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.Managers;
@@ -56,6 +57,8 @@ namespace ClassicUO
 
         private static Vector3 bgHueShader = new(0, 0, 0.3f);
         private bool drawScene;
+        private readonly IFrontendAdapter _frontend;
+        private long _frontendFrameId;
 
 #if DEBUG
         static GameController()
@@ -68,6 +71,7 @@ namespace ClassicUO
 
         public GameController(IPluginHost pluginHost)
         {
+            _frontend = FrontendAdapterFactory.Create(FrontendConfiguration.Current);
             GraphicManager = new GraphicsDeviceManager(this);
 
             GraphicManager.PreparingDeviceSettings += (sender, e) =>
@@ -232,6 +236,8 @@ namespace ClassicUO
                 BeyondRecallQA.BrQaSession.Instance.EmitAssetsLoaded();
                 BeyondRecallQA.BrQaSession.Instance.EmitWindowReady();
             }
+
+            _frontend.Initialize(this);
 #endif
         }
 
@@ -283,6 +289,8 @@ namespace ClassicUO
 
             _screenRenderTarget?.Dispose();
             _screenRenderTarget = null;
+
+            _frontend.Dispose();
 
             UO.Unload();
             base.UnloadContent();
@@ -688,6 +696,11 @@ namespace ClassicUO
                     Plugin.ProcessDrawCmdList(GraphicsDevice);
 
                 GraphicsDevice.SetRenderTarget(null);
+
+                _frontend.Present(
+                    new FrontendFrame(++_frontendFrameId, Time.Ticks, _screenRenderTarget)
+                );
+
                 GraphicsDevice.Clear(Color.Black);
 
                 var srcRect = new Rectangle(0, 0, _screenRenderTarget.Width, _screenRenderTarget.Height);
@@ -714,7 +727,8 @@ namespace ClassicUO
             Profiler.ExitContext("Draw");
         }
 
-        protected override bool BeginDraw() => !_suppressedDraw && base.BeginDraw();
+        protected override bool BeginDraw() =>
+            !_suppressedDraw && _frontend.WantsFrame(Time.Ticks) && base.BeginDraw();
 
         /// <summary>
         /// Must be called during a batch, cannot call before batcher.Begin or after batcher.End
