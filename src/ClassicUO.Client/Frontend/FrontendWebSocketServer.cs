@@ -23,13 +23,14 @@ internal sealed class FrontendWebSocketServer : IDisposable
     private readonly TcpListener _listener;
     private readonly CancellationTokenSource _lifetime = new();
     private readonly Action<string> _onInput;
+    private readonly Action _onConnected;
     private readonly object _clientTasksGate = new();
     private readonly HashSet<Task> _clientTasks = new();
     private Task _acceptLoop;
     private FrontendWebSocketConnection _connection;
     private int _started;
 
-    public FrontendWebSocketServer(int port, Action<string> onInput)
+    public FrontendWebSocketServer(int port, Action<string> onInput, Action onConnected = null)
     {
         if (port is < 0 or > 65535)
         {
@@ -38,6 +39,7 @@ internal sealed class FrontendWebSocketServer : IDisposable
 
         _listener = new TcpListener(IPAddress.Loopback, port);
         _onInput = onInput ?? throw new ArgumentNullException(nameof(onInput));
+        _onConnected = onConnected;
     }
 
     public int Port => _listener.LocalEndpoint is IPEndPoint endpoint ? endpoint.Port : 0;
@@ -171,6 +173,7 @@ internal sealed class FrontendWebSocketServer : IDisposable
             var connection = new FrontendWebSocketConnection(client, socket, _onInput, cancellationToken);
             FrontendWebSocketConnection previous = Interlocked.Exchange(ref _connection, connection);
             previous?.Dispose();
+            _onConnected?.Invoke();
 
             try
             {

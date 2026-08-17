@@ -45,7 +45,12 @@ public sealed class FrontendInstrumentationTests
                     EncodedBytes: 4096,
                     CaptureMilliseconds: 2.5,
                     Enqueued: true,
-                    Dropped: true
+                    Dropped: true,
+                    UncompressedBytes: 8192,
+                    DisplayListResourceBytes: 1024,
+                    DisplayListCommandBytes: 6144,
+                    DisplayListResourceRecords: 3,
+                    DisplayListCommands: 27
                 );
                 instrumentation.RecordDraw(
                     drawStarted,
@@ -65,7 +70,7 @@ public sealed class FrontendInstrumentationTests
             );
 
             report.Should().NotBeNull();
-            report.ReportVersion.Should().Be(1);
+            report.ReportVersion.Should().Be(2);
             report.Mode.Should().Be(nameof(FrontendMode.WebSocket));
             report.FrameFormat.Should().Be(nameof(FrontendFrameFormat.Png));
             report.TargetFramesPerSecond.Should().Be(12);
@@ -77,6 +82,12 @@ public sealed class FrontendInstrumentationTests
             report.Totals.EnqueuedFrames.Should().Be(1);
             report.Totals.DroppedFrames.Should().Be(1);
             report.Totals.EncodedBytes.Should().Be(4096);
+            report.Totals.UncompressedBytes.Should().Be(8192);
+            report.Totals.EncodedToUncompressedRatio.Should().Be(0.5);
+            report.Totals.DisplayListResourceBytes.Should().Be(1024);
+            report.Totals.DisplayListCommandBytes.Should().Be(6144);
+            report.Totals.DisplayListResourceRecords.Should().Be(3);
+            report.Totals.DisplayListCommands.Should().Be(27);
             report.Totals.AverageCaptureMilliseconds.Should().Be(2.5);
             report.Totals.PeakSpritesPerDraw.Should().Be(120);
             report.Totals.PeakFlushesPerDraw.Should().Be(4);

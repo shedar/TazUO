@@ -15,6 +15,15 @@ internal sealed class NullFrontendAdapter : IFrontendAdapter
     public bool IsAttached => false;
     public bool OwnsPointer => false;
     public bool ReduceUpdatesWhenNativeWindowInactive => false;
+    public FrontendResourcePolicy Resources => new(
+        EnableAudio: false,
+        EnableVoiceRecognition: false,
+        EnableNativeInput: false,
+        EnableRenderLoop: false,
+        RequiresComposedFramebuffer: false,
+        PresentNativeFramebuffer: false
+    );
+    public ClassicUO.Renderer.IRenderCommandSink RenderCommandSink => null;
 
     public void Initialize(GameController game)
     {

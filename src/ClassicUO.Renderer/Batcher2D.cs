@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 
 namespace ClassicUO.Renderer
 {
@@ -62,7 +61,10 @@ namespace ClassicUO.Renderer
         private readonly DynamicVertexBuffer _vertexBuffer;
         private readonly BasicUOEffect _basicUOEffect;
         private Texture2D[] _textureInfo;
-        private PositionNormalTextureColor4[] _vertexInfo;
+        private RenderSprite[] _vertexInfo;
+        private float _brightlight;
+        private Texture2D _recordedRenderTarget;
+        private bool _hasRecordedRenderTarget = true;
 
 
         public UltimaBatcher2D(GraphicsDevice device)
@@ -70,8 +72,8 @@ namespace ClassicUO.Renderer
             GraphicsDevice = device;
 
             _textureInfo = new Texture2D[MAX_SPRITES];
-            _vertexInfo = new PositionNormalTextureColor4[MAX_SPRITES];
-            _vertexBuffer = new DynamicVertexBuffer(GraphicsDevice, typeof(PositionNormalTextureColor4), MAX_VERTICES, BufferUsage.WriteOnly);
+            _vertexInfo = new RenderSprite[MAX_SPRITES];
+            _vertexBuffer = new DynamicVertexBuffer(GraphicsDevice, typeof(RenderSprite), MAX_VERTICES, BufferUsage.WriteOnly);
             _indexBuffer = new IndexBuffer(GraphicsDevice, IndexElementSize.SixteenBits, MAX_INDICES, BufferUsage.WriteOnly);
             _indexBuffer.SetData(GenerateIndexArray());
 
@@ -109,6 +111,7 @@ namespace ClassicUO.Renderer
         };
 
         public GraphicsDevice GraphicsDevice { get; }
+        public IRenderCommandSink CommandSink { get; set; }
 
         public int TextureSwitches, FlushesDone;
 
@@ -134,7 +137,11 @@ namespace ClassicUO.Renderer
         }
 
 
-        public void SetBrightlight(float f) => _basicUOEffect.Brighlight.SetValue(f);
+        public void SetBrightlight(float f)
+        {
+            _brightlight = f;
+            _basicUOEffect.Brighlight.SetValue(f);
+        }
 
         // For IFontStashRenderer
         public void Draw(Texture2D texture, Vector2 position, Rectangle? sourceRectangle, Color color, float rotation, Vector2 scale, float depth)
@@ -169,7 +176,7 @@ namespace ClassicUO.Renderer
 
             EnsureSize();
 
-            ref PositionNormalTextureColor4 sprite = ref _vertexInfo[_numSprites];
+            ref RenderSprite sprite = ref _vertexInfo[_numSprites];
 
             float rotationSin = (float)Math.Sin(rotation);
             float rotationCos = (float)Math.Cos(rotation);
@@ -374,7 +381,7 @@ namespace ClassicUO.Renderer
 
             EnsureSize();
 
-            ref PositionNormalTextureColor4 vertex = ref _vertexInfo[_numSprites];
+            ref RenderSprite vertex = ref _vertexInfo[_numSprites];
 
             // we need to apply an offset to the texture
             float sourceX = ((sourceRect.X + 0.5f) / (float)texture.Width);
@@ -442,7 +449,7 @@ namespace ClassicUO.Renderer
 
             EnsureSize();
 
-            ref PositionNormalTextureColor4 vertex = ref _vertexInfo[_numSprites];
+            ref RenderSprite vertex = ref _vertexInfo[_numSprites];
 
             vertex.Position0.X = position.X + width * ratio;
             vertex.Position0.Y = translatedY;
@@ -536,7 +543,7 @@ namespace ClassicUO.Renderer
             {
                 EnsureSize();
 
-                ref PositionNormalTextureColor4 vertex = ref _vertexInfo[_numSprites];
+                ref RenderSprite vertex = ref _vertexInfo[_numSprites];
 
                 vertex.Position0.X = position.X + sittingOffset;
                 vertex.Position0.Y = position.Y;
@@ -600,7 +607,7 @@ namespace ClassicUO.Renderer
             {
                 EnsureSize();
 
-                ref PositionNormalTextureColor4 vertex = ref _vertexInfo[_numSprites];
+                ref RenderSprite vertex = ref _vertexInfo[_numSprites];
 
                 vertex.Position0.X = position.X + sittingOffset;
                 vertex.Position0.Y = position.Y + h03;
@@ -664,7 +671,7 @@ namespace ClassicUO.Renderer
             {
                 EnsureSize();
 
-                ref PositionNormalTextureColor4 vertex = ref _vertexInfo[_numSprites];
+                ref RenderSprite vertex = ref _vertexInfo[_numSprites];
 
                 vertex.Position0.X = position.X;
                 vertex.Position0.Y = position.Y + h06;
@@ -1433,7 +1440,7 @@ namespace ClassicUO.Renderer
 
         private void SetVertex
         (
-            ref PositionNormalTextureColor4 sprite,
+            ref RenderSprite sprite,
             float sourceX,
             float sourceY,
             float sourceW,
@@ -1616,7 +1623,12 @@ namespace ClassicUO.Renderer
                     // Only draw if we have a valid texture
                     if (curTexture != null && !curTexture.IsDisposed)
                     {
-                        InternalDraw(curTexture, baseOff + offset, i - offset);
+                        InternalDraw(
+                            curTexture,
+                            baseOff + offset,
+                            arrayOffset + offset,
+                            i - offset
+                        );
                     }
                     curTexture = tex;
                     offset = i;
@@ -1626,7 +1638,12 @@ namespace ClassicUO.Renderer
             // Only draw the final batch if we have a valid texture
             if (curTexture != null && !curTexture.IsDisposed)
             {
-                InternalDraw(curTexture, baseOff + offset, batchSize - offset);
+                InternalDraw(
+                    curTexture,
+                    baseOff + offset,
+                    arrayOffset + offset,
+                    batchSize - offset
+                );
             }
 
             if (_numSprites > MAX_SPRITES)
@@ -1640,7 +1657,12 @@ namespace ClassicUO.Renderer
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void InternalDraw(Texture texture, int baseSprite, int batchSize)
+        private void InternalDraw(
+            Texture texture,
+            int baseSprite,
+            int sourceSprite,
+            int batchSize
+        )
         {
             if (texture == null || texture.IsDisposed)
             {
@@ -1649,6 +1671,13 @@ namespace ClassicUO.Renderer
 
             if (texture is Texture2D tex2d)
             {
+                RenderBatchState commandState = CaptureCommandState();
+                CommandSink?.DrawBatch(
+                    tex2d,
+                    _vertexInfo.AsSpan(sourceSprite, batchSize),
+                    commandState
+                );
+
                 _basicUOEffect.TexelSize.SetValue(new Vector2(1f / tex2d.Width, 1f / tex2d.Height));
                 _basicUOEffect.Pass.Apply();
             }
@@ -1684,6 +1713,115 @@ namespace ClassicUO.Renderer
                 );
             }
         }
+
+        private RenderBatchState CaptureCommandState()
+        {
+            BlendState blend = _blendState ?? BlendState.AlphaBlend;
+            DepthStencilState depth = _stencil ?? Stencil;
+            Viewport viewport = GraphicsDevice.Viewport;
+            Rectangle scissor = GraphicsDevice.ScissorRectangle;
+
+            return new RenderBatchState(
+                viewport,
+                scissor,
+                _rasterizerState.ScissorTestEnable,
+                blend.ColorSourceBlend,
+                blend.ColorDestinationBlend,
+                blend.ColorBlendFunction,
+                blend.AlphaSourceBlend,
+                blend.AlphaDestinationBlend,
+                blend.AlphaBlendFunction,
+                GraphicsDevice.BlendFactor,
+                depth.DepthBufferEnable,
+                depth.DepthBufferWriteEnable,
+                depth.DepthBufferFunction,
+                _sampler?.Filter ?? TextureFilter.Point,
+                _transformMatrix,
+                _projectionZNear,
+                _projectionZFar,
+                _brightlight,
+                _customEffect != null
+            );
+        }
+
+        public void BeginCommandFrame(int width, int height) => CommandSink?.BeginFrame(width, height);
+
+        public void RecordRenderTarget(Texture2D target)
+        {
+            if (CommandSink == null)
+            {
+                return;
+            }
+
+            CommandSink.SetRenderTarget(target);
+
+            bool changed = !_hasRecordedRenderTarget || !ReferenceEquals(_recordedRenderTarget, target);
+            _recordedRenderTarget = target;
+            _hasRecordedRenderTarget = true;
+
+            if (!changed)
+            {
+                return;
+            }
+
+            RenderTargetUsage usage = target is RenderTarget2D renderTarget
+                ? renderTarget.RenderTargetUsage
+                : GraphicsDevice.PresentationParameters.RenderTargetUsage;
+
+            if (usage != RenderTargetUsage.DiscardContents)
+            {
+                return;
+            }
+
+#if DEBUG
+            var discardColor = new Color(68, 34, 136, 255);
+#else
+            var discardColor = Color.Black;
+#endif
+            CommandSink.Clear(
+                new RenderClearCommand(
+                    RenderClearFlags.Target | RenderClearFlags.Depth | RenderClearFlags.Stencil,
+                    discardColor,
+                    GraphicsDevice.Viewport.MaxDepth,
+                    0
+                )
+            );
+        }
+
+        public void RecordClear(
+            ClearOptions options,
+            Color color,
+            float depth = 1f,
+            int stencil = 0
+        )
+        {
+            if (CommandSink == null)
+            {
+                return;
+            }
+
+            RenderClearFlags flags = RenderClearFlags.None;
+
+            if ((options & ClearOptions.Target) != 0)
+            {
+                flags |= RenderClearFlags.Target;
+            }
+
+            if ((options & ClearOptions.DepthBuffer) != 0)
+            {
+                flags |= RenderClearFlags.Depth;
+            }
+
+            if ((options & ClearOptions.Stencil) != 0)
+            {
+                flags |= RenderClearFlags.Stencil;
+            }
+
+            var command = new RenderClearCommand(flags, color, depth, stencil);
+            CommandSink.Clear(command);
+        }
+
+        public void EndCommandFrame() => CommandSink?.EndFrame();
 
         public bool ClipBegin(int x, int y, int width, int height)
         {
@@ -1804,13 +1942,13 @@ namespace ClassicUO.Renderer
                 hint = SetDataOptions.NoOverwrite;
             }
 
-            fixed (PositionNormalTextureColor4* p = &_vertexInfo[start])
+            fixed (RenderSprite* p = &_vertexInfo[start])
             {
                 _vertexBuffer.SetDataPointerEXT
                 (
-                    offset * PositionNormalTextureColor4.SIZE_IN_BYTES,
+                    offset * RenderSprite.SizeInBytes,
                     (IntPtr)p,
-                    count * PositionNormalTextureColor4.SIZE_IN_BYTES,
+                    count * RenderSprite.SizeInBytes,
                     hint
                 );
             }
@@ -1855,42 +1993,6 @@ namespace ClassicUO.Renderer
             }
         }
 
-
-        [StructLayout(LayoutKind.Sequential, Pack = 1)]
-        private struct PositionNormalTextureColor4 : IVertexType
-        {
-            public Vector3 Position0;
-            public Vector3 Normal0;
-            public Vector3 TextureCoordinate0;
-            public Vector3 Hue0;
-
-            public Vector3 Position1;
-            public Vector3 Normal1;
-            public Vector3 TextureCoordinate1;
-            public Vector3 Hue1;
-
-            public Vector3 Position2;
-            public Vector3 Normal2;
-            public Vector3 TextureCoordinate2;
-            public Vector3 Hue2;
-
-            public Vector3 Position3;
-            public Vector3 Normal3;
-            public Vector3 TextureCoordinate3;
-            public Vector3 Hue3;
-
-            VertexDeclaration IVertexType.VertexDeclaration => VertexDeclaration;
-
-            private static readonly VertexDeclaration VertexDeclaration = new VertexDeclaration
-            (
-                new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0),                          // position
-                new VertexElement(sizeof(float) * 3, VertexElementFormat.Vector3, VertexElementUsage.Normal, 0),            // normal
-                new VertexElement(sizeof(float) * 6, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 0), // tex coord
-                new VertexElement(sizeof(float) * 9, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate, 1)  // hue
-            );
-
-            public const int SIZE_IN_BYTES = sizeof(float) * 12 * 4;
-        }
     }
 
 

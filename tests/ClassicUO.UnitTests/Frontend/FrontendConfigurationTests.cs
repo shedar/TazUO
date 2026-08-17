@@ -91,5 +91,62 @@ public sealed class FrontendConfigurationTests
         local.WantsFrame(0).Should().BeTrue();
         none.IsAttached.Should().BeFalse();
         none.WantsFrame(0).Should().BeFalse();
+        local.Resources.EnableAudio.Should().BeTrue();
+        local.Resources.EnableVoiceRecognition.Should().BeTrue();
+        local.Resources.EnableNativeInput.Should().BeTrue();
+        local.Resources.EnableRenderLoop.Should().BeTrue();
+        local.Resources.RequiresComposedFramebuffer.Should().BeTrue();
+        local.Resources.PresentNativeFramebuffer.Should().BeTrue();
+        none.Resources.EnableAudio.Should().BeFalse();
+        none.Resources.EnableVoiceRecognition.Should().BeFalse();
+        none.Resources.EnableNativeInput.Should().BeFalse();
+        none.Resources.EnableRenderLoop.Should().BeFalse();
+        none.Resources.RequiresComposedFramebuffer.Should().BeFalse();
+        none.Resources.PresentNativeFramebuffer.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("display-list")]
+    [InlineData("displaylist")]
+    [InlineData("commands")]
+    [InlineData("draw")]
+    public void ParsesDisplayListAliases(string value)
+    {
+        FrontendOptions options = FrontendConfiguration.Parse(
+            new[] { "-frontend-frame-format", value }
+        );
+
+        options.FrameFormat.Should().Be(FrontendFrameFormat.DisplayList);
+    }
+
+    [Fact]
+    public void DisplayListWebSocketAdapterDoesNotRequireAComposedFramebuffer()
+    {
+        using IFrontendAdapter displayList = FrontendAdapterFactory.Create(
+            new FrontendOptions
+            {
+                Mode = FrontendMode.WebSocket,
+                FrameFormat = FrontendFrameFormat.DisplayList,
+                HideNativeWindow = true
+            }
+        );
+        using IFrontendAdapter png = FrontendAdapterFactory.Create(
+            new FrontendOptions
+            {
+                Mode = FrontendMode.WebSocket,
+                FrameFormat = FrontendFrameFormat.Png,
+                HideNativeWindow = true
+            }
+        );
+
+        displayList.Resources.EnableAudio.Should().BeFalse();
+        displayList.Resources.EnableVoiceRecognition.Should().BeFalse();
+        displayList.Resources.EnableNativeInput.Should().BeFalse();
+        displayList.Resources.EnableRenderLoop.Should().BeTrue();
+        displayList.Resources.RequiresComposedFramebuffer.Should().BeFalse();
+        displayList.Resources.PresentNativeFramebuffer.Should().BeFalse();
+        displayList.RenderCommandSink.Should().NotBeNull();
+        png.Resources.RequiresComposedFramebuffer.Should().BeTrue();
+        png.RenderCommandSink.Should().BeNull();
     }
 }

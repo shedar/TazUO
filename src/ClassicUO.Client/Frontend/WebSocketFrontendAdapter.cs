@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
+using ClassicUO.Renderer;
 using ClassicUO.Utility.Logging;
 using SDL3;
 
@@ -14,27 +15,49 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
 {
     private const int MaxQueuedInputEvents = 4096;
     private const int MaxInputEventsPerUpdate = 512;
+    private const uint ResourceAcknowledgementRetryMilliseconds = 2000;
 
     private readonly FrontendOptions _options;
     private readonly ConcurrentQueue<FrontendInputEvent> _input = new();
+    private readonly FrontendDisplayListRecorder _displayList;
     private FrontendWebSocketServer _server;
     private int _queuedInputEvents;
     private uint _nextFrameAt;
+    private uint _resourceRetryAt;
     private bool _wasAttached;
 
     public WebSocketFrontendAdapter(FrontendOptions options)
     {
         _options = options ?? throw new ArgumentNullException(nameof(options));
+
+        if (options.FrameFormat == FrontendFrameFormat.DisplayList)
+        {
+            _displayList = new FrontendDisplayListRecorder();
+        }
     }
 
     public FrontendMode Mode => FrontendMode.WebSocket;
     public bool IsAttached => _server?.IsConnected == true;
     public bool OwnsPointer => IsAttached;
     public bool ReduceUpdatesWhenNativeWindowInactive => false;
+    public FrontendResourcePolicy Resources => new(
+        EnableAudio: false,
+        EnableVoiceRecognition: false,
+        EnableNativeInput: !_options.HideNativeWindow,
+        EnableRenderLoop: true,
+        RequiresComposedFramebuffer: _options.FrameFormat != FrontendFrameFormat.DisplayList,
+        PresentNativeFramebuffer: !_options.HideNativeWindow
+    );
+    public IRenderCommandSink RenderCommandSink => _displayList;
 
     public void Initialize(GameController game)
     {
-        _server = new FrontendWebSocketServer(_options.WebSocketPort, QueueInput);
+        _displayList?.Initialize(game.GraphicsDevice);
+        _server = new FrontendWebSocketServer(
+            _options.WebSocketPort,
+            QueueInput,
+            _displayList == null ? null : _displayList.ResetResourceAcknowledgement
+        );
         _server.Start();
 
         if (_options.HideNativeWindow)
@@ -59,6 +82,13 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
         {
             _wasAttached = true;
             _nextFrameAt = timestamp;
+            _resourceRetryAt = timestamp;
+        }
+
+        if (_displayList?.IsAwaitingResourceAcknowledgement == true
+            && unchecked((int)(timestamp - _resourceRetryAt)) < 0)
+        {
+            return false;
         }
 
         if (unchecked((int)(timestamp - _nextFrameAt)) < 0)
@@ -97,15 +127,35 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
 
     public FrontendPresentResult Present(in FrontendFrame frame)
     {
-        if (!IsAttached || frame.Texture == null || frame.Texture.IsDisposed)
+        if (!IsAttached)
         {
             return default;
         }
 
         long started = Stopwatch.GetTimestamp();
         FrontendWireFrame wireFrame;
+        FrontendDisplayListMetrics displayListMetrics = default;
+        int uncompressedBytes;
 
-        if (_options.FrameFormat == FrontendFrameFormat.RawRgba)
+        if (_options.FrameFormat == FrontendFrameFormat.DisplayList)
+        {
+            wireFrame = _displayList.CreateWireFrame(
+                frame.FrameId,
+                frame.Timestamp,
+                out displayListMetrics
+            );
+            uncompressedBytes = FrontendFrameProtocol.HeaderSize + displayListMetrics.PayloadBytes;
+
+            if (displayListMetrics.ResourceRecords > 0)
+            {
+                _resourceRetryAt = frame.Timestamp + ResourceAcknowledgementRetryMilliseconds;
+            }
+        }
+        else if (frame.Texture == null || frame.Texture.IsDisposed)
+        {
+            return default;
+        }
+        else if (_options.FrameFormat == FrontendFrameFormat.RawRgba)
         {
             int payloadLength = checked(frame.Texture.Width * frame.Texture.Height * 4);
             byte[] rgba = ArrayPool<byte>.Shared.Rent(payloadLength);
@@ -122,6 +172,7 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
                     payloadLength,
                     ReturnPayload
                 );
+                uncompressedBytes = wireFrame.Length;
             }
             catch
             {
@@ -146,6 +197,9 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
                 frame.Texture.Height,
                 png
             );
+            uncompressedBytes = checked(
+                FrontendFrameProtocol.HeaderSize + frame.Texture.Width * frame.Texture.Height * 4
+            );
         }
 
         double captureMilliseconds = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
@@ -156,7 +210,12 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
             encodedBytes,
             captureMilliseconds,
             result.Enqueued,
-            result.Dropped
+            result.Dropped,
+            uncompressedBytes,
+            displayListMetrics.ResourceBytes,
+            displayListMetrics.CommandBytes,
+            displayListMetrics.ResourceRecords,
+            displayListMetrics.Commands
         );
     }
 
@@ -173,6 +232,15 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
 
             if (!FrontendInputConverter.TryConvert(message, out FrontendInputEvent input))
             {
+                if (message?.Type == "resourceAck")
+                {
+                    _displayList?.AcknowledgeResources(message.ResourceSequence);
+                }
+                else if (message?.Type == "viewerReady")
+                {
+                    _displayList?.ResetResourceAcknowledgement();
+                }
+
                 return;
             }
 
@@ -194,6 +262,7 @@ internal sealed class WebSocketFrontendAdapter : IFrontendAdapter
     {
         _server?.Dispose();
         _server = null;
+        _displayList?.Dispose();
 
         ClearQueuedInput();
         Interlocked.Exchange(ref _queuedInputEvents, 0);

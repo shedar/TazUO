@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.IO.Compression;
 using ClassicUO.Frontend;
 using FluentAssertions;
 using Xunit;
@@ -100,6 +102,49 @@ public sealed class FrontendFrameProtocolTests
 
         frame = FrontendFrameProtocol.CreatePngFrame(1, 2, 3, 4, new byte[1]);
         frame.Header[5] = 99;
+        FrontendFrameProtocol.TryReadHeader(frame.Header, out _).Should().BeFalse();
+    }
+
+    [Fact]
+    public void CompressesAndRoundTripsDisplayListPayload()
+    {
+        byte[] displayList = new byte[16 * 1024];
+        Array.Fill(displayList, (byte)0x5a);
+
+        using FrontendWireFrame frame = FrontendFrameProtocol.CreateDisplayListFrame(
+            99,
+            456,
+            1512,
+            916,
+            displayList
+        );
+
+        FrontendFrameProtocol.TryReadHeader(frame.Header, out FrontendFrameHeader header)
+            .Should()
+            .BeTrue();
+        header.MessageType.Should().Be(FrontendFrameProtocol.DisplayListFrameMessageType);
+        header.Flags.Should().Be(FrontendFrameProtocol.CompressedPayloadFlag);
+        frame.PayloadLength.Should().BeLessThan(displayList.Length);
+
+        using var compressed = new MemoryStream(frame.Payload, 0, frame.PayloadLength);
+        using var inflater = new ZLibStream(compressed, CompressionMode.Decompress);
+        using var inflated = new MemoryStream();
+        inflater.CopyTo(inflated);
+        inflated.ToArray().Should().Equal(displayList);
+    }
+
+    [Fact]
+    public void RejectsCompressionFlagOnFramebufferMessages()
+    {
+        using FrontendWireFrame frame = FrontendFrameProtocol.CreatePngFrame(
+            1,
+            2,
+            3,
+            4,
+            new byte[1]
+        );
+        frame.Header[6] = FrontendFrameProtocol.CompressedPayloadFlag;
+
         FrontendFrameProtocol.TryReadHeader(frame.Header, out _).Should().BeFalse();
     }
 }

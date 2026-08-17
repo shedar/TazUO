@@ -15,7 +15,8 @@ internal enum FrontendMode
 internal enum FrontendFrameFormat
 {
     RawRgba,
-    Png
+    Png,
+    DisplayList
 }
 
 internal sealed class FrontendOptions
@@ -120,8 +121,10 @@ internal static class FrontendConfiguration
                     {
                         "rgba" or "raw" or "raw-rgba" => FrontendFrameFormat.RawRgba,
                         "png" => FrontendFrameFormat.Png,
+                        "display-list" or "displaylist" or "commands" or "draw" =>
+                            FrontendFrameFormat.DisplayList,
                         _ => throw new ArgumentException(
-                            $"Unsupported frontend frame format '{value}'. Expected rgba or png."
+                            $"Unsupported frontend frame format '{value}'. Expected rgba, png, or display-list."
                         )
                     };
                     break;

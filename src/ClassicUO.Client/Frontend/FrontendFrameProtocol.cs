@@ -1,11 +1,14 @@
 using System;
 using System.Buffers.Binary;
+using System.IO;
+using System.IO.Compression;
 
 namespace ClassicUO.Frontend;
 
 internal readonly record struct FrontendFrameHeader(
     byte Version,
     byte MessageType,
+    byte Flags,
     long FrameId,
     uint Timestamp,
     int Width,
@@ -57,6 +60,8 @@ internal static class FrontendFrameProtocol
     public const byte CurrentVersion = 1;
     public const byte PngFrameMessageType = 1;
     public const byte RawRgbaFrameMessageType = 2;
+    public const byte DisplayListFrameMessageType = 3;
+    public const byte CompressedPayloadFlag = 1;
 
     private static ReadOnlySpan<byte> Magic => "TUOF"u8;
 
@@ -108,6 +113,53 @@ internal static class FrontendFrameProtocol
         );
     }
 
+    public static FrontendWireFrame CreateDisplayListFrame(
+        long frameId,
+        uint timestamp,
+        int width,
+        int height,
+        byte[] displayList
+    )
+    {
+        ArgumentNullException.ThrowIfNull(displayList);
+
+        byte[] compressed = Compress(displayList);
+
+        if (compressed.Length < displayList.Length)
+        {
+            return CreateFrame(
+                frameId,
+                timestamp,
+                width,
+                height,
+                DisplayListFrameMessageType,
+                compressed,
+                flags: CompressedPayloadFlag
+            );
+        }
+
+        return CreateFrame(
+            frameId,
+            timestamp,
+            width,
+            height,
+            DisplayListFrameMessageType,
+            displayList
+        );
+    }
+
+    private static byte[] Compress(byte[] payload)
+    {
+        using var output = new MemoryStream();
+
+        using (var compressor = new ZLibStream(output, CompressionLevel.Fastest, leaveOpen: true))
+        {
+            compressor.Write(payload);
+        }
+
+        return output.ToArray();
+    }
+
     private static FrontendWireFrame CreateFrame(
         long frameId,
         uint timestamp,
@@ -116,7 +168,8 @@ internal static class FrontendFrameProtocol
         byte messageType,
         byte[] payload,
         int payloadLength = -1,
-        Action<byte[]> releasePayload = null
+        Action<byte[]> releasePayload = null,
+        byte flags = 0
     )
     {
         ArgumentNullException.ThrowIfNull(payload);
@@ -131,6 +184,7 @@ internal static class FrontendFrameProtocol
         Magic.CopyTo(header);
         header[4] = CurrentVersion;
         header[5] = messageType;
+        header[6] = flags;
         BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(8, 8), frameId);
         BinaryPrimitives.WriteUInt32LittleEndian(header.AsSpan(16, 4), timestamp);
         BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(20, 4), width);
@@ -154,9 +208,17 @@ internal static class FrontendFrameProtocol
         int height = BinaryPrimitives.ReadInt32LittleEndian(bytes.Slice(24, 4));
 
         byte messageType = bytes[5];
+        byte flags = bytes[6];
 
         if (bytes[4] != CurrentVersion
-            || messageType is not (PngFrameMessageType or RawRgbaFrameMessageType)
+            || messageType is not (
+                PngFrameMessageType
+                or RawRgbaFrameMessageType
+                or DisplayListFrameMessageType
+            )
+            || bytes[7] != 0
+            || (flags & ~CompressedPayloadFlag) != 0
+            || (flags != 0 && messageType != DisplayListFrameMessageType)
             || payloadLength < 0
             || width <= 0
             || height <= 0)
@@ -173,6 +235,7 @@ internal static class FrontendFrameProtocol
         header = new FrontendFrameHeader(
             bytes[4],
             bytes[5],
+            flags,
             BinaryPrimitives.ReadInt64LittleEndian(bytes.Slice(8, 8)),
             BinaryPrimitives.ReadUInt32LittleEndian(bytes.Slice(16, 4)),
             width,

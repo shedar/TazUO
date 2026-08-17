@@ -48,6 +48,7 @@ internal sealed class FrontendInputMessage
     public int Width { get; set; }
     public int Height { get; set; }
     public long FrameId { get; set; }
+    public int ResourceSequence { get; set; }
 }
 
 internal static class FrontendInputConverter

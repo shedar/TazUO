@@ -12,7 +12,7 @@ namespace ClassicUO.Frontend;
 
 internal sealed class FrontendInstrumentation : IDisposable
 {
-    private const int ReportVersion = 1;
+    private const int ReportVersion = 2;
     private static readonly long InitialCheckpointDelay = Stopwatch.Frequency * 2;
     private static readonly long CheckpointInterval = Stopwatch.Frequency * 5;
     private static FrontendInstrumentation _current;
@@ -32,6 +32,11 @@ internal sealed class FrontendInstrumentation : IDisposable
     private long _enqueuedFrameCount;
     private long _droppedFrameCount;
     private long _encodedBytes;
+    private long _uncompressedBytes;
+    private long _displayListResourceBytes;
+    private long _displayListCommandBytes;
+    private long _displayListResourceRecords;
+    private long _displayListCommands;
     private long _totalSprites;
     private long _totalFlushes;
     private long _totalTextureSwitches;
@@ -135,6 +140,11 @@ internal sealed class FrontendInstrumentation : IDisposable
         {
             _encodedFrameCount++;
             _encodedBytes += present.EncodedBytes;
+            _uncompressedBytes += present.UncompressedBytes;
+            _displayListResourceBytes += present.DisplayListResourceBytes;
+            _displayListCommandBytes += present.DisplayListCommandBytes;
+            _displayListResourceRecords += present.DisplayListResourceRecords;
+            _displayListCommands += present.DisplayListCommands;
             _totalCaptureMilliseconds += present.CaptureMilliseconds;
             _maxCaptureMilliseconds = Math.Max(
                 _maxCaptureMilliseconds,
@@ -265,6 +275,19 @@ internal sealed class FrontendInstrumentation : IDisposable
                 EnqueuedFrames = _enqueuedFrameCount,
                 DroppedFrames = _droppedFrameCount,
                 EncodedBytes = _encodedBytes,
+                UncompressedBytes = _uncompressedBytes,
+                DisplayListResourceBytes = _displayListResourceBytes,
+                DisplayListCommandBytes = _displayListCommandBytes,
+                DisplayListResourceRecords = _displayListResourceRecords,
+                DisplayListCommands = _displayListCommands,
+                AverageEncodedBytesPerFrame = Average(_encodedBytes, _encodedFrameCount),
+                AverageUncompressedBytesPerFrame = Average(
+                    _uncompressedBytes,
+                    _encodedFrameCount
+                ),
+                EncodedToUncompressedRatio = _uncompressedBytes == 0
+                    ? 0
+                    : (double)_encodedBytes / _uncompressedBytes,
                 AverageUpdateMilliseconds = Average(_totalUpdateMilliseconds, _updateCount),
                 PeakUpdateMilliseconds = _maxUpdateMilliseconds,
                 AverageDrawMilliseconds = Average(_totalDrawMilliseconds, _drawCount),
@@ -392,6 +415,14 @@ internal sealed class FrontendInstrumentationTotals
     public long EnqueuedFrames { get; set; }
     public long DroppedFrames { get; set; }
     public long EncodedBytes { get; set; }
+    public long UncompressedBytes { get; set; }
+    public long DisplayListResourceBytes { get; set; }
+    public long DisplayListCommandBytes { get; set; }
+    public long DisplayListResourceRecords { get; set; }
+    public long DisplayListCommands { get; set; }
+    public double AverageEncodedBytesPerFrame { get; set; }
+    public double AverageUncompressedBytesPerFrame { get; set; }
+    public double EncodedToUncompressedRatio { get; set; }
     public double AverageUpdateMilliseconds { get; set; }
     public double PeakUpdateMilliseconds { get; set; }
     public double AverageDrawMilliseconds { get; set; }

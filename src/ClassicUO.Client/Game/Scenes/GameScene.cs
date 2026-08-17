@@ -1200,6 +1200,7 @@ namespace ClassicUO.Game.Scenes
             gd.Viewport = rViewport;
 
             gd.Clear(ClearOptions.Stencil, Color.Transparent, 0f, 0);
+            batcher.RecordClear(ClearOptions.Stencil, Color.Transparent, 0f, 0);
             Profiler.ExitContext("DrawOverlays");
 
             Profiler.ExitContext("GameSceneDraw");
@@ -1263,7 +1264,9 @@ namespace ClassicUO.Game.Scenes
             // Always use render target for consistent scaling
             RenderTargetBinding[] previousRenderTargets = batcher.GraphicsDevice.GetRenderTargets();
             batcher.GraphicsDevice.SetRenderTarget(_worldRenderTarget);
+            batcher.RecordRenderTarget(_worldRenderTarget);
             batcher.GraphicsDevice.Clear(ClearOptions.Target, Color.Black, 1f, 0);
+            batcher.RecordClear(ClearOptions.Target, Color.Black, 1f, 0);
 
             batcher.SetSampler(SamplerState.PointClamp);
 
@@ -1330,10 +1333,12 @@ namespace ClassicUO.Game.Scenes
             if (previousRenderTargets != null && previousRenderTargets.Length > 0)
             {
                 batcher.GraphicsDevice.SetRenderTargets(previousRenderTargets);
+                batcher.RecordRenderTarget(previousRenderTargets[0].RenderTarget as Texture2D);
             }
             else
             {
                 batcher.GraphicsDevice.SetRenderTarget(null);
+                batcher.RecordRenderTarget(null);
             }
         }
 
@@ -1389,7 +1394,9 @@ namespace ClassicUO.Game.Scenes
             RenderTargetBinding[] previousRenderTargets = batcher.GraphicsDevice.GetRenderTargets();
 
             batcher.GraphicsDevice.SetRenderTarget(_lightRenderTarget);
+            batcher.RecordRenderTarget(_lightRenderTarget);
             batcher.GraphicsDevice.Clear(ClearOptions.Target, Color.Black, 0f, 0);
+            batcher.RecordClear(ClearOptions.Target, Color.Black, 0f, 0);
 
             if (!UseAltLights)
             {
@@ -1403,6 +1410,12 @@ namespace ClassicUO.Game.Scenes
                 batcher.GraphicsDevice.Clear(
                     ClearOptions.Target,
                     new Vector4(lightColor, lightColor, lightColor, 1),
+                    0f,
+                    0
+                );
+                batcher.RecordClear(
+                    ClearOptions.Target,
+                    new Color(lightColor, lightColor, lightColor, 1f),
                     0f,
                     0
                 );
@@ -1453,10 +1466,12 @@ namespace ClassicUO.Game.Scenes
             if (previousRenderTargets != null && previousRenderTargets.Length > 0)
             {
                 batcher.GraphicsDevice.SetRenderTargets(previousRenderTargets);
+                batcher.RecordRenderTarget(previousRenderTargets[0].RenderTarget as Texture2D);
             }
             else
             {
                 batcher.GraphicsDevice.SetRenderTarget(null);
+                batcher.RecordRenderTarget(null);
             }
             return true;
         }

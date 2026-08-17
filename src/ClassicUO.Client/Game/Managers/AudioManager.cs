@@ -15,7 +15,7 @@ namespace ClassicUO.Game.Managers
     {
         const float SOUND_DELTA = 250;
 
-        private bool _canReproduceAudio = true;
+        private bool _canReproduceAudio;
         private bool _audioDeviceDisconnected = false;
         private uint _lastAudioRecoveryAttempt = 0;
         private const uint AUDIO_RECOVERY_DELAY = 1000; // 1 second delay between recovery attempts
@@ -31,6 +31,11 @@ namespace ClassicUO.Game.Managers
         public int DeathMusicIndex { get; } = 42;
         private long _nextAudioHealthCheck = 0;
 
+        public AudioManager(bool enabled = true)
+        {
+            _canReproduceAudio = enabled;
+        }
+
         /// <summary>
         /// Index, Name
         /// </summary>
@@ -39,17 +44,20 @@ namespace ClassicUO.Game.Managers
 
         public void Initialize()
         {
-            try
+            if (_canReproduceAudio)
             {
-                if(!System.Diagnostics.Debugger.IsAttached)
-                    new DynamicSoundEffectInstance(0, AudioChannels.Mono).Dispose();
-                else //Fix for rider debugging not having audio apparently
+                try
+                {
+                    if (!System.Diagnostics.Debugger.IsAttached)
+                        new DynamicSoundEffectInstance(0, AudioChannels.Mono).Dispose();
+                    else //Fix for rider debugging not having audio apparently
+                        _canReproduceAudio = false;
+                }
+                catch (NoAudioHardwareException ex)
+                {
+                    Log.Warn(ex.ToString());
                     _canReproduceAudio = false;
-            }
-            catch (NoAudioHardwareException ex)
-            {
-                Log.Warn(ex.ToString());
-                _canReproduceAudio = false;
+                }
             }
 
             LoginMusicIndex = Client.Game.UO.Version switch
@@ -59,8 +67,11 @@ namespace ClassicUO.Game.Managers
                 _ => 8 // stones2
             };
 
-            Client.Game.Activated += OnWindowActivated;
-            Client.Game.Deactivated += OnWindowDeactivated;
+            if (_canReproduceAudio)
+            {
+                Client.Game.Activated += OnWindowActivated;
+                Client.Game.Deactivated += OnWindowDeactivated;
+            }
         }
 
         private void OnWindowDeactivated(object sender, EventArgs e)
