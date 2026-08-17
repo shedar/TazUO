@@ -21,8 +21,10 @@ internal interface IFrontendAdapter : IDisposable
     FrontendMode Mode { get; }
     bool IsAttached { get; }
     bool OwnsPointer { get; }
+    bool ReduceUpdatesWhenNativeWindowInactive { get; }
 
     void Initialize(GameController game);
     bool WantsFrame(uint timestamp);
+    void DrainInput(Action<FrontendInputEvent> dispatch);
     FrontendPresentResult Present(in FrontendFrame frame);
 }

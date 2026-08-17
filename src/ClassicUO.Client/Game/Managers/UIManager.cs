@@ -2,6 +2,7 @@
 
 
 using ClassicUO.Configuration;
+using ClassicUO.Frontend;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Input;
@@ -468,7 +469,18 @@ namespace ClassicUO.Game.Managers
             for (LinkedListNode<IGui> last = Gumps.Last; last != null; last = last.Previous)
             {
                 IGui g = last.Value;
-                g.Draw(batcher, g.X, g.Y);
+
+                if (FrontendInstrumentation.IsEnabled)
+                {
+                    using (FrontendInstrumentation.Measure("ui.gump", g.GetType().Name))
+                    {
+                        g.Draw(batcher, g.X, g.Y);
+                    }
+                }
+                else
+                {
+                    g.Draw(batcher, g.X, g.Y);
+                }
             }
 
             batcher.End();

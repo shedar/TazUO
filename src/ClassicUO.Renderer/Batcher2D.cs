@@ -112,6 +112,10 @@ namespace ClassicUO.Renderer
 
         public int TextureSwitches, FlushesDone;
 
+        public int FrameSprites { get; private set; }
+        public int FrameFlushes { get; private set; }
+        public int FrameTextureSwitches { get; private set; }
+
 
 
         public void Dispose()
@@ -120,6 +124,13 @@ namespace ClassicUO.Renderer
             _basicUOEffect?.Dispose();
             _vertexBuffer.Dispose();
             _indexBuffer.Dispose();
+        }
+
+        public void ResetFrameMetrics()
+        {
+            FrameSprites = 0;
+            FrameFlushes = 0;
+            FrameTextureSwitches = 0;
         }
 
 
@@ -1579,11 +1590,14 @@ namespace ClassicUO.Renderer
                 return;
             }
 
+            FrameSprites += _numSprites;
+
             ApplyStates();
 
             int arrayOffset = 0;
         nextbatch:
             ++FlushesDone;
+            ++FrameFlushes;
 
             int batchSize = Math.Min(_numSprites, MAX_SPRITES);
             int baseOff = UpdateVertexBuffer(arrayOffset, batchSize);
@@ -1598,6 +1612,7 @@ namespace ClassicUO.Renderer
                 if (tex != curTexture)
                 {
                     ++TextureSwitches;
+                    ++FrameTextureSwitches;
                     // Only draw if we have a valid texture
                     if (curTexture != null && !curTexture.IsDisposed)
                     {

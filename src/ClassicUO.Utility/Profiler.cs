@@ -35,6 +35,7 @@ namespace ClassicUO.Utility
         public static double TrackedTime => m_TotalTimeData.TimeInContext;
 
         public static bool Enabled = false;
+        public static bool LogSpikes = true;
 
         //[Conditional("DEBUG")]
         public static void BeginFrame()
@@ -219,7 +220,7 @@ namespace ClassicUO.Utility
 
             public void AddNewHitLength(double time)
             {
-                if (m_LastIndex >= ProfileTimeCount && time >= MinimumTimeForSpikeDetection)
+                if (LogSpikes && m_LastIndex >= ProfileTimeCount && time >= MinimumTimeForSpikeDetection)
                 {
                     double currentAverage = AverageTime;
                     if (time > currentAverage * SpikeThresholdMultiplier)

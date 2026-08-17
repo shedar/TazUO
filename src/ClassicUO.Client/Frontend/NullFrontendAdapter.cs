@@ -14,6 +14,7 @@ internal sealed class NullFrontendAdapter : IFrontendAdapter
     public FrontendMode Mode => FrontendMode.Null;
     public bool IsAttached => false;
     public bool OwnsPointer => false;
+    public bool ReduceUpdatesWhenNativeWindowInactive => false;
 
     public void Initialize(GameController game)
     {
@@ -24,6 +25,10 @@ internal sealed class NullFrontendAdapter : IFrontendAdapter
     }
 
     public bool WantsFrame(uint timestamp) => false;
+
+    public void DrainInput(System.Action<FrontendInputEvent> dispatch)
+    {
+    }
 
     public FrontendPresentResult Present(in FrontendFrame frame) => default;
 

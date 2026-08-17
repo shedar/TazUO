@@ -6,6 +6,7 @@ internal static class FrontendAdapterFactory
     {
         FrontendMode.Local => new LocalFrontendAdapter(),
         FrontendMode.Null => new NullFrontendAdapter(options.HideNativeWindow),
+        FrontendMode.WebSocket => new WebSocketFrontendAdapter(options),
         _ => throw new System.ArgumentOutOfRangeException(nameof(options.Mode), options.Mode, null)
     };
 }

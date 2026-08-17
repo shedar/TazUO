@@ -58,7 +58,9 @@ namespace ClassicUO
         private static Vector3 bgHueShader = new(0, 0, 0.3f);
         private bool drawScene;
         private readonly IFrontendAdapter _frontend;
+        private readonly FrontendInstrumentation _frontendInstrumentation;
         private long _frontendFrameId;
+        private bool _frontendOwnedPointerLastUpdate;
 
 #if DEBUG
         static GameController()
@@ -69,9 +71,10 @@ namespace ClassicUO
 
         private static string DefaultWindowTitle => $"[TazUO - {CUOEnviroment.Version}]";
 
-        public GameController(IPluginHost pluginHost)
+        public GameController(IPluginHost pluginHost, IFrontendAdapter frontend = null)
         {
-            _frontend = FrontendAdapterFactory.Create(FrontendConfiguration.Current);
+            _frontend = frontend ?? FrontendAdapterFactory.Create(FrontendConfiguration.Current);
+            _frontendInstrumentation = FrontendInstrumentation.Create(FrontendConfiguration.Current);
             GraphicManager = new GraphicsDeviceManager(this);
 
             GraphicManager.PreparingDeviceSettings += (sender, e) =>
@@ -129,6 +132,7 @@ namespace ClassicUO
             }
 
             GraphicManager.ApplyChanges();
+            _frontend.Initialize(this);
 
             SetRefreshRate(Settings.GlobalSettings.FPS);
             SupportedRefreshRate = Settings.GlobalSettings.FPS;
@@ -237,7 +241,6 @@ namespace ClassicUO
                 BeyondRecallQA.BrQaSession.Instance.EmitWindowReady();
             }
 
-            _frontend.Initialize(this);
 #endif
         }
 
@@ -290,6 +293,7 @@ namespace ClassicUO
             _screenRenderTarget?.Dispose();
             _screenRenderTarget = null;
 
+            _frontendInstrumentation?.Dispose();
             _frontend.Dispose();
 
             UO.Unload();
@@ -494,13 +498,25 @@ namespace ClassicUO
 
         protected override void Update(GameTime gameTime)
         {
+            long instrumentationStarted = _frontendInstrumentation?.BeginSample() ?? 0;
+            _frontendInstrumentation?.BeginProfilerFrame();
             Profiler.EnterContext("Update");
 
             Time.Ticks = (uint)gameTime.TotalGameTime.TotalMilliseconds;
             Time.Delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
             Profiler.EnterContext("Mouse");
+            bool frontendOwnsPointer = _frontend.OwnsPointer;
+
+            if (_frontendOwnedPointerLastUpdate && !frontendOwnsPointer)
+            {
+                ReleaseFrontendPointerButtons();
+            }
+
+            _frontendOwnedPointerLastUpdate = frontendOwnsPointer;
+            Mouse.UseInjectedPosition = frontendOwnsPointer;
             Mouse.Update();
+            _frontend.DrainInput(DispatchFrontendInput);
             Profiler.ExitContext("Mouse");
 
             Profiler.EnterContext("ProcessNetworkPackets");
@@ -544,7 +560,8 @@ namespace ClassicUO
             }
 
             double x = _intervalFixedUpdate[
-                !IsActive
+                _frontend.ReduceUpdatesWhenNativeWindowInactive
+                && !IsActive
                 && ProfileManager.CurrentProfile != null
                 && ProfileManager.CurrentProfile.ReduceFPSWhenInactive
                     ? 1
@@ -579,6 +596,7 @@ namespace ClassicUO
             base.Update(gameTime);
 
             Profiler.ExitContext("Update");
+            _frontendInstrumentation?.RecordUpdate(instrumentationStarted, _frontend.IsAttached);
         }
 
         public static void UpdateBackgroundHueShader()
@@ -631,15 +649,23 @@ namespace ClassicUO
 
         protected override void Draw(GameTime gameTime)
         {
+            long instrumentationStarted = _frontendInstrumentation?.BeginSample() ?? 0;
+            _uoSpriteBatch.ResetFrameMetrics();
             Profiler.EnterContext("Draw");
 
-            Profiler.EndFrame();
+            if (_frontendInstrumentation == null)
+            {
+                Profiler.EndFrame();
+            }
 
             Profiler.EnterContext("PreDraw");
             UIManager.PreDraw();
             Profiler.ExitContext("PreDraw");
 
-            Profiler.BeginFrame();
+            if (_frontendInstrumentation == null)
+            {
+                Profiler.BeginFrame();
+            }
 
             Profiler.EnterContext("RenderSetup");
             _totalFrames++;
@@ -690,6 +716,7 @@ namespace ClassicUO
             Profiler.ExitContext("SceneRender");
 
             Profiler.EnterContext("PluginRender");
+            FrontendPresentResult frontendPresentResult = default;
             if (useRenderTarget)
             {
                 if(_pluginsInitialized)
@@ -697,7 +724,7 @@ namespace ClassicUO
 
                 GraphicsDevice.SetRenderTarget(null);
 
-                _frontend.Present(
+                frontendPresentResult = _frontend.Present(
                     new FrontendFrame(++_frontendFrameId, Time.Ticks, _screenRenderTarget)
                 );
 
@@ -725,6 +752,15 @@ namespace ClassicUO
             base.Draw(gameTime);
 
             Profiler.ExitContext("Draw");
+            _frontendInstrumentation?.RecordDraw(
+                instrumentationStarted,
+                frontendPresentResult,
+                _uoSpriteBatch.FrameSprites,
+                _uoSpriteBatch.FrameFlushes,
+                _uoSpriteBatch.FrameTextureSwitches,
+                Scene?.RenderedObjectsCount ?? 0,
+                _frontend.IsAttached
+            );
         }
 
         protected override bool BeginDraw() =>
@@ -886,28 +922,8 @@ namespace ClassicUO
                     break;
 
                 case SDL_EventType.SDL_EVENT_TEXT_INPUT when Scene is not null:
-                    if (_ignoreNextTextInput)
-                    {
-                        break;
-                    }
-
-                    // Fix for linux OS: https://github.com/andreakarasho/ClassicUO/pull/1263
-                    // Fix 2: SDL owns this behaviour. Cheating is not a real solution.
-                    /*if (!Utility.Platforms.PlatformHelper.IsWindows)
-                    {
-                        if (Keyboard.Alt || Keyboard.Ctrl)
-                        {
-                            break;
-                        }
-                    }*/
-
                     string s = Marshal.PtrToStringUTF8((IntPtr)sdlEvent->text.text);
-
-                    if (!string.IsNullOrEmpty(s))
-                    {
-                        UIManager.KeyboardFocusControl?.InvokeTextInput(s);
-                        Scene.OnTextInput(s);
-                    }
+                    ProcessTextInput(s);
 
                     break;
 
@@ -1183,6 +1199,110 @@ namespace ClassicUO
             }
 
             return true;
+        }
+
+        private void DispatchFrontendInput(FrontendInputEvent input)
+        {
+            if (input.Kind == FrontendInputKind.Resize)
+            {
+                SetWindowSize(input.Width, input.Height);
+                return;
+            }
+
+            if (Scene == null)
+            {
+                return;
+            }
+
+            SDL_Event sdlEvent = new();
+
+            switch (input.Kind)
+            {
+                case FrontendInputKind.PointerMove:
+                    SetFrontendPointerPosition(input.X, input.Y);
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_MOUSE_MOTION;
+                    break;
+                case FrontendInputKind.PointerDown:
+                    SetFrontendPointerPosition(input.X, input.Y);
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_MOUSE_BUTTON_DOWN;
+                    sdlEvent.button.button = (byte)input.Button;
+                    break;
+                case FrontendInputKind.PointerUp:
+                    SetFrontendPointerPosition(input.X, input.Y);
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP;
+                    sdlEvent.button.button = (byte)input.Button;
+                    break;
+                case FrontendInputKind.Wheel:
+                    SetFrontendPointerPosition(input.X, input.Y);
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_MOUSE_WHEEL;
+                    sdlEvent.wheel.y = input.WheelY;
+                    break;
+                case FrontendInputKind.KeyDown:
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_KEY_DOWN;
+                    sdlEvent.key.key = input.Key;
+                    sdlEvent.key.mod = input.Modifiers;
+                    break;
+                case FrontendInputKind.KeyUp:
+                    sdlEvent.type = (uint)SDL_EventType.SDL_EVENT_KEY_UP;
+                    sdlEvent.key.key = input.Key;
+                    sdlEvent.key.mod = input.Modifiers;
+                    break;
+                case FrontendInputKind.Text:
+                    ProcessTextInput(input.Text);
+                    return;
+                default:
+                    return;
+            }
+
+            HandleSdlEvent(IntPtr.Zero, &sdlEvent);
+        }
+
+        private void SetFrontendPointerPosition(int x, int y)
+        {
+            int width = Math.Max(1, GraphicManager.PreferredBackBufferWidth);
+            int height = Math.Max(1, GraphicManager.PreferredBackBufferHeight);
+            Mouse.SetInjectedPosition(
+                new Point(Math.Clamp(x, 0, width - 1), Math.Clamp(y, 0, height - 1))
+            );
+        }
+
+        private void ProcessTextInput(string text)
+        {
+            if (_ignoreNextTextInput || Scene == null || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+
+            UIManager.KeyboardFocusControl?.InvokeTextInput(text);
+            Scene.OnTextInput(text);
+        }
+
+        private static void ReleaseFrontendPointerButtons()
+        {
+            if (Mouse.LButtonPressed)
+            {
+                Mouse.ButtonRelease(MouseButtonType.Left);
+            }
+
+            if (Mouse.MButtonPressed)
+            {
+                Mouse.ButtonRelease(MouseButtonType.Middle);
+            }
+
+            if (Mouse.RButtonPressed)
+            {
+                Mouse.ButtonRelease(MouseButtonType.Right);
+            }
+
+            if (Mouse.XButton1Pressed)
+            {
+                Mouse.ButtonRelease(MouseButtonType.XButton1);
+            }
+
+            if (Mouse.XButton2Pressed)
+            {
+                Mouse.ButtonRelease(MouseButtonType.XButton2);
+            }
         }
 
         protected override void OnExiting(object sender, EventArgs args)

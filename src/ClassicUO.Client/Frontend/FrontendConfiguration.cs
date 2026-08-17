@@ -8,7 +8,14 @@ namespace ClassicUO.Frontend;
 internal enum FrontendMode
 {
     Local,
-    Null
+    Null,
+    WebSocket
+}
+
+internal enum FrontendFrameFormat
+{
+    RawRgba,
+    Png
 }
 
 internal sealed class FrontendOptions
@@ -19,6 +26,7 @@ internal sealed class FrontendOptions
     public int FramesPerSecond { get; init; } = 15;
     public int WebSocketPort { get; init; } = 19870;
     public bool HideNativeWindow { get; init; } = true;
+    public FrontendFrameFormat FrameFormat { get; init; } = FrontendFrameFormat.RawRgba;
     public string InstrumentationPath { get; init; }
 }
 
@@ -39,6 +47,7 @@ internal static class FrontendConfiguration
         int framesPerSecond = 15;
         int webSocketPort = 19870;
         bool hideNativeWindow = true;
+        FrontendFrameFormat frameFormat = FrontendFrameFormat.RawRgba;
         string instrumentationPath = null;
 
         for (int i = 0; i < arguments.Count; i++)
@@ -61,8 +70,9 @@ internal static class FrontendConfiguration
                     {
                         "local" => FrontendMode.Local,
                         "null" or "none" => FrontendMode.Null,
+                        "websocket" or "ws" or "remote" => FrontendMode.WebSocket,
                         _ => throw new ArgumentException(
-                            $"Unsupported frontend mode '{value}'. Expected local or null."
+                            $"Unsupported frontend mode '{value}'. Expected local, null, or websocket."
                         )
                     };
                     break;
@@ -102,6 +112,20 @@ internal static class FrontendConfiguration
 
                     break;
                 }
+                case "frontend-frame-format":
+                case "frontend-format":
+                {
+                    string value = RequireValue(arguments, ref i, option).ToLowerInvariant();
+                    frameFormat = value switch
+                    {
+                        "rgba" or "raw" or "raw-rgba" => FrontendFrameFormat.RawRgba,
+                        "png" => FrontendFrameFormat.Png,
+                        _ => throw new ArgumentException(
+                            $"Unsupported frontend frame format '{value}'. Expected rgba or png."
+                        )
+                    };
+                    break;
+                }
                 case "frontend-instrumentation":
                     instrumentationPath = Path.GetFullPath(RequireValue(arguments, ref i, option));
                     break;
@@ -114,6 +138,7 @@ internal static class FrontendConfiguration
             FramesPerSecond = framesPerSecond,
             WebSocketPort = webSocketPort,
             HideNativeWindow = hideNativeWindow,
+            FrameFormat = frameFormat,
             InstrumentationPath = instrumentationPath
         };
     }

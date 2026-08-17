@@ -17,6 +17,7 @@ public sealed class FrontendConfigurationTests
         options.FramesPerSecond.Should().Be(15);
         options.WebSocketPort.Should().Be(19870);
         options.HideNativeWindow.Should().BeTrue();
+        options.FrameFormat.Should().Be(FrontendFrameFormat.RawRgba);
         options.InstrumentationPath.Should().BeNull();
     }
 
@@ -30,6 +31,7 @@ public sealed class FrontendConfigurationTests
                 "-frontend_fps", "24",
                 "-frontend-port", "21987",
                 "-frontend-hide-window", "false",
+                "-frontend-format", "png",
                 "-frontend-instrumentation", "metrics.json"
             }
         );
@@ -38,7 +40,19 @@ public sealed class FrontendConfigurationTests
         options.FramesPerSecond.Should().Be(24);
         options.WebSocketPort.Should().Be(21987);
         options.HideNativeWindow.Should().BeFalse();
+        options.FrameFormat.Should().Be(FrontendFrameFormat.Png);
         options.InstrumentationPath.Should().Be(Path.GetFullPath("metrics.json"));
+    }
+
+    [Theory]
+    [InlineData("websocket")]
+    [InlineData("ws")]
+    [InlineData("remote")]
+    public void ParsesWebSocketAliases(string value)
+    {
+        FrontendOptions options = FrontendConfiguration.Parse(new[] { "-frontend", value });
+
+        options.Mode.Should().Be(FrontendMode.WebSocket);
     }
 
     [Theory]
@@ -47,6 +61,7 @@ public sealed class FrontendConfigurationTests
     [InlineData("-frontend-fps", "61")]
     [InlineData("-frontend-port", "80")]
     [InlineData("-frontend-hide-window", "perhaps")]
+    [InlineData("-frontend-frame-format", "jpeg")]
     public void RejectsInvalidValues(string option, string value)
     {
         Action parse = () => FrontendConfiguration.Parse(new[] { option, value });

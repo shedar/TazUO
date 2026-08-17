@@ -3,6 +3,7 @@
 
 using ClassicUO.Assets;
 using ClassicUO.Configuration;
+using ClassicUO.Frontend;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
@@ -1345,7 +1346,31 @@ namespace ClassicUO.Game.Scenes
                 if (obj.Z <= _maxGroundZ)
                 {
                     float depth = obj.CalculateDepthZ();
-                    if (obj.Draw(batcher, obj.RealScreenPosition.X, obj.RealScreenPosition.Y, depth))
+                    bool drawn;
+
+                    if (FrontendInstrumentation.IsEnabled)
+                    {
+                        using (FrontendInstrumentation.Measure("world.object", obj.GetType().Name))
+                        {
+                            drawn = obj.Draw(
+                                batcher,
+                                obj.RealScreenPosition.X,
+                                obj.RealScreenPosition.Y,
+                                depth
+                            );
+                        }
+                    }
+                    else
+                    {
+                        drawn = obj.Draw(
+                            batcher,
+                            obj.RealScreenPosition.X,
+                            obj.RealScreenPosition.Y,
+                            depth
+                        );
+                    }
+
+                    if (drawn)
                     {
                         ++done;
                     }
