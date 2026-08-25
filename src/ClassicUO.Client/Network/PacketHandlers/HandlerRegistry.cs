@@ -56,6 +56,7 @@ public static class PacketHandlerRegistry
         (0x72, Warmode.Receive),
         (0x73, Ping.Receive),
         (0x74, BuyList.Receive),
+        (0x76, ServerChange.Receive),
         (0x77, UpdateCharacter.Receive),
         (0x78, UpdateObject.Receive),
         (0x7C, OpenMenu.Receive),

@@ -59,6 +59,9 @@ internal static class Talk
                 entity.Name = string.IsNullOrEmpty(name) ? text : name;
         }
 
+        if (BeyondRecallQA.BrQaSession.IsActive && !string.IsNullOrEmpty(text))
+            BeyondRecallQA.BrQaSession.Instance.ObserveJournal(text);
+
         world.MessageManager.HandleMessage(entity, text, name, hue, type, (byte)font, text_type);
     }
 }

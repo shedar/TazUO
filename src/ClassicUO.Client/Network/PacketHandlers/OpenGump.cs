@@ -15,6 +15,9 @@ internal static class OpenGump
         int x = (int)p.ReadUInt32BE();
         int y = (int)p.ReadUInt32BE();
 
+        if (BeyondRecallQA.BrQaSession.IsActive)
+            BeyondRecallQA.BrQaSession.Instance.EmitGumpOpened(gumpID);
+
         ushort cmdLen = p.ReadUInt16BE();
         string cmd = p.ReadASCII(cmdLen);
 
