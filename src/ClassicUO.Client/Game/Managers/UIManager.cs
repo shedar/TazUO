@@ -2,7 +2,6 @@
 
 
 using ClassicUO.Configuration;
-using ClassicUO.Frontend;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Input;
@@ -40,9 +39,6 @@ namespace ClassicUO.Game.Managers
         // Ctrl-modified drag constants
         private const int AXIS_LOCK_THRESHOLD_PIXELS = 10;
         private const float CTRL_DRAG_SPEED_MULTIPLIER = 0.5f;
-
-        // Warn the user when too many gumps of the same type are open at once
-        private const int SAME_TYPE_GUMP_WARN_THRESHOLD = 100;
 
         private static void ResetCtrlDragState()
         {
@@ -469,18 +465,7 @@ namespace ClassicUO.Game.Managers
             for (LinkedListNode<IGui> last = Gumps.Last; last != null; last = last.Previous)
             {
                 IGui g = last.Value;
-
-                if (FrontendInstrumentation.IsEnabled)
-                {
-                    using (FrontendInstrumentation.Measure("ui.gump", g.GetType().Name))
-                    {
-                        g.Draw(batcher, g.X, g.Y);
-                    }
-                }
-                else
-                {
-                    g.Draw(batcher, g.X, g.Y);
-                }
+                g.Draw(batcher, g.X, g.Y);
             }
 
             batcher.End();
@@ -504,42 +489,6 @@ namespace ClassicUO.Game.Managers
             _needSort = Gumps.Count > 1;
 
             RegisterGump(gump);
-
-            WarnIfTooManySameType(gump);
-        }
-
-        /// <summary>
-        /// Warn the user when they have more than <see cref="SAME_TYPE_GUMP_WARN_THRESHOLD"/>
-        /// gumps of the same type open at once. Only the count of the added gump's exact
-        /// type is reported, not the total number of gumps.
-        /// </summary>
-        private static void WarnIfTooManySameType(IGui gump)
-        {
-            // NameOverheadGumps are legitimately created in large numbers (one per
-            // entity name shown), so they should never trigger this warning.
-            if (gump is NameOverheadGump)
-                return;
-
-            Type t = gump.GetType();
-
-            if (!_gumpTypeList.TryGetValue(t, out List<IGui> list))
-                return;
-
-            // The type list bucket also contains subclass instances (RegisterGump registers
-            // each gump under every type in its inheritance chain). Count only instances whose
-            // exact runtime type matches so the warning reflects the real number of this gump.
-            int count = 0;
-
-            foreach (IGui g in list)
-            {
-                if (g.GetType() == t)
-                    count++;
-            }
-
-            if (count > SAME_TYPE_GUMP_WARN_THRESHOLD)
-            {
-                GameActions.PrintUserWarn(World.Instance, TazLang.Get("uimanager_toomanygumps", new[] { count.ToString(), t.Name }));
-            }
         }
 
         public static void Clear()

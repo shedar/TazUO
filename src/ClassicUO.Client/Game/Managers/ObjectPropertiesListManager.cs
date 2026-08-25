@@ -23,7 +23,7 @@ namespace ClassicUO.Game.Managers
             _world = world;
         }
 
-        public void Add(uint serial, uint revision, string name, string data, int namecliloc, int[] clilocs = null)
+        public void Add(uint serial, uint revision, string name, string data, int namecliloc)
         {
             if (!_itemsProperties.TryGetValue(serial, out ItemProperty prop))
             {
@@ -36,19 +36,12 @@ namespace ClassicUO.Game.Managers
             prop.Name = name;
             prop.Data = data;
             prop.NameCliloc = namecliloc;
-            prop.Clilocs = clilocs;
 
             EventSink.InvokeOPLOnReceive(null, new OPLEventArgs(serial, name, data));
 
-            Entity ent = _world.Get(serial);
-            ent?.OPLUpdated(prop);
-
-            if (ent is Item item)
-            {
-                item.OPLName = name;
-                item.OPLData = data;
+            Item item = _world.Items.Get(serial);
+            if(item != null)
                 ItemDatabaseManager.Instance.AddOrUpdateItem(item, _world);
-            }
         }
 
         public bool Contains(uint serial)
@@ -106,15 +99,6 @@ namespace ClassicUO.Game.Managers
 
             return false;
         }
-        public int[] GetClilocs(uint serial)
-        {
-            if (_itemsProperties.TryGetValue(serial, out ItemProperty p) && p.Clilocs != null)
-            {
-                return p.Clilocs;
-            }
-
-            return Array.Empty<int>();
-        }
 
         public int GetNameCliloc(uint serial)
         {
@@ -147,7 +131,6 @@ namespace ClassicUO.Game.Managers
         public uint Revision;
         public uint Serial;
         public int NameCliloc;
-        public int[] Clilocs;
 
         public string CreateData(bool extended) => string.Empty;
     }

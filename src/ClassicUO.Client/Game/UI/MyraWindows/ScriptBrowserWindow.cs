@@ -380,7 +380,7 @@ public class ScriptBrowserWindow : MyraControl
                         }
                     }
 
-                    LegionWorkspaceFileSystem.WriteAllText(finalFilePath, content, Encoding.UTF8);
+                    File.WriteAllText(finalFilePath, content, Encoding.UTF8);
 
                     var f = new ScriptFile(World.Instance, LegionScripting.LegionScripting.ScriptPath, finalFileName);
                     new ScriptEditorWindow(f);

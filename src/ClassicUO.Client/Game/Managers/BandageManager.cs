@@ -36,7 +36,6 @@ namespace ClassicUO.Game.Managers
         private bool IsEnabled => ProfileManager.CurrentProfile?.EnableBandageAgent ?? false;
         private bool FriendBandagingEnabled => ProfileManager.CurrentProfile?.BandageAgentBandageFriends ?? false;
         private bool AllyBandagingEnabled => ProfileManager.CurrentProfile?.BandageAgentBandageAllies ?? false;
-        private bool PetBandagingEnabled => ProfileManager.CurrentProfile?.BandageAgentBandagePets ?? false;
         private int HealDelayMs => ProfileManager.CurrentProfile?.BandageAgentDelay ?? 3000;
         private bool CheckForBuff => ProfileManager.CurrentProfile?.BandageAgentCheckForBuff ?? false;
         private ushort BandageGraphic => ProfileManager.CurrentProfile?.BandageAgentGraphic ?? 0x0E21;
@@ -48,14 +47,11 @@ namespace ClassicUO.Game.Managers
         private bool HasBandagingBuff { get; set; } = false;
         private bool UseDexFormula => ProfileManager.CurrentProfile?.BandageAgentUseDexFormula ?? false;
         private bool DisableSelfHeal => ProfileManager.CurrentProfile?.BandageAgentDisableSelfHeal ?? false;
-        private bool UseJournalTrigger => ProfileManager.CurrentProfile?.BandageAgentUseJournalTrigger ?? false;
-        private string JournalMessages => ProfileManager.CurrentProfile?.BandageAgentJournalMessages ?? "";
 
         private BandageManager()
         {
             EventSink.OnBuffAddedInternal += OnBuffAdded;
             EventSink.OnBuffRemovedInternal += OnBuffRemoved;
-            EventSink.JournalEntryAdded += OnJournalEntryAdded;
         }
 
         public void SetPoisoned(uint serial, bool status)
@@ -71,27 +67,6 @@ namespace ClassicUO.Game.Managers
         {
             if (e.Buff.Type == BuffIconType.Healing) HasBandagingBuff = true;
             if (e.Buff.Type == BuffIconType.Veterinary) HasBandagingBuff = true;
-        }
-
-        private void OnJournalEntryAdded(object sender, JournalEntry e)
-        {
-            if (!IsEnabled || !UseJournalTrigger || e == null) return;
-            if (string.IsNullOrEmpty(e.Text)) return;
-
-            string messages = JournalMessages;
-            if (string.IsNullOrWhiteSpace(messages)) return;
-
-            string[] triggers = messages.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            foreach (string trigger in triggers)
-            {
-                if (!string.IsNullOrEmpty(trigger) && e.Text.Contains(trigger, StringComparison.OrdinalIgnoreCase))
-                {
-                    _nextBandageTime = 0;
-                    HasBandagingBuff = false;
-                    VerifyTimer();
-                    return;
-                }
-            }
         }
 
         private void OnBuffRemoved(object sender, BuffEventArgs e)
@@ -212,9 +187,7 @@ namespace ClassicUO.Game.Managers
             bool isPlayer = mobile == player;
             bool isFriend = !isPlayer && FriendBandagingEnabled && FriendsListManager.Instance.IsFriend(mobile);
             bool isAlly = !isPlayer && AllyBandagingEnabled && mobile.NotorietyFlag == NotorietyFlag.Ally;
-            bool isPet = !isPlayer && PetBandagingEnabled && mobile.IsRenamable;
-
-            if (!isPlayer && !isFriend && !isAlly && !isPet)
+            if (!isPlayer && !isFriend && !isAlly)
                 return false;
 
             if (isPlayer && DisableSelfHeal)
@@ -240,9 +213,7 @@ namespace ClassicUO.Game.Managers
             bool isPlayer = mobile == player;
             bool isFriend = !isPlayer && FriendBandagingEnabled && FriendsListManager.Instance.IsFriend(mobile.Serial);
             bool isAlly = !isPlayer && AllyBandagingEnabled && mobile.NotorietyFlag == NotorietyFlag.Ally;
-            bool isPet = !isPlayer && PetBandagingEnabled && mobile.IsRenamable;
-
-            if (!isPlayer && !isFriend && !isAlly && !isPet)
+            if (!isPlayer && !isFriend && !isAlly)
                 return false;
 
             // Check if self-healing is disabled
@@ -377,7 +348,6 @@ namespace ClassicUO.Game.Managers
             ClearAllPendingHeals();
             EventSink.OnBuffAddedInternal -= OnBuffAdded;
             EventSink.OnBuffRemovedInternal -= OnBuffRemoved;
-            EventSink.JournalEntryAdded -= OnJournalEntryAdded;
             Instance = null;
         }
     }

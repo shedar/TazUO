@@ -161,21 +161,7 @@ internal static class MegaCliLoc
             sb.Dispose();
         }
 
-        int[] clilocs = null;
-
-        if (list.Count != 0)
-        {
-            clilocs = new int[list.Count];
-
-            for (int i = 0; i < list.Count; i++)
-            {
-                clilocs[i] = list[i].Item1;
-            }
-        }
-
-        world.OPL.Add(serial, revision, name, data, namecliloc, clilocs);
-
-        UIManager.GetGump<SpellbookGump>(serial)?.RequestUpdateContents();
+        world.OPL.Add(serial, revision, name, data, namecliloc);
 
         if (inBuyList && container != null && SerialHelper.IsValid(container.Serial))
         {

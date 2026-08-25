@@ -22,8 +22,6 @@ internal static class ItemHelpers
         uint containerSerial
     )
     {
-        world.CancelPendingItemRemoval(serial);
-
         if (Client.Game.UO.GameCursor.ItemHold.Serial == serial)
             if (Client.Game.UO.GameCursor.ItemHold.Dropped)
                 Client.Game.UO.GameCursor.ItemHold.Clear();

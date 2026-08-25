@@ -2,7 +2,6 @@
 
 using ClassicUO.Configuration;
 using ClassicUO.Game.Managers;
-using ClassicUO.Game.Managers.Hotkeys;
 using ClassicUO.Input;
 using ClassicUO.Renderer;
 using Microsoft.Xna.Framework;
@@ -36,11 +35,11 @@ namespace ClassicUO.Game.UI.Gumps
         public int WidthMultiplier { get; protected set; } = 1;
         public int HeightMultiplier { get; protected set; } = 1;
 
-        public bool ShowLock => HotKeys.IsPressed(HotKeyRegistrar.GumpModifierId) && UIManager.AnchorManager[this] != null;
+        public bool ShowLock => Keyboard.Alt && UIManager.AnchorManager[this] != null;
 
         protected override void OnMove(int x, int y)
         {
-            if (HotKeys.IsPressed(HotKeyRegistrar.GumpModifierId) && !ProfileManager.CurrentProfile.HoldAltToMoveGumps)
+            if (Keyboard.Alt && !ProfileManager.CurrentProfile.HoldAltToMoveGumps)
             {
                 UIManager.AnchorManager.DetachControl(this);
             }
@@ -205,7 +204,7 @@ namespace ClassicUO.Game.UI.Gumps
         {
             if (
                 UIManager.AnchorManager[this] == null
-                || HotKeys.IsPressed(HotKeyRegistrar.GumpModifierId)
+                || Keyboard.Alt
                 || !ProfileManager.CurrentProfile.HoldDownKeyAltToCloseAnchored
             )
             {

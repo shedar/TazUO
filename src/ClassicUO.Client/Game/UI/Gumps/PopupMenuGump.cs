@@ -1,6 +1,5 @@
 ﻿// SPDX-License-Identifier: BSD-2-Clause
 
-using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
@@ -15,8 +14,6 @@ namespace ClassicUO.Game.UI.Gumps
         private ushort _selectedItem;
         private readonly PopupMenuData _data;
 
-        public uint Serial => _data.Serial;
-
         public PopupMenuGump(World world, PopupMenuData data) : base(world, 0, 0)
         {
             if (CloseNext != uint.MaxValue && data.Serial == CloseNext)
@@ -30,17 +27,15 @@ namespace ClassicUO.Game.UI.Gumps
             CanCloseWithRightClick = true;
             _data = data;
 
-            double scale = ProfileManager.CurrentProfile?.ContextMenuScale ?? 1.0;
-
             var pic = new ResizePic(0x0A3C)
             {
                 Alpha = 0.75f
             };
 
             Add(pic);
-            int offsetY = ScaleHelper.Scaled(10, scale);
+            int offsetY = 10;
             bool arrowAdded = false;
-            int width = 0, height = ScaleHelper.Scaled(20, scale);
+            int width = 0, height = 20;
 
             for (int i = 0; i < data.Items.Length; i++)
             {
@@ -57,14 +52,15 @@ namespace ClassicUO.Game.UI.Gumps
                     Client.Game.UO.FileManager.Fonts.SetUseHTML(true, h);
                 }
 
-                var label = new Label(text, true, hue, font: 1);
-                label.ApplyScale(scale, scalePosition: false);
-                label.X = ScaleHelper.Scaled(10, scale);
-                label.Y = offsetY;
+                var label = new Label(text, true, hue, font: 1)
+                {
+                    X = 10,
+                    Y = offsetY
+                };
 
                 Client.Game.UO.FileManager.Fonts.SetUseHTML(false);
 
-                var box = new HitBox(ScaleHelper.Scaled(10, scale), offsetY, label.Width, label.Height)
+                var box = new HitBox(10, offsetY, label.Width, label.Height)
                 {
                     Tag = item.Index
                 };
@@ -82,16 +78,16 @@ namespace ClassicUO.Game.UI.Gumps
                     arrowAdded = true;
 
                     // TODO: wat?
-                    var arrow = new Button(0, 0x15E6, 0x15E2, 0x15E2)
-                    {
-                        X = ScaleHelper.Scaled(20, scale),
-                        Y = offsetY
-                    };
-                    arrow.ApplyScale(scale, scalePosition: false);
+                    Add
+                    (
+                        new Button(0, 0x15E6, 0x15E2, 0x15E2)
+                        {
+                            X = 20,
+                            Y = offsetY
+                        }
+                    );
 
-                    Add(arrow);
-
-                    height += ScaleHelper.Scaled(20, scale);
+                    height += 20;
                 }
 
                 offsetY += label.Height;
@@ -107,9 +103,9 @@ namespace ClassicUO.Game.UI.Gumps
                 }
             }
 
-            width += ScaleHelper.Scaled(20, scale);
+            width += 20;
 
-            if (height <= ScaleHelper.Scaled(10, scale) || width <= ScaleHelper.Scaled(20, scale))
+            if (height <= 10 || width <= 20)
             {
                 Dispose();
             }
@@ -120,7 +116,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 foreach (HitBox box in FindControls<HitBox>())
                 {
-                    box.Width = width - ScaleHelper.Scaled(20, scale);
+                    box.Width = width - 20;
                 }
             }
         }

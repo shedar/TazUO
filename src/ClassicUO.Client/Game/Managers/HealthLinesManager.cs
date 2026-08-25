@@ -29,22 +29,53 @@ namespace ClassicUO.Game.Managers
         {
             Camera camera = Client.Game.Scene.Camera;
 
-            bool showTargetIndicator = ProfileManager.CurrentProfile?.ShowTargetIndicator ?? false;
-            bool hasNewTarget = SerialHelper.IsMobile(_world.TargetManager.NewTargetSystemSerial);
+            // if (SerialHelper.IsMobile(_world.TargetManager.LastTargetInfo.Serial))
+            // {
+            //     DrawHealthLineWithMath(
+            //         batcher,
+            //         _world.TargetManager.LastTargetInfo.Serial,
+            //         camera.Bounds.Width,
+            //         camera.Bounds.Height
+            //     );
+            //     DrawTargetIndicator(batcher, _world.TargetManager.LastTargetInfo.Serial);
+            // }
 
-            if (!IsEnabled && !(showTargetIndicator && hasNewTarget))
+            // if (SerialHelper.IsMobile(_world.TargetManager.SelectedTarget))
+            // {
+            //     DrawHealthLineWithMath(
+            //         batcher,
+            //         _world.TargetManager.SelectedTarget,
+            //         camera.Bounds.Width,
+            //         camera.Bounds.Height
+            //     );
+            //     DrawTargetIndicator(batcher, _world.TargetManager.SelectedTarget);
+            // }
+
+            // if (SerialHelper.IsMobile(_world.TargetManager.LastAttack))
+            // {
+            //     DrawHealthLineWithMath(
+            //         batcher,
+            //         _world.TargetManager.LastAttack,
+            //         camera.Bounds.Width,
+            //         camera.Bounds.Height
+            //     );
+            //     DrawTargetIndicator(batcher, _world.TargetManager.LastAttack);
+            // }
+
+            if (!IsEnabled)
             {
                 return;
             }
 
             int mode = ProfileManager.CurrentProfile.MobileHPType;
 
-            if (mode < 0 && !showTargetIndicator)
+            if (mode < 0)
             {
                 return;
             }
 
             int showWhen = ProfileManager.CurrentProfile.MobileHPShowWhen;
+            bool useNewTargetSystem = ProfileManager.CurrentProfile.UseNewTargetSystem;
             Renderer.Animations.Animations animations = Client.Game.UO.Animations;
             bool isEnabled = IsEnabled;
 
@@ -64,14 +95,9 @@ namespace ClassicUO.Game.Managers
                     _world.TargetManager.SelectedTarget == mobile ||
                     _world.TargetManager.NewTargetSystemSerial == mobile)
                 {
-                    newTargSystem = showTargetIndicator && _world.TargetManager.NewTargetSystemSerial == mobile;
+                    newTargSystem = useNewTargetSystem && _world.TargetManager.NewTargetSystemSerial == mobile;
                     passive = false;
                     forceDraw = true;
-                }
-
-                if (!isEnabled && !newTargSystem)
-                {
-                    continue;
                 }
 
                 int current = mobile.Hits;
@@ -122,7 +148,7 @@ namespace ClassicUO.Game.Managers
                                 Point p1 = p;
                                 p1.Y -= height + centerY + 8 + 22;
 
-                                if (mobile.IsGargoyle && mobile.IsFlyingAnimationEnabled)
+                                if (mobile.IsGargoyle && mobile.IsFlying)
                                 {
                                     p1.Y -= 22;
                                 }
@@ -131,13 +157,7 @@ namespace ClassicUO.Game.Managers
                                     p1.Y += 22;
                                 }
 
-                                // NOTE: Do NOT call Camera.WorldToScreen here. This overhead pass is
-                                // already drawn through a batcher begun with Camera.ViewTransformMatrix
-                                // (see GameScene.DrawOverheads), so the camera transform is applied
-                                // automatically. The health bar below uses world coordinates directly for
-                                // the same reason. Applying WorldToScreen manually transforms the position a
-                                // second time, which made the percent text drift in a radius around the
-                                // mobile as the zoom level changed instead of staying centered on top.
+                                p1 = Client.Game.Scene.Camera.WorldToScreen(p1);
                                 p1.X -= (mobile.HitsTexture.Width >> 1) + 5;
                                 p1.Y -= mobile.HitsTexture.Height;
 
@@ -383,10 +403,6 @@ namespace ClassicUO.Game.Managers
                     );
             }
 
-            if (newTargetSystem && ProfileManager.CurrentProfile != null && !ProfileManager.CurrentProfile.ShowMobilesHP)
-            {
-                return;
-            }
 
             ref readonly SpriteInfo gumpInfo = ref Client.Game.UO.Gumps.GetGump(BACKGROUND_GRAPHIC);
             Rectangle bounds = gumpInfo.UV;

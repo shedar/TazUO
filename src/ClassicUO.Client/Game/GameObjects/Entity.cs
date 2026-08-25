@@ -53,16 +53,7 @@ namespace ClassicUO.Game.GameObjects
         public byte HitsPercentage;
         public bool IsClicked;
         public uint LastStepTime;
-        public string Name { get
-            {
-                return field;
-            }
-            set
-            {
-                field = value;
-                NameUpdated();
-            } 
-        }
+        public string Name;
         public uint Serial;
         public HitsRequestStatus HitsRequest;
         public uint NextHitsUpdate;
@@ -87,8 +78,6 @@ namespace ClassicUO.Game.GameObjects
 
         public RenderedText HitsTexture => _hitsPercText[HitsPercentage % _hitsPercText.Length];
 
-        public virtual void NameUpdated() {}
-        public virtual void OPLUpdated(ItemProperty newProps) {}
 
         public bool Equals(Entity e) => e != null && Serial == e.Serial;
 

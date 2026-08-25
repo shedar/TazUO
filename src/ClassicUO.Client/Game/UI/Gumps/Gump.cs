@@ -7,7 +7,6 @@ using System.Xml;
 using ClassicUO.Configuration;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
-using ClassicUO.Game.Managers.Hotkeys;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Renderer;
@@ -48,7 +47,7 @@ namespace ClassicUO.Game.UI.Gumps
         {
             base.OnMouseWheel(delta);
 
-            if (HotKeys.IsPressed(HotKeyRegistrar.GumpOpacityId) && ProfileManager.CurrentProfile.EnableAlphaScrollingOnGumps)
+            if (Keyboard.Alt && ProfileManager.CurrentProfile.EnableAlphaScrollingOnGumps)
             {
                 if (delta == MouseEventType.WheelScrollUp && Alpha < 0.99)
                 {
@@ -124,7 +123,7 @@ namespace ClassicUO.Game.UI.Gumps
         public override void OnMouseUp(int x, int y, MouseButtonType button)
         {
             base.OnMouseUp(x, y, button);
-            if (CanBeLocked && (HotKeys.IsPressed(HotKeyRegistrar.GumpLockId) || Controller.Button_LeftTrigger) && UIManager.MouseOverControl != null && (UIManager.MouseOverControl == this || UIManager.MouseOverControl.RootParent == this))
+            if (CanBeLocked && ((Keyboard.Ctrl && Keyboard.Alt) || Controller.Button_LeftTrigger) && UIManager.MouseOverControl != null && (UIManager.MouseOverControl == this || UIManager.MouseOverControl.RootParent == this))
             {
                 IsLocked ^= true;
             }
@@ -143,16 +142,14 @@ namespace ClassicUO.Game.UI.Gumps
 
         public void CenterXInScreen()
         {
-            // Width is already in logical UI space, so only the window bounds need converting.
-            // (The previous form multiplied Width by RenderScale, double-counting it and
-            // mis-centering whenever the game scale was not 1.0.)
-            X = (ScaleHelper.LogicalWindowWidth - Width) / 2;
+            Rectangle windowBounds = Client.Game.Window.ClientBounds;
+            X = (windowBounds.Width - Width) / 2;
         }
 
         public void CenterYInScreen()
         {
-            // Height is already in logical UI space; see CenterXInScreen for the double-count fix.
-            Y = (ScaleHelper.LogicalWindowHeight - Height) / 2;
+            Rectangle windowBounds = Client.Game.Window.ClientBounds;
+            Y = (windowBounds.Height - Height) / 2;
         }
 
         public void CenterXInViewPort()

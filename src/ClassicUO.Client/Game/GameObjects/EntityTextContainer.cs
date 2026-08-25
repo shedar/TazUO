@@ -173,7 +173,7 @@ namespace ClassicUO.Game.GameObjects
 
                 if (Parent is Mobile m)
                 {
-                    if (m.IsGargoyle && m.IsFlyingAnimationEnabled)
+                    if (m.IsGargoyle && m.IsFlying)
                     {
                         offY += 22;
                     }
@@ -181,8 +181,6 @@ namespace ClassicUO.Game.GameObjects
                     {
                         offY = -22;
                     }
-
-                    offY -= m.NameOverheadTextExtraHeight;
 
                     Client.Game.UO.Animations.GetAnimationDimensions(
                         m.AnimIndex,

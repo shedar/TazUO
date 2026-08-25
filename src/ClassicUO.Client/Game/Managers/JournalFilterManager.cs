@@ -35,11 +35,8 @@ public class JournalFilterManager
 
     public bool IgnoreMessage(string message)
     {
-        foreach (string filter in _filters)
-        {
-            if (message.Contains(filter, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
+        if(_filters.Contains(message))
+            return true;
         return false;
     }
 

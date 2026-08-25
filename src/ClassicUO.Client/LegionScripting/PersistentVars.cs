@@ -20,8 +20,8 @@ namespace ClassicUO.LegionScripting
         private static string _serverScopeKey = "";
 
         private static readonly SemaphoreSlim _dbLock = new SemaphoreSlim(1, 1);
-        private static string DataPath => Path.Combine(LegionWorkspacePaths.Current.StateDirectory, DB_FILE);
-        private static string OldDataPath => Path.Combine(LegionWorkspacePaths.Current.StateDirectory, OLD_DATA_FILE);
+        private static string DataPath => Path.Combine(CUOEnviroment.ExecutablePath, "Data", DB_FILE);
+        private static string OldDataPath => Path.Combine(CUOEnviroment.ExecutablePath, "Data", OLD_DATA_FILE);
 
         private static string ConnectionString => new SqliteConnectionStringBuilder
         {
@@ -179,12 +179,13 @@ namespace ClassicUO.LegionScripting
             }
         }
 
-        /// <summary>
-        /// Runs a database operation behind the shared lock on an open connection, returning
-        /// <paramref name="fallback"/> (and logging with <paramref name="errorLabel"/>) if it throws.
-        /// </summary>
-        private static async Task<T> ExecuteAsync<T>(Func<SqliteConnection, Task<T>> body, T fallback, string errorLabel)
+        public static string GetVar(LegionAPI.PersistentVar scope, string key, string defaultValue = "") => GetVarAsync(scope, key, defaultValue).Result;
+
+        public static async Task<string> GetVarAsync(LegionAPI.PersistentVar scope, string key, string defaultValue = "")
         {
+            (LegionAPI.PersistentVar s, string scopeKey) = GetScopeKeyPair(scope);
+            string scopeStr = s.ToString();
+
             await _dbLock.WaitAsync();
             try
             {
@@ -192,40 +193,27 @@ namespace ClassicUO.LegionScripting
                 {
                     await connection.OpenAsync();
 
-                    return await body(connection);
+                    SqliteCommand cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        SELECT value FROM persistent_vars
+                        WHERE scope = $scope AND scope_key = $scope_key AND key = $key";
+                    cmd.Parameters.AddWithValue("$scope", scopeStr);
+                    cmd.Parameters.AddWithValue("$scope_key", scopeKey);
+                    cmd.Parameters.AddWithValue("$key", key);
+
+                    object result = await cmd.ExecuteScalarAsync();
+                    return result?.ToString() ?? defaultValue;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"{errorLabel}: {ex.Message}");
-                return fallback;
+                Console.WriteLine($"Error getting var '{key}': {ex.Message}");
+                return defaultValue;
             }
             finally
             {
                 _dbLock.Release();
             }
-        }
-
-        public static string GetVar(LegionAPI.PersistentVar scope, string key, string defaultValue = "") => GetVarAsync(scope, key, defaultValue).Result;
-
-        public static Task<string> GetVarAsync(LegionAPI.PersistentVar scope, string key, string defaultValue = "")
-        {
-            (LegionAPI.PersistentVar s, string scopeKey) = GetScopeKeyPair(scope);
-            string scopeStr = s.ToString();
-
-            return ExecuteAsync(async connection =>
-            {
-                SqliteCommand cmd = connection.CreateCommand();
-                cmd.CommandText = @"
-                    SELECT value FROM persistent_vars
-                    WHERE scope = $scope AND scope_key = $scope_key AND key = $key";
-                cmd.Parameters.AddWithValue("$scope", scopeStr);
-                cmd.Parameters.AddWithValue("$scope_key", scopeKey);
-                cmd.Parameters.AddWithValue("$key", key);
-
-                object result = await cmd.ExecuteScalarAsync();
-                return result?.ToString() ?? defaultValue;
-            }, defaultValue, $"Error getting var '{key}'");
         }
 
         public static void SaveVar(LegionAPI.PersistentVar scope, string key, string value) => SaveVarAsync(scope, key, value, null).ConfigureAwait(false);
@@ -237,22 +225,34 @@ namespace ClassicUO.LegionScripting
             (LegionAPI.PersistentVar s, string scopeKey) = GetScopeKeyPair(scope);
             string scopeStr = s.ToString();
 
-            await ExecuteAsync<bool>(async connection =>
+            await _dbLock.WaitAsync();
+            try
             {
-                SqliteCommand cmd = connection.CreateCommand();
-                cmd.CommandText = @"
-                    INSERT OR REPLACE INTO persistent_vars (scope, scope_key, key, value)
-                    VALUES ($scope, $scope_key, $key, $value)";
-                cmd.Parameters.AddWithValue("$scope", scopeStr);
-                cmd.Parameters.AddWithValue("$scope_key", scopeKey);
-                cmd.Parameters.AddWithValue("$key", key);
-                cmd.Parameters.AddWithValue("$value", value);
+                using (var connection = new SqliteConnection(ConnectionString))
+                {
+                    await connection.OpenAsync();
 
-                await cmd.ExecuteNonQueryAsync();
-                return true;
-            }, false, $"Error saving var '{key}'");
+                    SqliteCommand cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        INSERT OR REPLACE INTO persistent_vars (scope, scope_key, key, value)
+                        VALUES ($scope, $scope_key, $key, $value)";
+                    cmd.Parameters.AddWithValue("$scope", scopeStr);
+                    cmd.Parameters.AddWithValue("$scope_key", scopeKey);
+                    cmd.Parameters.AddWithValue("$key", key);
+                    cmd.Parameters.AddWithValue("$value", value);
 
-            onComplete?.Invoke();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving var '{key}': {ex.Message}");
+            }
+            finally
+            {
+                _dbLock.Release();
+                onComplete?.Invoke();
+            }
         }
 
         public static void DeleteVar(LegionAPI.PersistentVar scope, string key) => DeleteVarAsync(scope, key, null).ConfigureAwait(false);
@@ -264,21 +264,34 @@ namespace ClassicUO.LegionScripting
             (LegionAPI.PersistentVar s, string scopeKey) = GetScopeKeyPair(scope);
             string scopeStr = s.ToString();
 
-            await ExecuteAsync<bool>(async connection =>
+            await _dbLock.WaitAsync();
+            try
             {
-                SqliteCommand cmd = connection.CreateCommand();
-                cmd.CommandText = @"
-                    DELETE FROM persistent_vars
-                    WHERE scope = $scope AND scope_key = $scope_key AND key = $key";
-                cmd.Parameters.AddWithValue("$scope", scopeStr);
-                cmd.Parameters.AddWithValue("$scope_key", scopeKey);
-                cmd.Parameters.AddWithValue("$key", key);
+                using (var connection = new SqliteConnection(ConnectionString))
+                {
+                    await connection.OpenAsync();
 
-                await cmd.ExecuteNonQueryAsync();
-                return true;
-            }, false, $"Error deleting var '{key}'");
+                    SqliteCommand cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        DELETE FROM persistent_vars
+                        WHERE scope = $scope AND scope_key = $scope_key AND key = $key";
+                    cmd.Parameters.AddWithValue("$scope", scopeStr);
+                    cmd.Parameters.AddWithValue("$scope_key", scopeKey);
+                    cmd.Parameters.AddWithValue("$key", key);
 
-            onComplete?.Invoke();
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting var '{key}': {ex.Message}");
+            }
+            finally
+            {
+                _dbLock.Release();
+                onComplete?.Invoke();
+            }
         }
 
         public static Dictionary<string, string> GetAllVars(LegionAPI.PersistentVar scope) => GetAllVarsAsync(scope).Result;
@@ -291,31 +304,46 @@ namespace ClassicUO.LegionScripting
             _dbLock.Release();
         }
 
-        public static Task<Dictionary<string, string>> GetAllVarsAsync(LegionAPI.PersistentVar scope)
+        public static async Task<Dictionary<string, string>> GetAllVarsAsync(LegionAPI.PersistentVar scope)
         {
             (LegionAPI.PersistentVar s, string scopeKey) = GetScopeKeyPair(scope);
             string scopeStr = s.ToString();
             var result = new Dictionary<string, string>();
 
-            return ExecuteAsync(async connection =>
+            await _dbLock.WaitAsync();
+            try
             {
-                SqliteCommand cmd = connection.CreateCommand();
-                cmd.CommandText = @"
-                    SELECT key, value FROM persistent_vars
-                    WHERE scope = $scope AND scope_key = $scope_key";
-                cmd.Parameters.AddWithValue("$scope", scopeStr);
-                cmd.Parameters.AddWithValue("$scope_key", scopeKey);
-
-                using (SqliteDataReader reader = await cmd.ExecuteReaderAsync())
+                using (var connection = new SqliteConnection(ConnectionString))
                 {
-                    while (await reader.ReadAsync())
+                    await connection.OpenAsync();
+
+                    SqliteCommand cmd = connection.CreateCommand();
+                    cmd.CommandText = @"
+                        SELECT key, value FROM persistent_vars
+                        WHERE scope = $scope AND scope_key = $scope_key";
+                    cmd.Parameters.AddWithValue("$scope", scopeStr);
+                    cmd.Parameters.AddWithValue("$scope_key", scopeKey);
+
+                    using (SqliteDataReader reader = await cmd.ExecuteReaderAsync())
                     {
-                        result[reader.GetString(0)] = reader.GetString(1);
+                        while (await reader.ReadAsync())
+                        {
+                            result[reader.GetString(0)] = reader.GetString(1);
+                        }
                     }
                 }
 
                 return result;
-            }, result, "Error getting all vars");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all vars: {ex.Message}");
+                return result;
+            }
+            finally
+            {
+                _dbLock.Release();
+            }
         }
     }
 }

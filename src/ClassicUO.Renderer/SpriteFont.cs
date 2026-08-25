@@ -53,6 +53,11 @@ namespace ClassicUO.Renderer
         {
             if (text.IsEmpty)
             {
+                throw new ArgumentNullException(nameof(text));
+            }
+
+            if (text.Length == 0)
+            {
                 return Vector2.Zero;
             }
 

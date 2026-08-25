@@ -10,7 +10,6 @@ namespace ClassicUO.Game.UI.Gumps.GridHighLight
 {
     public class GridHighLightProfile
     {
-#pragma warning disable CS0618 // Populating the obsolete GridHighlightSetup is a one-time migration step toward grid_highlights.json.
         public static void MigrateGridHighlightToSetup(Profile profile)
         {
             profile.GridHighlightSetup.Clear();
@@ -57,6 +56,5 @@ namespace ClassicUO.Game.UI.Gumps.GridHighLight
             profile.GridHighlight_ExcludeNegatives.Clear();
             profile.GridHighlight_RequiredRarities.Clear();
         }
-#pragma warning restore CS0618
     }
 }

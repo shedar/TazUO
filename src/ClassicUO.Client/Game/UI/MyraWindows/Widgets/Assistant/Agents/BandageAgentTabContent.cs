@@ -11,59 +11,43 @@ public static class BandageAgentTabContent
     public static Widget Build()
     {
         Profile? profile = ProfileManager.CurrentProfile;
-
         if (profile == null)
-            return new MyraLabel(TazLang.Get("bandageagent_profilenotloaded"), MyraLabel.TextStyle.P);
+            return new MyraLabel("Profile not loaded", MyraLabel.TextStyle.P);
 
         var root = new VerticalStackPanel { Spacing = MyraStyle.STANDARD_SPACING };
 
         root.Widgets.Add(new MyraLabel(
-            TazLang.Get("bandageagent_autohealwhenhpbelowthreshold"),
-            MyraLabel.TextStyle.H3
-        ));
+            "Automatically use bandages to heal when HP drops below threshold.",
+            MyraLabel.TextStyle.H3));
 
         var enableRow = new HorizontalStackPanel { Spacing = MyraStyle.STANDARD_SPACING };
         enableRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.EnableBandageAgent,
             b => profile.EnableBandageAgent = b,
-            TazLang.Get("bandageagent_enable")
-        ));
-
+            "Enable bandage agent"));
         enableRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentBandageFriends,
             b => profile.BandageAgentBandageFriends = b,
-            TazLang.Get("bandageagent_bandagefriends"),
-            TazLang.Get("bandageagent_bandagefriends_tooltip")
-        ));
-
+            "Bandage friends",
+            "Bandage mobiles in Friends list"));
         enableRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentBandageAllies,
             b => profile.BandageAgentBandageAllies = b,
-            TazLang.Get("bandageagent_bandageallies"),
-            TazLang.Get("bandageagent_bandageallies_tooltip")
-        ));
-
-        enableRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
-            profile.BandageAgentBandagePets,
-            b => profile.BandageAgentBandagePets = b,
-            TazLang.Get("bandageagent_bandagepets"),
-            TazLang.Get("bandageagent_bandagepets_tooltip")
-        ));
+            "Bandage allies",
+            "Bandage nearby guild/alliance members (notoriety: ally)"));
+        root.Widgets.Add(enableRow);
 
         enableRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentDisableSelfHeal,
             b => profile.BandageAgentDisableSelfHeal = b,
-            TazLang.Get("bandageagent_disableselfheal"),
-            TazLang.Get("bandageagent_disableselfheal_tooltip")
-        ));
+            "Disable self heal",
+            "When enabled, bandage agent will only heal friends and not yourself"));
 
-        root.Widgets.Add(enableRow);
-
-        // Delay + HP threshold on the same row
+        // Delay
         var delayBox = new MyraInputBox
         {
             Text = profile.BandageAgentDelay.ToString(),
-            Tooltip = TazLang.Get("bandageagent_delay_tooltip"),
+            Tooltip = "Delay between bandage attempts in milliseconds (50-30000)",
             Width = 80,
         };
         delayBox.TextChangedByUser += (_, _) =>
@@ -76,84 +60,54 @@ public static class BandageAgentTabContent
         };
         var delayRow = new HorizontalStackPanel { Spacing = MyraStyle.STANDARD_SPACING };
         delayRow.Widgets.Add(delayBox);
-        delayRow.Widgets.Add(new MyraLabel(TazLang.Get("bandageagent_delay_label"), MyraLabel.TextStyle.P));
-        delayRow.Widgets.Add(new MyraSpacer(15, 1));
-        delayRow.Widgets.Add(LabeledHorizontalSlider.SliderWithLabel(
-            TazLang.Get("bandageagent_hpthreshold"),
-            out _,
-            v => profile.BandageAgentHPPercentage = (int)v,
-            1, 99,
-            profile.BandageAgentHPPercentage
-        ));
+        delayRow.Widgets.Add(new MyraLabel("Delay (ms)", MyraLabel.TextStyle.P));
         root.Widgets.Add(new MyraSpacer(15, 1));
         root.Widgets.Add(delayRow);
 
-        // Journal messages below delay/HP
-        root.Widgets.Add(new MyraLabel(TazLang.Get("bandageagent_journalmessages_label"), MyraLabel.TextStyle.P));
-        var journalMessageBox = new MyraInputBox
-        {
-            Text = profile.BandageAgentJournalMessages,
-            Tooltip = TazLang.Get("bandageagent_journalmessages_tooltip"),
-            Width = 300,
-        };
-        journalMessageBox.TextChangedByUser += (_, _) =>
-        {
-            profile.BandageAgentJournalMessages = journalMessageBox.Text ?? "";
-        };
-        root.Widgets.Add(journalMessageBox);
-
-        // Timing mode checkboxes in one row
-        var timingRow = new HorizontalStackPanel { Spacing = MyraStyle.STANDARD_SPACING };
-        timingRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
+        root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentUseDexFormula,
             b => profile.BandageAgentUseDexFormula = b,
-            TazLang.Get("bandageagent_usedexformula"),
-            TazLang.Get("bandageagent_usedexformula_tooltip")
-        ));
-        timingRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
+            "Use dex formula",
+            "Use the dex formula instead of a set delay"));
+
+        root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentCheckForBuff,
             b => profile.BandageAgentCheckForBuff = b,
-            TazLang.Get("bandageagent_usebandagebuff"),
-            TazLang.Get("bandageagent_usebandagebuff_tooltip")
-        ));
-        timingRow.Widgets.Add(MyraCheckButton.CreateWithCallback(
-            profile.BandageAgentUseJournalTrigger,
-            b => profile.BandageAgentUseJournalTrigger = b,
-            TazLang.Get("bandageagent_journaltrigger"),
-            TazLang.Get("bandageagent_journaltrigger_tooltip")
-        ));
-        root.Widgets.Add(timingRow);
+            "Use bandaging buff", "Use bandaging buff instead of delay"));
+
+        root.Widgets.Add(MyraHSlider.SliderWithLabel(
+            "HP percentage threshold",
+            out _,
+            v => profile.BandageAgentHPPercentage = (int)v,
+            1, 99,
+            profile.BandageAgentHPPercentage));
 
         root.Widgets.Add(new MyraSpacer(15, 1));
         root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentUseNewPacket,
             b => profile.BandageAgentUseNewPacket = b,
-            TazLang.Get("bandageagent_usenewpacket")
-        ));
+            "Use new bandage packet"));
 
         root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentCheckPoisoned,
             b => profile.BandageAgentCheckPoisoned = b,
-            TazLang.Get("bandageagent_bandageifpoisoned")
-        ));
+            "Bandage if poisoned"));
 
         root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentCheckHidden,
             b => profile.BandageAgentCheckHidden = b,
-            TazLang.Get("bandageagent_skipifhidden")
-        ));
+            "Skip bandage if hidden"));
 
         root.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.BandageAgentCheckInvul,
             b => profile.BandageAgentCheckInvul = b,
-            TazLang.Get("bandageagent_skipifyellowhits")
-        ));
+            "Skip bandage if yellow hits"));
 
         // Bandage graphic
         var graphicBox = new MyraInputBox
         {
             Text = $"0x{profile.BandageAgentGraphic:X4}",
-            Tooltip = TazLang.Get("bandageagent_graphicid_tooltip"),
+            Tooltip = "Graphic ID of bandages to use (default: 0x0E21). Accepts hex (0x0E21) or decimal (3617)",
             Width = 80,
         };
         graphicBox.TextChangedByUser += (_, _) =>
@@ -162,7 +116,7 @@ public static class BandageAgentTabContent
                 profile.BandageAgentGraphic = (ushort)graphic;
         };
         var graphicRow = new HorizontalStackPanel { Spacing = MyraStyle.STANDARD_SPACING };
-        graphicRow.Widgets.Add(new MyraLabel(TazLang.Get("bandageagent_graphicid_label"), MyraLabel.TextStyle.P));
+        graphicRow.Widgets.Add(new MyraLabel("Bandage graphic ID:", MyraLabel.TextStyle.P));
         graphicRow.Widgets.Add(graphicBox);
         root.Widgets.Add(graphicRow);
 

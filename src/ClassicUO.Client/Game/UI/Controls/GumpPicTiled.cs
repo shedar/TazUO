@@ -13,13 +13,6 @@ namespace ClassicUO.Game.UI.Controls
         private ushort hue;
         Vector3 hueVector;
 
-        /// <summary>
-        /// When true and <see cref="Control.InternalScale"/> is not 1.0, the tiled texture is drawn at
-        /// the scaled tile size (so any edge baked into the texture lands on the scaled bounds). Opt-in
-        /// so ordinary/server tiled graphics keep tiling at their native size.
-        /// </summary>
-        public bool ScaleTiledTexture { get; set; }
-
         public GumpPicTiled(ushort graphic)
         {
             CanMove = true;
@@ -102,25 +95,12 @@ namespace ClassicUO.Game.UI.Controls
 
             if (gumpInfo.Texture != null)
             {
-                if (ScaleTiledTexture && InternalScale != 1.0)
-                {
-                    batcher.DrawTiled(
-                        gumpInfo.Texture,
-                        new Rectangle(x, y, Width, Height),
-                        gumpInfo.UV,
-                        hueVector,
-                        (float)InternalScale
-                    );
-                }
-                else
-                {
-                    batcher.DrawTiled(
-                        gumpInfo.Texture,
-                        new Rectangle(x, y, Width, Height),
-                        gumpInfo.UV,
-                        hueVector
-                    );
-                }
+                batcher.DrawTiled(
+                    gumpInfo.Texture,
+                    new Rectangle(x, y, Width, Height),
+                    gumpInfo.UV,
+                    hueVector
+                );
             }
 
             return base.Draw(batcher, x, y);

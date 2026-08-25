@@ -15,13 +15,6 @@ namespace ClassicUO.Game.UI.Controls
 
     public class ScrollArea : Control
     {
-        /// <summary>
-        /// Width reserved on the right edge for the normal scrollbar. Content is
-        /// always clipped to this gutter, so callers drawing at the right edge must
-        /// account for it or their content will be hidden.
-        /// </summary>
-        public const int SCROLLBAR_WIDTH = 14;
-
         private bool _isNormalScroll;
         private readonly ScrollBarBase _scrollBar;
 
@@ -43,7 +36,7 @@ namespace ClassicUO.Game.UI.Controls
 
             if (normalScrollbar)
             {
-                _scrollBar = new ScrollBar(Width - SCROLLBAR_WIDTH, 0, Height);
+                _scrollBar = new ScrollBar(Width - 14, 0, Height);
             }
             else
             {
@@ -95,7 +88,7 @@ namespace ClassicUO.Game.UI.Controls
         public void UpdateScrollbarPosition()
         {
             if (_isNormalScroll)
-                _scrollBar.X = Width - SCROLLBAR_WIDTH;
+                _scrollBar.X = Width - 14;
             else
                 _scrollBar.X = Width - 19;
         }
@@ -131,7 +124,7 @@ namespace ClassicUO.Game.UI.Controls
             var scrollbar = (ScrollBarBase)Children[0];
             scrollbar.Draw(batcher, x + scrollbar.X, y + scrollbar.Y);
 
-            if (batcher.ClipBegin(x + ScissorRectangle.X, y + ScissorRectangle.Y, Width - SCROLLBAR_WIDTH + ScissorRectangle.Width, Height + ScissorRectangle.Height))
+            if (batcher.ClipBegin(x + ScissorRectangle.X, y + ScissorRectangle.Y, Width - 14 + ScissorRectangle.Width, Height + ScissorRectangle.Height))
             {
                 for (int i = 1; i < Children.Count; i++)
                 {

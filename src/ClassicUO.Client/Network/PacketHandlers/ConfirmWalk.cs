@@ -20,9 +20,6 @@ internal static class ConfirmWalk
         world.Player.NotorietyFlag = (NotorietyFlag)noto;
         world.Player.Walker.ConfirmWalk(seq);
 
-        if (BeyondRecallQA.BrQaSession.IsActive)
-            BeyondRecallQA.BrQaSession.Instance.EmitMovementAcknowledged(seq);
-
         // AddToTile is already handled in Mobile.ProcessSteps when the step visually completes
         // Calling it again here was redundant and caused performance issues
     }

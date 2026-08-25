@@ -23,9 +23,6 @@ bld/
 # Visual Studio Code
 .vscode/
 
-# JetBrains Junie Memory/Configs
-.junie
-
 # Visual Studio 2015 cache/options directory
 .vs/
 # Uncomment if you have tasks that create the project's static files in wwwroot
@@ -270,10 +267,3 @@ __pycache__/
 external/FNA
 external/MP3Sharp
 .claude/settings.local.json
-.DS_Store
-
-
-# Client-generated folders
-
-Data
-LegionScripts

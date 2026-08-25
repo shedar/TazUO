@@ -130,8 +130,6 @@ internal static class CharacterStatus
                     world.Player.Dexterity = dex;
                     world.Player.Intelligence = intell;
 
-                    AutoStatLockManager.Instance.OnStatsUpdated(world);
-
                     if (type >= 5) //ML
                     {
                         world.Player.WeightMax = p.ReadUInt16BE();

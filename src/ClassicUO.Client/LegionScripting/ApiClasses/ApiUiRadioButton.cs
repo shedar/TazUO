@@ -17,8 +17,17 @@ public class ApiUiRadioButton(RadioButton radioButton) : ApiUiCheckbox(radioButt
     /// </summary>
     public int GroupIndex
     {
-        get => GetProp(() => radioButton.GroupIndex);
-        set => SetProp(() => radioButton.GroupIndex = value);
+        get
+        {
+            if (!VerifyIntegrity()) return 0;
+
+            return MainThreadQueue.InvokeOnMainThread(() => radioButton.GroupIndex);
+        }
+        set
+        {
+            if (VerifyIntegrity())
+                MainThreadQueue.EnqueueAction(() => radioButton.GroupIndex = value);
+        }
     }
 
     /// <summary>
@@ -27,7 +36,12 @@ public class ApiUiRadioButton(RadioButton radioButton) : ApiUiCheckbox(radioButt
     /// Used in python API
     /// </summary>
     /// <returns>The group index</returns>
-    public int GetGroupIndex() => GetProp(() => radioButton.GroupIndex);
+    public int GetGroupIndex()
+    {
+        if (!VerifyIntegrity()) return 0;
+
+        return MainThreadQueue.InvokeOnMainThread(() => radioButton.GroupIndex);
+    }
 
     /// <summary>
     /// Sets the group index of the radio button.
@@ -35,5 +49,9 @@ public class ApiUiRadioButton(RadioButton radioButton) : ApiUiCheckbox(radioButt
     /// Used in python API
     /// </summary>
     /// <param name="groupIndex">The group index to set</param>
-    public void SetGroupIndex(int groupIndex) => SetProp(() => radioButton.GroupIndex = groupIndex);
+    public void SetGroupIndex(int groupIndex)
+    {
+        if (VerifyIntegrity())
+            MainThreadQueue.EnqueueAction(() => radioButton.GroupIndex = groupIndex);
+    }
 }

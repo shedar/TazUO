@@ -7,25 +7,65 @@ public class ApiUiGumpPic(GumpPic gumpPic) : ApiUiBaseControl(gumpPic)
 {
     public ushort Graphic
     {
-        get => GetProp(() => gumpPic.Graphic);
-        set => SetProp(() => gumpPic.Graphic = value);
+        get
+        {
+            if (!VerifyIntegrity()) return 0;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPic.Graphic);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPic.Graphic = value);
+        }
     }
 
     public ushort Hue
     {
-        get => GetProp(() => gumpPic.Hue);
-        set => SetProp(() => gumpPic.Hue = value);
+        get
+        {
+            if (!VerifyIntegrity()) return 0;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPic.Hue);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPic.Hue = value);
+        }
     }
 
     public bool IsPartialHue
     {
-        get => GetProp(() => gumpPic.IsPartialHue);
-        set => SetProp(() => gumpPic.IsPartialHue = value);
+        get
+        {
+            if (!VerifyIntegrity()) return false;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPic.IsPartialHue);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPic.IsPartialHue = value);
+        }
     }
 
     public bool ContainsByBounds
     {
-        get => GetProp(() => gumpPic.ContainsByBounds);
-        set => SetProp(() => gumpPic.ContainsByBounds = value);
+        get
+        {
+            if (!VerifyIntegrity()) return false;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPic.ContainsByBounds);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPic.ContainsByBounds = value);
+        }
     }
 }

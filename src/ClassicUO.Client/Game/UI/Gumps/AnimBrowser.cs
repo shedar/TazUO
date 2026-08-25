@@ -1,5 +1,4 @@
 using System;
-using ClassicUO.Configuration;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Utility.Logging;
@@ -22,11 +21,11 @@ public class AnimBrowser : Gump
         Add(new AlphaBlendControl() { Width = Width, Height = Height });
         Add(dataBox);
 
-        var next = new NiceButton(Width - 100, Height - 20, 100, 20, ButtonAction.Default, TazLang.Get("animbrowser_next", ">>"));
+        var next = new NiceButton(Width - 100, Height - 20, 100, 20, ButtonAction.Default, ">>");
         next.MouseDown += (s, e) => { Page++; BuildPage(); };
         Add(next);
 
-        var prev = new NiceButton(0, Height - 20, 100, 20, ButtonAction.Default, TazLang.Get("animbrowser_prev", "<<"));
+        var prev = new NiceButton(0, Height - 20, 100, 20, ButtonAction.Default, "<<");
         prev.MouseDown += (s, e) => { Page--; BuildPage(); };
         Add(prev);
 
@@ -48,7 +47,7 @@ public class AnimBrowser : Gump
         };
         Add(pageInput);
 
-        StbTextBox graphicInput = new(0xFF, maxWidth: 100, hue: 52, align: Assets.TEXT_ALIGN_TYPE.TS_CENTER) { Width = 100, Height = 20, PlaceHolderText = TazLang.Get("animbrowser_entergraphic", "Enter Graphic") };
+        StbTextBox graphicInput = new(0xFF, maxWidth: 100, hue: 52, align: Assets.TEXT_ALIGN_TYPE.TS_CENTER) { Width = 100, Height = 20, PlaceHolderText = "Enter Graphic" };
         graphicInput.X = (Width - 100) >> 1;
         graphicInput.TextChanged += (s, e) =>
         {
@@ -117,7 +116,7 @@ public class AnimBrowser : Gump
             {
                 AnimationDisplay c = animationDisplays[count];
                 c.UpdateGraphic((ushort)index);
-                c.SetTooltip(TazLang.Get("animbrowser_tooltip", new string[] { index.ToString() }));
+                c.SetTooltip($"Animation: {index}\nDouble click to copy.");
                 count++;
             }
             index++;

@@ -15,15 +15,12 @@ namespace ClassicUO.Game.UI.Gumps
             Height = 40;
             Width = 300;
 
-            WorldViewportGump vp = UIManager.GetGump<WorldViewportGump>();
-
-            if (ProfileManager.CurrentProfile == null || ProfileManager.CurrentProfile.SkillProgressBarPosition == Point.Zero)
+            if (ProfileManager.CurrentProfile.SkillProgressBarPosition == Point.Zero)
             {
-                if (vp != null)
-                {
-                    Y = vp.Location.Y + 80;
-                    X = (vp.Location.X + (vp.Width / 2)) - (Width / 2);
-                }
+                WorldViewportGump vp = UIManager.GetGump<WorldViewportGump>();
+
+                Y = vp.Location.Y + 80;
+                X = (vp.Location.X + (vp.Width / 2)) - (Width / 2);
             }
             else
             {
@@ -161,7 +158,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 CurrentProgressBar = skillProgressBar;
                 skillProgressBar.SetDuration(4000); //Expire in 4 seconds
-                UIManager.Add(skillProgressBar, false);
+                UIManager.Add(skillProgressBar);
             }
 
             public static void Reset()

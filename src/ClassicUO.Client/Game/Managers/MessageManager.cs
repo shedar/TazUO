@@ -271,9 +271,6 @@ namespace ClassicUO.Game.Managers
                             }
                         }
 
-                        if (parent is Mobile && MessageTypeFilter.IsEnabled(currentProfile.DisabledOverheadMessageTypes, type))                        
-                            break;                        
-
                         parent.AddMessage(msg);
 
                         break;

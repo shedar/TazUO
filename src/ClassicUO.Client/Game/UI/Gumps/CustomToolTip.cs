@@ -3,7 +3,6 @@ using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Renderer;
-using ClassicUO.Utility;
 using Microsoft.Xna.Framework;
 using System.Threading.Tasks;
 
@@ -62,44 +61,43 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            string name = item.OPLName;
-            string data = item.OPLData ?? string.Empty;
-
-            if (name.NotNullNotEmpty())
+            if (World.OPL.Contains(item.Serial))
             {
-                string finalString = FormatTooltip(name, data);
-                if (SerialHelper.IsItem(item.Serial))
+                if (World.OPL.TryGetNameAndData(item.Serial, out string name, out string data))
                 {
-                    finalString = Managers.ToolTipOverrideData.ProcessTooltipText(World, item.Serial, compareTo == null ? uint.MinValue : compareTo.Serial);
-                    if (finalString == null)
-                        finalString = FormatTooltip(name, data);
-                    finalString = prepend + finalString + append;
+                    string finalString = FormatTooltip(name, data);
+                    if (SerialHelper.IsItem(item.Serial))
+                    {
+                        finalString = Managers.ToolTipOverrideData.ProcessTooltipText(World, item.Serial, compareTo == null ? uint.MinValue : compareTo.Serial);
+                        if (finalString == null)
+                            finalString = FormatTooltip(name, data);
+                        finalString = prepend + finalString + append;
+                    }
+
+                    text?.Dispose();
+                    text = TextBox.GetOne(
+                        TextBox.ConvertHtmlToFontStashSharpCommand(finalString).Trim(),
+                        ProfileManager.CurrentProfile.SelectedToolTipFont,
+                        ProfileManager.CurrentProfile.SelectedToolTipFontSize,
+                        (int)hue,
+                        ToolTipOptions
+                        );
+                    text.Width = 600;
+
+                    if (text.MeasuredSize.X + 10 < 600)
+                        text.Width = text.MeasuredSize.X + 10;
+
+                    Height = text.Height;
+                    Width = text.Width;
+                    OnOPLLoaded?.Invoke();
                 }
-
-                text?.Dispose();
-                text = TextBox.GetOne(
-                    TextBox.ConvertHtmlToFontStashSharpCommand(finalString).Trim(),
-                    ProfileManager.CurrentProfile.SelectedToolTipFont,
-                    ProfileManager.CurrentProfile.SelectedToolTipFontSize,
-                    (int)hue,
-                    ToolTipOptions
-                    );
-                text.Width = 600;
-
-                if (text.MeasuredSize.X + 10 < 600)
-                    text.Width = text.MeasuredSize.X + 10;
-
-                Height = text.Height;
-                Width = text.Width;
-                OnOPLLoaded?.Invoke();
             }
             else
             {
                 Task.Factory.StartNew(() =>
                 {
                     Task.Delay(1500).Wait();
-                    attempt++;
-                    LoadOPLData(attempt);
+                    LoadOPLData(attempt++);
                 });
             }
 

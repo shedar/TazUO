@@ -5,14 +5,12 @@
     <ApplicationIcon>cuoicon.ico</ApplicationIcon>
     <AssemblyName>TazUO</AssemblyName>
     <RootNamespace>ClassicUO</RootNamespace>
-    <AssemblyVersion>5.3.62</AssemblyVersion>
-    <FileVersion>5.3.62</FileVersion>
+    <AssemblyVersion>5.2.0</AssemblyVersion>
+    <FileVersion>5.2.0</FileVersion>
     <PackageProjectUrl>https://github.com/PlayTazUO/TazUO</PackageProjectUrl>
     <PublishAot>false</PublishAot>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Nullable>disable</Nullable>
-    <BeyondRecallSourceCommit Condition="'$(BeyondRecallSourceCommit)' == ''">not-injected</BeyondRecallSourceCommit>
-    <BeyondRecallBuildIdentity Condition="'$(BeyondRecallBuildIdentity)' == ''">not-injected</BeyondRecallBuildIdentity>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -41,14 +39,6 @@
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>ClassicUO.UnitTests</_Parameter1>
-    </AssemblyAttribute>
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-      <_Parameter1>BeyondRecallSourceCommit</_Parameter1>
-      <_Parameter2>$(BeyondRecallSourceCommit)</_Parameter2>
-    </AssemblyAttribute>
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-      <_Parameter1>BeyondRecallBuildIdentity</_Parameter1>
-      <_Parameter2>$(BeyondRecallBuildIdentity)</_Parameter2>
     </AssemblyAttribute>
   </ItemGroup>
 
@@ -109,7 +99,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Game\Managers\DefaultSpellIndicatorConfig.json" />
-    <EmbeddedResource Include="Configuration\language.ini" />
   </ItemGroup>
 
   <ItemGroup>
@@ -163,12 +152,9 @@
   <PropertyGroup>
     <!-- Create a string of quoted paths -->
     <DocFileArgs>@(DocSourceFiles->'"%(FullPath)"', ' ')</DocFileArgs>
-    <GenerateLegionDocs Condition="'$(GenerateLegionDocs)' == ''">
-      false
-    </GenerateLegionDocs>
   </PropertyGroup>
 
-  <Target Name="GenerateDocs" AfterTargets="Build" Condition="'$(GenerateLegionDocs)' == 'true'">
+  <Target Name="GenerateDocs" AfterTargets="Build">
     <Message Text="Running: dotnet run --project ../APIToMarkdown/APIToMarkdown.csproj $(DocFileArgs)" />
     <Exec Command='dotnet run --project ../APIToMarkdown/APIToMarkdown.csproj "$(ProjectDir)/LegionScripting/docs" $(DocFileArgs)' />
   </Target>

@@ -45,7 +45,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             Add(_button);
 
-            SetTooltip(Client.Game.UO.FileManager.Clilocs.GetString(1028838 + (Index - 1)));
+            SetTooltip(Client.Game.UO.FileManager.Clilocs.GetString(1028838 + (Index - 1)), 80);
 
             WantUpdateSize = true;
             AcceptMouseInput = true;

@@ -4,7 +4,6 @@ using ClassicUO.Game.Data;
 using ClassicUO.Game.Managers;
 using ClassicUO.Game.Scenes;
 using ClassicUO.Game.UI.Controls;
-using ClassicUO.Game.UI.MyraWindows;
 using ClassicUO.Input;
 using ClassicUO.Resources;
 using ClassicUO.Utility;
@@ -23,45 +22,14 @@ using static ClassicUO.Configuration.ProfileManager;
 
 namespace ClassicUO.Game.UI.Gumps
 {
-    [Obsolete("Use OptionsWindow instead. This will be removed in the future.")]
     public class ModernOptionsGump : BaseOptionsGump
     {
         private List<SettingsOption> _options = new List<SettingsOption>();
         private Profile profile;
-
-        private string[] GetNamePlatePresetOptions() => new[]
-        {
-            TazLang.Get("nameplate_preset_custom", "Custom"),
-            TazLang.Get("nameplate_preset_orion", "Orion"),
-            TazLang.Get("nameplate_preset_wow_blockybars", "WoW - Blocky Bars"),
-            TazLang.Get("nameplate_preset_wow_cleanhealth", "WoW - Clean Health"),
-            TazLang.Get("nameplate_preset_wow_blockycast", "WoW - Blocky Cast"),
-            TazLang.Get("nameplate_preset_wow_redname", "WoW - Red Name")
-        };
-
-        private string[] GetNamePlateBackgroundModeOptions() => new[]
-        {
-            TazLang.Get("nameplate_background_fixedcolor", "Fixed color"),
-            TazLang.Get("nameplate_background_notorietycolor", "Notoriety color")
-        };
-
-        private string[] GetNamePlateHealthBarModeOptions() => new[]
-        {
-            TazLang.Get("nameplate_health_statuscolor", "Status color"),
-            TazLang.Get("nameplate_health_green", "Green"),
-            TazLang.Get("nameplate_health_blue", "Blue"),
-            TazLang.Get("nameplate_health_red", "Red"),
-            TazLang.Get("nameplate_health_cyan", "Cyan"),
-            TazLang.Get("nameplate_health_yellow", "Yellow"),
-            TazLang.Get("nameplate_health_orange", "Orange"),
-            TazLang.Get("nameplate_health_purple", "Purple"),
-            TazLang.Get("nameplate_health_white", "White"),
-            TazLang.Get("nameplate_health_gray", "Gray"),
-            TazLang.Get("nameplate_health_black", "Black")
-        };
+        private ModernOptionsGumpLanguage lang = Language.Instance.GetModernOptionsGumpLanguage;
 
         public ModernOptionsGump(World world) : base(world, 900, 700,
-            TazLang.Get("mog_optionstitle"))
+            Language.Instance.GetModernOptionsGumpLanguage.OptionsTitle)
         {
             profile = CurrentProfile;
 
@@ -74,24 +42,24 @@ namespace ClassicUO.Game.UI.Gumps
         private void Build()
         {
             ModernButton b;
-            MainContent.AddToLeft(b = CategoryButton(TazLang.Get("mog_buttongeneral"), (int)PAGE.General, MainContent.LeftWidth));
+            MainContent.AddToLeft(b = CategoryButton(lang.ButtonGeneral, (int)PAGE.General, MainContent.LeftWidth));
             b.IsSelected = true;
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttonsound"), (int)PAGE.Sound, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttonvideo"), (int)PAGE.Video, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttonmacros"), (int)PAGE.Macros, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttontooltips"), (int)PAGE.Tooltip, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttonspeech"), (int)PAGE.Speech, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonSound, (int)PAGE.Sound, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonVideo, (int)PAGE.Video, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonMacros, (int)PAGE.Macros, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonTooltips, (int)PAGE.Tooltip, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonSpeech, (int)PAGE.Speech, MainContent.LeftWidth));
             MainContent.AddToLeft(
-                CategoryButton(TazLang.Get("mog_buttoncombatspells"), (int)PAGE.CombatSpells, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttoncounters"), (int)PAGE.Counters, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttoninfobar"), (int)PAGE.InfoBar, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttoncontainers"), (int)PAGE.Containers, MainContent.LeftWidth));
+                CategoryButton(lang.ButtonCombatSpells, (int)PAGE.CombatSpells, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonCounters, (int)PAGE.Counters, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonInfobar, (int)PAGE.InfoBar, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonContainers, (int)PAGE.Containers, MainContent.LeftWidth));
             MainContent.AddToLeft(
-                CategoryButton(TazLang.Get("mog_buttonexperimental"), (int)PAGE.Experimental, MainContent.LeftWidth));
+                CategoryButton(lang.ButtonExperimental, (int)PAGE.Experimental, MainContent.LeftWidth));
 
             MainContent.AddToLeft
             (
-                b = new ModernButton(0, 0, MainContent.LeftWidth, 40, ButtonAction.Activate, TazLang.Get("mog_buttonignorelist"),
+                b = new ModernButton(0, 0, MainContent.LeftWidth, 40, ButtonAction.Activate, lang.ButtonIgnoreList,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = 999 }
             );
 
@@ -101,10 +69,10 @@ namespace ClassicUO.Game.UI.Gumps
                 UIManager.Add(new IgnoreManagerGump(World));
             };
 
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttonnameplates"), (int)PAGE.NameplateOptions,
+            MainContent.AddToLeft(CategoryButton(lang.ButtonNameplates, (int)PAGE.NameplateOptions,
                 MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttoncooldowns"), (int)PAGE.TUOCooldowns, MainContent.LeftWidth));
-            MainContent.AddToLeft(CategoryButton(TazLang.Get("mog_buttontazuo"), (int)PAGE.TUOOptions, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonCooldowns, (int)PAGE.TUOCooldowns, MainContent.LeftWidth));
+            MainContent.AddToLeft(CategoryButton(lang.ButtonTazUO, (int)PAGE.TUOOptions, MainContent.LeftWidth));
 
             BuildGeneral();
             BuildSound();
@@ -139,11 +107,11 @@ namespace ClassicUO.Game.UI.Gumps
             #region General
 
             page = ((int)PAGE.General + 1000);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttongeneral"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonGeneral, page, content.LeftWidth));
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_highlightobjects"), isChecked: profile.HighlightGameObjects,
+                new CheckboxWithLabel(lang.GetGeneral.HighlightObjects, isChecked: profile.HighlightGameObjects,
                     valueChanged: (b) => { profile.HighlightGameObjects = b; }), true,
                 page
             );
@@ -151,20 +119,20 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_pathfinding"), isChecked: profile.EnablePathfind, valueChanged: (b) => { profile.EnablePathfind = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.Pathfinding, isChecked: profile.EnablePathfind, valueChanged: (b) => { profile.EnablePathfind = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_shiftpathfinding"), isChecked: profile.UseShiftToPathfind,
+                new CheckboxWithLabel(lang.GetGeneral.ShiftPathfinding, isChecked: profile.UseShiftToPathfind,
                     valueChanged: (b) => { profile.UseShiftToPathfind = b; }), true, page
             );
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_singleclickpathfind"), isChecked: profile.PathfindSingleClick,
+                new CheckboxWithLabel(lang.GetGeneral.SingleClickPathfind, isChecked: profile.PathfindSingleClick,
                     valueChanged: (b) => { profile.PathfindSingleClick = b; }), true,
                 page
             );
@@ -174,13 +142,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_alwaysrun"), isChecked: profile.AlwaysRun,
+                new CheckboxWithLabel(lang.GetGeneral.AlwaysRun, isChecked: profile.AlwaysRun,
                     valueChanged: (b) => { profile.AlwaysRun = b; }), true, page);
             content.Indent();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_rununlesshidden"), isChecked: profile.AlwaysRunUnlessHidden,
+                new CheckboxWithLabel(lang.GetGeneral.RunUnlessHidden, isChecked: profile.AlwaysRunUnlessHidden,
                     valueChanged: (b) => { profile.AlwaysRunUnlessHidden = b; }), true,
                 page
             );
@@ -190,17 +158,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_autoopendoors"), isChecked: profile.AutoOpenDoors, valueChanged: (b) => { profile.AutoOpenDoors = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.AutoOpenDoors, isChecked: profile.AutoOpenDoors, valueChanged: (b) => { profile.AutoOpenDoors = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_autoopenpathfinding"), isChecked: profile.SmoothDoors, valueChanged: (b) => { profile.SmoothDoors = b; }),
-                true, page);
-
-            content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("auto_open_doors_hidden"), isChecked: profile.AutoOpenDoorsIfHidden, valueChanged: (b) => { profile.AutoOpenDoorsIfHidden = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.AutoOpenPathfinding, isChecked: profile.SmoothDoors, valueChanged: (b) => { profile.SmoothDoors = b; }),
                 true, page);
 
             content.RemoveIndent();
@@ -208,7 +172,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_autoopencorpse"), isChecked: profile.AutoOpenCorpses, valueChanged: (b) => { profile.AutoOpenCorpses = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.AutoOpenCorpse, isChecked: profile.AutoOpenCorpses, valueChanged: (b) => { profile.AutoOpenCorpses = b; }),
                 true, page);
 
             content.Indent();
@@ -216,23 +180,23 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_general_corpseopendistance"), 0, ThemeSettings.SLIDER_WIDTH, 0, 5,
+                (lang.GetGeneral.CorpseOpenDistance, 0, ThemeSettings.SLIDER_WIDTH, 0, 5,
                     profile.AutoOpenCorpseRange, (r) => { profile.AutoOpenCorpseRange = r; }), true, page
             );
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_corpseskipempty"), isChecked: profile.SkipEmptyCorpse, valueChanged: (b) => { profile.SkipEmptyCorpse = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.CorpseSkipEmpty, isChecked: profile.SkipEmptyCorpse, valueChanged: (b) => { profile.SkipEmptyCorpse = b; }),
                 true, page);
 
             content.AddToRight
             (
                 new ComboBoxWithLabel
                 (
-                    World, TazLang.Get("mog_general_corpseopenoptions"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    World, lang.GetGeneral.CorpseOpenOptions, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_corpseoptnone"), TazLang.Get("mog_general_corpseoptnottarg"),
-                        TazLang.Get("mog_general_corpseoptnothiding"), TazLang.Get("mog_general_corpseoptboth")
+                        lang.GetGeneral.CorpseOptNone, lang.GetGeneral.CorpseOptNotTarg,
+                        lang.GetGeneral.CorpseOptNotHiding, lang.GetGeneral.CorpseOptBoth
                     },
                     profile.CorpseOpenOptions, (s, n) => { profile.CorpseOpenOptions = s; }
                 ), true, page
@@ -244,7 +208,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_outrangecolor"), isChecked: profile.NoColorObjectsOutOfRange,
+                new CheckboxWithLabel(lang.GetGeneral.OutRangeColor, isChecked: profile.NoColorObjectsOutOfRange,
                     valueChanged: (b) => { profile.NoColorObjectsOutOfRange = b; }),
                 true, page
             );
@@ -252,19 +216,10 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (
-                new CheckboxWithLabel(TazLang.Get("disable_gargoyle_flying_animation", "Disable gargoyle flying animation"), isChecked: profile.DisableGargoyleFlyingAnimation,
-                    valueChanged: (b) => { profile.DisableGargoyleFlyingAnimation = b; }),
-                true, page
-            );
-
-            content.BlankLine();
-
-            content.AddToRight
-            (c = new CheckboxWithLabel(TazLang.Get("mog_general_salloseasygrab"), isChecked: profile.SallosEasyGrab, valueChanged: (b) => { profile.SallosEasyGrab = b; }),
+            (c = new CheckboxWithLabel(lang.GetGeneral.SallosEasyGrab, isChecked: profile.SallosEasyGrab, valueChanged: (b) => { profile.SallosEasyGrab = b; }),
                 true, page);
 
-            c.SetTooltip(TazLang.Get("mog_general_sallostooltip"));
+            c.SetTooltip(lang.GetGeneral.SallosTooltip);
 
             if (Client.Game.UO.Version > ClientVersion.CV_70796)
             {
@@ -272,7 +227,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 content.AddToRight
                 (
-                    new CheckboxWithLabel(TazLang.Get("mog_general_showhousecontent"), isChecked: profile.ShowHouseContent,
+                    new CheckboxWithLabel(lang.GetGeneral.ShowHouseContent, isChecked: profile.ShowHouseContent,
                         valueChanged: (b) => { profile.ShowHouseContent = b; }), true, page
                 );
             }
@@ -283,7 +238,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 content.AddToRight
                 (
-                    new CheckboxWithLabel(TazLang.Get("mog_general_smoothboat"), isChecked: profile.UseSmoothBoatMovement,
+                    new CheckboxWithLabel(lang.GetGeneral.SmoothBoat, isChecked: profile.UseSmoothBoatMovement,
                         valueChanged: (b) => { profile.UseSmoothBoatMovement = b; }), true,
                     page
                 );
@@ -296,11 +251,11 @@ namespace ClassicUO.Game.UI.Gumps
             #region Mobiles
 
             page = ((int)PAGE.General + 1001);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonmobiles"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonMobiles, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_showmobilehp"), isChecked: profile.ShowMobilesHP, valueChanged: (b) => { profile.ShowMobilesHP = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.ShowMobileHP, isChecked: profile.ShowMobilesHP, valueChanged: (b) => { profile.ShowMobilesHP = b; }),
                 true, page);
 
             content.Indent();
@@ -309,8 +264,8 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_mobilehptype"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    new string[] { TazLang.Get("mog_general_hptypeperc"), TazLang.Get("mog_general_hptypebar"), TazLang.Get("mog_general_hptypenboth") },
+                    lang.GetGeneral.MobileHPType, 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    new string[] { lang.GetGeneral.HPTypePerc, lang.GetGeneral.HPTypeBar, lang.GetGeneral.HPTypeNBoth },
                     profile.MobileHPType,
                     (s, n) => { profile.MobileHPType = s; }
                 ), true, page
@@ -320,11 +275,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_hpshowwhen"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.HPShowWhen, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_hpshowwhen_always"), TazLang.Get("mog_general_hpshowwhen_less100"),
-                        TazLang.Get("mog_general_hpshowwhen_smart")
+                        lang.GetGeneral.HPShowWhen_Always, lang.GetGeneral.HPShowWhen_Less100,
+                        lang.GetGeneral.HPShowWhen_Smart
                     }, profile.MobileHPShowWhen,
                     (s, n) => { profile.MobileHPShowWhen = s; }
                 ), true, page
@@ -337,13 +292,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_highlightpoisoned"), isChecked: profile.HighlightMobilesByPoisoned,
+                (lang.GetGeneral.HighlightPoisoned, isChecked: profile.HighlightMobilesByPoisoned,
                     valueChanged: (b) => { profile.HighlightMobilesByPoisoned = b; }), true, page
             );
 
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_general_poisonhighlightcolor"), profile.PoisonHue,
+                new ModernColorPickerWithLabel(World, lang.GetGeneral.PoisonHighlightColor, profile.PoisonHue,
                     (h) => { profile.PoisonHue = h; }), true, page);
             content.RemoveIndent();
 
@@ -352,13 +307,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_highlightpara"), isChecked: profile.HighlightMobilesByParalize,
+                (lang.GetGeneral.HighlightPara, isChecked: profile.HighlightMobilesByParalize,
                     valueChanged: (b) => { profile.HighlightMobilesByParalize = b; }), true, page
             );
 
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_general_parahighlightcolor"), profile.ParalyzedHue,
+                new ModernColorPickerWithLabel(World, lang.GetGeneral.ParaHighlightColor, profile.ParalyzedHue,
                     (h) => { profile.ParalyzedHue = h; }), true, page);
             content.RemoveIndent();
 
@@ -366,14 +321,14 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_highlightinvul"), isChecked: profile.HighlightMobilesByInvul,
+                new CheckboxWithLabel(lang.GetGeneral.HighlightInvul, isChecked: profile.HighlightMobilesByInvul,
                     valueChanged: (b) => { profile.HighlightMobilesByInvul = b; }),
                 true, page
             );
 
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_general_invulhighlightcolor"), profile.InvulnerableHue,
+                new ModernColorPickerWithLabel(World, lang.GetGeneral.InvulHighlightColor, profile.InvulnerableHue,
                     (h) => { profile.InvulnerableHue = h; }), true, page);
             content.RemoveIndent();
 
@@ -382,7 +337,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_incomingmobiles"), isChecked: profile.ShowNewMobileNameIncoming,
+                (lang.GetGeneral.IncomingMobiles, isChecked: profile.ShowNewMobileNameIncoming,
                     valueChanged: (b) => { profile.ShowNewMobileNameIncoming = b; }), true, page
             );
 
@@ -391,7 +346,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_incomingcorpses"), isChecked: profile.ShowNewCorpseNameIncoming,
+                (lang.GetGeneral.IncomingCorpses, isChecked: profile.ShowNewCorpseNameIncoming,
                     valueChanged: (b) => { profile.ShowNewCorpseNameIncoming = b; }), true, page
             );
 
@@ -401,11 +356,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_auraunderfeet"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.AuraUnderFeet, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_auraoptdisabled"), TazLang.Get("mog_general_aurooptwarmode"),
-                        TazLang.Get("mog_general_auraoptctrlshift"), TazLang.Get("mog_general_auraoptalways")
+                        lang.GetGeneral.AuraOptDisabled, lang.GetGeneral.AuroOptWarmode,
+                        lang.GetGeneral.AuraOptCtrlShift, lang.GetGeneral.AuraOptAlways
                     },
                     profile.AuraUnderFeetType, (s, n) => { profile.AuraUnderFeetType = s; }
                 ), true, page
@@ -413,11 +368,11 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.Indent();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_auraforparty"), isChecked: profile.PartyAura,
+                new CheckboxWithLabel(lang.GetGeneral.AuraForParty, isChecked: profile.PartyAura,
                     valueChanged: (b) => { profile.PartyAura = b; }), true, page);
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_general_aurapartycolor"), profile.PartyAuraHue,
+                new ModernColorPickerWithLabel(World, lang.GetGeneral.AuraPartyColor, profile.PartyAuraHue,
                     (h) => { profile.PartyAuraHue = h; }), true, page);
             content.RemoveIndent();
             content.RemoveIndent();
@@ -427,12 +382,12 @@ namespace ClassicUO.Game.UI.Gumps
             #region Gumps & Context
 
             page = ((int)PAGE.General + 1002);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttongumpcontext"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonGumpContext, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_disabletopmenu"), isChecked: profile.TopbarGumpIsDisabled,
+                new CheckboxWithLabel(lang.GetGeneral.DisableTopMenu, isChecked: profile.TopbarGumpIsDisabled,
                     valueChanged: (b) => { profile.TopbarGumpIsDisabled = b; }), true,
                 page
             );
@@ -442,7 +397,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_altforanchorsgumps"), isChecked: profile.HoldDownKeyAltToCloseAnchored,
+                (lang.GetGeneral.AltForAnchorsGumps, isChecked: profile.HoldDownKeyAltToCloseAnchored,
                     valueChanged: (b) => { profile.HoldDownKeyAltToCloseAnchored = b; }),
                 true, page
             );
@@ -451,7 +406,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_alttomovegumps"), isChecked: profile.HoldAltToMoveGumps,
+                new CheckboxWithLabel(lang.GetGeneral.AltToMoveGumps, isChecked: profile.HoldAltToMoveGumps,
                     valueChanged: (b) => { profile.HoldAltToMoveGumps = b; }), true, page
             );
 
@@ -461,7 +416,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_general_closeentireanchorwithrclick"),
+                    lang.GetGeneral.CloseEntireAnchorWithRClick,
                     isChecked: profile.CloseAllAnchoredGumpsInGroupWithRightClick,
                     valueChanged: (b) => { profile.CloseAllAnchoredGumpsInGroupWithRightClick = b; }
                 ), true, page
@@ -471,7 +426,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_originalskillsgump"), isChecked: profile.StandardSkillsGump,
+                new CheckboxWithLabel(lang.GetGeneral.OriginalSkillsGump, isChecked: profile.StandardSkillsGump,
                     valueChanged: (b) => { profile.StandardSkillsGump = b; }), true,
                 page
             );
@@ -479,27 +434,27 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_oldstatusgump"), isChecked: profile.UseOldStatusGump, valueChanged: (b) => { profile.UseOldStatusGump = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.OldStatusGump, isChecked: profile.UseOldStatusGump, valueChanged: (b) => { profile.UseOldStatusGump = b; }),
                 true, page);
 
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_partyinvitegump"), isChecked: profile.PartyInviteGump, valueChanged: (b) => { profile.PartyInviteGump = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.PartyInviteGump, isChecked: profile.PartyInviteGump, valueChanged: (b) => { profile.PartyInviteGump = b; }),
                 true, page);
 
             content.BlankLine();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_modernhealthbars"), isChecked: profile.CustomBarsToggled,
+                new CheckboxWithLabel(lang.GetGeneral.ModernHealthBars, isChecked: profile.CustomBarsToggled,
                     valueChanged: (b) => { profile.CustomBarsToggled = b; }), true, page
             );
 
             content.Indent();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_modernhpblackbg"), isChecked: profile.CBBlackBGToggled, valueChanged: (b) => { profile.CBBlackBGToggled = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.ModernHPBlackBG, isChecked: profile.CBBlackBGToggled, valueChanged: (b) => { profile.CBBlackBGToggled = b; }),
                 true, page);
 
             content.RemoveIndent();
@@ -507,7 +462,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_savehpbars"), isChecked: profile.SaveHealthbars, valueChanged: (b) => { profile.SaveHealthbars = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.SaveHPBars, isChecked: profile.SaveHealthbars, valueChanged: (b) => { profile.SaveHealthbars = b; }),
                 true, page);
 
             content.BlankLine();
@@ -516,11 +471,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_closehpgumpswhen"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.CloseHPGumpsWhen, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_closehpoptdisable"), TazLang.Get("mog_general_closehpoptoor"),
-                        TazLang.Get("mog_general_closehpoptdead"), TazLang.Get("mog_general_closehpoptboth")
+                        lang.GetGeneral.CloseHPOptDisable, lang.GetGeneral.CloseHPOptOOR,
+                        lang.GetGeneral.CloseHPOptDead, lang.GetGeneral.CloseHPOptBoth
                     },
                     profile.CloseHealthBarType, (s, n) => { profile.CloseHealthBarType = s; }
                 ), true, page
@@ -532,23 +487,23 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_gridloot"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.GridLoot, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_gridlootoptdisable"), TazLang.Get("mog_general_gridlootoptonly"),
-                        TazLang.Get("mog_general_gridlootoptboth")
+                        lang.GetGeneral.GridLootOptDisable, lang.GetGeneral.GridLootOptOnly,
+                        lang.GetGeneral.GridLootOptBoth
                     }, profile.GridLootType,
                     (s, n) => { profile.GridLootType = s; }
                 ), true, page
             );
 
-            c.SetTooltip(TazLang.Get("mog_general_gridloottooltip"));
+            c.SetTooltip(lang.GetGeneral.GridLootTooltip);
 
             content.BlankLine();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_shiftcontext"), isChecked: profile.HoldShiftForContext,
+                new CheckboxWithLabel(lang.GetGeneral.ShiftContext, isChecked: profile.HoldShiftForContext,
                     valueChanged: (b) => { profile.HoldShiftForContext = b; }), true, page
             );
 
@@ -556,7 +511,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_shiftsplit"), isChecked: profile.HoldShiftToSplitStack,
+                new CheckboxWithLabel(lang.GetGeneral.ShiftSplit, isChecked: profile.HoldShiftToSplitStack,
                     valueChanged: (b) => { profile.HoldShiftToSplitStack = b; }), true, page
             );
 
@@ -565,12 +520,12 @@ namespace ClassicUO.Game.UI.Gumps
             #region Misc
 
             page = ((int)PAGE.General + 1003);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonmisc"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonMisc, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_enablecot"), isChecked: profile.UseCircleOfTransparency,
+                new CheckboxWithLabel(lang.GetGeneral.EnableCOT, isChecked: profile.UseCircleOfTransparency,
                     valueChanged: (b) => { profile.UseCircleOfTransparency = b; }), true,
                 page
             );
@@ -581,7 +536,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_general_cotdistance"), 0, ThemeSettings.SLIDER_WIDTH,
+                    lang.GetGeneral.COTDistance, 0, ThemeSettings.SLIDER_WIDTH,
                     Constants.MIN_CIRCLE_OF_TRANSPARENCY_RADIUS, Constants.MAX_CIRCLE_OF_TRANSPARENCY_RADIUS,
                     profile.CircleOfTransparencyRadius, (r) => { profile.CircleOfTransparencyRadius = r; }
                 ), true, page
@@ -591,11 +546,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_cottype"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.COTType, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_cottypeoptfull"), TazLang.Get("mog_general_cottypeoptgrad"),
-                        TazLang.Get("mog_general_cottypeoptmodern")
+                        lang.GetGeneral.COTTypeOptFull, lang.GetGeneral.COTTypeOptGrad,
+                        lang.GetGeneral.COTTypeOptModern
                     }, profile.CircleOfTransparencyType,
                     (s, n) => { profile.CircleOfTransparencyType = s; }
                 ), true, page
@@ -608,7 +563,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_hidescreenshotmessage"), isChecked: profile.HideScreenshotStoredInMessage,
+                (lang.GetGeneral.HideScreenshotMessage, isChecked: profile.HideScreenshotStoredInMessage,
                     valueChanged: (b) => { profile.HideScreenshotStoredInMessage = b; }),
                 true, page
             );
@@ -616,20 +571,20 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_objfade"), isChecked: profile.UseObjectsFading, valueChanged: (b) => { profile.UseObjectsFading = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.ObjFade, isChecked: profile.UseObjectsFading, valueChanged: (b) => { profile.UseObjectsFading = b; }),
                 true, page);
 
             content.BlankLine();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_textfade"), isChecked: profile.TextFading,
+                new CheckboxWithLabel(lang.GetGeneral.TextFade, isChecked: profile.TextFading,
                     valueChanged: (b) => { profile.TextFading = b; }), true, page);
 
             content.BlankLine();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_cursorrange"), isChecked: profile.ShowTargetRangeIndicator,
+                new CheckboxWithLabel(lang.GetGeneral.CursorRange, isChecked: profile.ShowTargetRangeIndicator,
                     valueChanged: (b) => { profile.ShowTargetRangeIndicator = b; }),
                 true, page
             );
@@ -637,7 +592,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_dragselecthp"), isChecked: profile.EnableDragSelect, valueChanged: (b) => { profile.EnableDragSelect = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.DragSelectHP, isChecked: profile.EnableDragSelect, valueChanged: (b) => { profile.EnableDragSelect = b; }),
                 true, page);
 
             content.Indent();
@@ -646,11 +601,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_dragkeymod"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.DragKeyMod, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_sharednone"), TazLang.Get("mog_general_sharedctrl"), TazLang.Get("mog_general_sharedshift"),
-                        TazLang.Get("mog_general_sharedalt")
+                        lang.GetGeneral.SharedNone, lang.GetGeneral.SharedCtrl, lang.GetGeneral.SharedShift,
+                        lang.GetGeneral.SharedAlt
                     }, profile.DragSelectModifierKey,
                     (s, n) => { profile.DragSelectModifierKey = s; }
                 ), true, page
@@ -660,11 +615,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_dragplayersonly"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.DragPlayersOnly, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_sharednone"), TazLang.Get("mog_general_sharedctrl"), TazLang.Get("mog_general_sharedshift"),
-                        TazLang.Get("mog_general_sharedalt")
+                        lang.GetGeneral.SharedNone, lang.GetGeneral.SharedCtrl, lang.GetGeneral.SharedShift,
+                        lang.GetGeneral.SharedAlt
                     },
                     profile.DragSelect_PlayersModifier, (s, n) => { profile.DragSelect_PlayersModifier = s; }
                 ), true, page
@@ -674,11 +629,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_dragmobsonly"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.DragMobsOnly, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_sharednone"), TazLang.Get("mog_general_sharedctrl"), TazLang.Get("mog_general_sharedshift"),
-                        TazLang.Get("mog_general_sharedalt")
+                        lang.GetGeneral.SharedNone, lang.GetGeneral.SharedCtrl, lang.GetGeneral.SharedShift,
+                        lang.GetGeneral.SharedAlt
                     },
                     profile.DragSelect_MonstersModifier, (s, n) => { profile.DragSelect_MonstersModifier = s; }
                 ), true, page
@@ -688,11 +643,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_dragnameplatesonly"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.DragNameplatesOnly, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_sharednone"), TazLang.Get("mog_general_sharedctrl"), TazLang.Get("mog_general_sharedshift"),
-                        TazLang.Get("mog_general_sharedalt")
+                        lang.GetGeneral.SharedNone, lang.GetGeneral.SharedCtrl, lang.GetGeneral.SharedShift,
+                        lang.GetGeneral.SharedAlt
                     },
                     profile.DragSelect_NameplateModifier, (s, n) => { profile.DragSelect_NameplateModifier = s; }
                 ), true, page
@@ -702,7 +657,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_general_dragx"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Scene.Camera.Bounds.Width,
+                    lang.GetGeneral.DragX, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Scene.Camera.Bounds.Width,
                     profile.DragSelectStartX,
                     (r) => { profile.DragSelectStartX = r; }
                 ), true, page
@@ -712,14 +667,14 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_general_dragy"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Scene.Camera.Bounds.Width,
+                    lang.GetGeneral.DragY, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Scene.Camera.Bounds.Width,
                     profile.DragSelectStartY,
                     (r) => { profile.DragSelectStartY = r; }
                 ), true, page
             );
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_draganchored"), isChecked: profile.DragSelectAsAnchor, valueChanged: (b) => { profile.DragSelectAsAnchor = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.DragAnchored, isChecked: profile.DragSelectAsAnchor, valueChanged: (b) => { profile.DragSelectAsAnchor = b; }),
                 true, page);
 
             content.RemoveIndent();
@@ -729,7 +684,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_showstatschangedmsg"), isChecked: profile.ShowStatsChangedMessage,
+                (lang.GetGeneral.ShowStatsChangedMsg, isChecked: profile.ShowStatsChangedMessage,
                     valueChanged: (b) => { profile.ShowStatsChangedMessage = b; }), true, page
             );
 
@@ -738,7 +693,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_general_showskillschangedmsg"), isChecked: profile.ShowSkillsChangedMessage,
+                (lang.GetGeneral.ShowSkillsChangedMsg, isChecked: profile.ShowSkillsChangedMessage,
                     valueChanged: (b) => { profile.ShowSkillsChangedMessage = b; }), true, page
             );
 
@@ -747,7 +702,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_general_changevolume"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                (lang.GetGeneral.ChangeVolume, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
                     profile.ShowSkillsChangedDeltaValue, (r) => { profile.ShowSkillsChangedDeltaValue = r; }),
                 true, page
             );
@@ -759,23 +714,23 @@ namespace ClassicUO.Game.UI.Gumps
             #region Terrain and statics
 
             page = ((int)PAGE.General + 1004);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonterrainstatics"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonTerrainStatics, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_hideroof"), isChecked: !profile.DrawRoofs,
+                new CheckboxWithLabel(lang.GetGeneral.HideRoof, isChecked: !profile.DrawRoofs,
                     valueChanged: (b) => { profile.DrawRoofs = !b; }), true, page);
 
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_treestostump"), isChecked: profile.TreeToStumps, valueChanged: (b) => { profile.TreeToStumps = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.TreesToStump, isChecked: profile.TreeToStumps, valueChanged: (b) => { profile.TreeToStumps = b; }),
                 true, page);
 
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_general_hidevegetation"), isChecked: profile.HideVegetation, valueChanged: (b) => { profile.HideVegetation = b; }),
+            (new CheckboxWithLabel(lang.GetGeneral.HideVegetation, isChecked: profile.HideVegetation, valueChanged: (b) => { profile.HideVegetation = b; }),
                 true, page);
 
             //content.BlankLine();
@@ -788,11 +743,11 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_general_magicfieldtype"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetGeneral.MagicFieldType, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     new string[]
                     {
-                        TazLang.Get("mog_general_magicfieldopt_normal"), TazLang.Get("mog_general_magicfieldopt_static"),
-                        TazLang.Get("mog_general_magicfieldopt_tile")
+                        lang.GetGeneral.MagicFieldOpt_Normal, lang.GetGeneral.MagicFieldOpt_Static,
+                        lang.GetGeneral.MagicFieldOpt_Tile
                     }, profile.FieldsType,
                     (s, n) => { profile.FieldsType = s; }
                 ), true, page
@@ -805,89 +760,161 @@ namespace ClassicUO.Game.UI.Gumps
 
         private void BuildSound()
         {
+            SettingsOption s;
+
             PositionHelper.Reset();
 
-            var scroll = new ScrollArea(0, 0, MainContent.RightWidth, MainContent.Height)
-            {
-                CanMove = true,
-                AcceptMouseInput = true
-            };
-            _options.Add(new SettingsOption("", scroll, MainContent.RightWidth, (int)PAGE.Sound));
+            _options.Add
+            (
+                s = new SettingsOption
+                ("",
+                    new CheckboxWithLabel(lang.GetSound.EnableSound, 0, profile.EnableSound,
+                        (b) => { profile.EnableSound = b; }), MainContent.RightWidth, (int)PAGE.Sound)
+            );
 
-            Control c;
-
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_enablesound"), 0, profile.EnableSound,
-                (b) => { profile.EnableSound = b; }));
-            PositionHelper.PositionControl(c);
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.Indent();
 
-            scroll.Add(c = new SliderWithLabel(TazLang.Get("mog_sound_sharedvolume"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
-                profile.SoundVolume, (i) => { profile.SoundVolume = i; }));
-            PositionHelper.PositionControl(c);
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new SliderWithLabel(lang.GetSound.SharedVolume, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                        profile.SoundVolume, (i) => { profile.SoundVolume = i; }),
+                    MainContent.RightWidth, (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.RemoveIndent();
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_enablemusic"), 0, profile.EnableMusic,
-                (b) => { profile.EnableMusic = b; }));
-            PositionHelper.PositionControl(c);
+
+            _options.Add
+            (
+                s = new SettingsOption
+                ("",
+                    new CheckboxWithLabel(lang.GetSound.EnableMusic, 0, profile.EnableMusic,
+                        (b) => { profile.EnableMusic = b; }), MainContent.RightWidth, (int)PAGE.Sound)
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.Indent();
 
-            scroll.Add(c = new SliderWithLabel(TazLang.Get("mog_sound_sharedvolume"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
-                profile.MusicVolume, (i) => { profile.MusicVolume = i; }));
-            PositionHelper.PositionControl(c);
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new SliderWithLabel(lang.GetSound.SharedVolume, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                        profile.MusicVolume, (i) => { profile.MusicVolume = i; }),
+                    MainContent.RightWidth, (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.RemoveIndent();
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_loginmusic"), 0, Settings.GlobalSettings.LoginMusic,
-                (b) => { Settings.GlobalSettings.LoginMusic = b; }));
-            PositionHelper.PositionControl(c);
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new CheckboxWithLabel(lang.GetSound.LoginMusic, 0, Settings.GlobalSettings.LoginMusic,
+                        (b) => { Settings.GlobalSettings.LoginMusic = b; }),
+                    MainContent.RightWidth, (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.Indent();
 
-            scroll.Add(c = new SliderWithLabel(
-                TazLang.Get("mog_sound_sharedvolume"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
-                Settings.GlobalSettings.LoginMusicVolume,
-                (i) => { Settings.GlobalSettings.LoginMusicVolume = i; }));
-            PositionHelper.PositionControl(c);
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new SliderWithLabel
+                    (
+                        lang.GetSound.SharedVolume, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                        Settings.GlobalSettings.LoginMusicVolume,
+                        (i) => { Settings.GlobalSettings.LoginMusicVolume = i; }
+                    ), MainContent.RightWidth, (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.RemoveIndent();
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_playfootsteps"), 0, profile.EnableFootstepsSound,
-                (b) => { profile.EnableFootstepsSound = b; }));
-            PositionHelper.PositionControl(c);
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new CheckboxWithLabel(lang.GetSound.PlayFootsteps, 0, profile.EnableFootstepsSound,
+                        (b) => { profile.EnableFootstepsSound = b; }), MainContent.RightWidth,
+                    (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("sound_play_rain", "Play rain sound"), 0, profile.EnableRainSound,
-                (b) => { profile.EnableRainSound = b; }));
-            PositionHelper.PositionControl(c);
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new CheckboxWithLabel(lang.GetSound.CombatMusic, 0, profile.EnableCombatMusic,
+                        (b) => { profile.EnableCombatMusic = b; }), MainContent.RightWidth,
+                    (int)PAGE.Sound
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_combatmusic"), 0, profile.EnableCombatMusic,
-                (b) => { profile.EnableCombatMusic = b; }));
-            PositionHelper.PositionControl(c);
-            PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_sound_backgroundmusic"), 0, profile.ReproduceSoundsInBackground,
-                (b) => { profile.ReproduceSoundsInBackground = b; }));
-            PositionHelper.PositionControl(c);
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    new CheckboxWithLabel(lang.GetSound.BackgroundMusic, 0, profile.ReproduceSoundsInBackground,
+                        (b) => { profile.ReproduceSoundsInBackground = b; }),
+                    MainContent.RightWidth, (int)PAGE.Sound
+                )
+            );
 
-            BuildVoiceRecognition(scroll);
+            PositionHelper.PositionControl(s.FullControl);
+
+            BuildVoiceRecognition();
         }
 
-        private void BuildVoiceRecognition(ScrollArea scroll)
+        private void BuildVoiceRecognition()
         {
+            SettingsOption s;
+            ModernOptionsGumpLanguage.TazUO voiceLang = lang.GetTazUO;
             VoiceRecognitionManager voiceManager = VoiceRecognitionManager.Instance;
 
             PositionHelper.BlankLine();
             PositionHelper.BlankLine();
 
-            Control c;
-
-            scroll.Add(c = TextBox.GetOne(TazLang.Get("mog_tazuo_voicerecognition"), ThemeSettings.FONT,
-                ThemeSettings.STANDARD_TEXT_SIZE + 2, ThemeSettings.TEXT_FONT_COLOR, TextBox.RTLOptions.Default()));
-            PositionHelper.PositionControl(c);
+            // Section header
+            var header = TextBox.GetOne(voiceLang.VoiceRecognition, ThemeSettings.FONT,
+                ThemeSettings.STANDARD_TEXT_SIZE + 2, ThemeSettings.TEXT_FONT_COLOR, TextBox.RTLOptions.Default());
+            _options.Add(s = new SettingsOption("", header, MainContent.RightWidth, (int)PAGE.Sound));
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
 
-            var createMacroBtn = new ModernButton(0, 0, 160, 30, ButtonAction.Activate, TazLang.Get("mog_tazuo_voicecreatemacro"),
+            // Create macro button
+            var createMacroBtn = new ModernButton(0, 0, 160, 30, ButtonAction.Activate, voiceLang.VoiceCreateMacro,
                 ThemeSettings.BUTTON_FONT_COLOR);
             createMacroBtn.MouseUp += (sender, e) =>
             {
@@ -898,28 +925,30 @@ namespace ClassicUO.Game.UI.Gumps
                 macroManager.PushToBack(macro);
                 UIManager.Add(new MacroButtonGump(World, macro, Mouse.Position.X, Mouse.Position.Y));
             };
-            scroll.Add(c = createMacroBtn);
-            PositionHelper.PositionControl(c);
+            _options.Add(s = new SettingsOption("", createMacroBtn, MainContent.RightWidth, (int)PAGE.Sound));
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
 
-            var modelPathInput = new InputFieldWithLabel(TazLang.Get("mog_tazuo_voicemodelpath"), 300, profile.VoiceModelPath,
+            // Model path input
+            var modelPathInput = new InputFieldWithLabel(voiceLang.VoiceModelPath, 300, profile.VoiceModelPath,
                 onTextChange: (sender, e) =>
                 {
                     profile.VoiceModelPath = ((InputField.StbTextBox)sender).Text;
                 });
-            modelPathInput.SetTooltip(TazLang.Get("mog_tazuo_voicemodelpathtooltip"));
-            scroll.Add(c = modelPathInput);
-            PositionHelper.PositionControl(c);
+            modelPathInput.SetTooltip(voiceLang.VoiceModelPathTooltip);
+            _options.Add(s = new SettingsOption("", modelPathInput, MainContent.RightWidth, (int)PAGE.Sound));
+            PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
 
-            var applyBtn = new ModernButton(0, 0, 160, 30, ButtonAction.Activate, TazLang.Get("mog_tazuo_voiceapplymodel"),
+            // Apply button
+            var applyBtn = new ModernButton(0, 0, 160, 30, ButtonAction.Activate, voiceLang.VoiceApplyModel,
                 ThemeSettings.BUTTON_FONT_COLOR);
             applyBtn.MouseUp += (sender, e) =>
             {
                 voiceManager.Reinitialize();
             };
-            scroll.Add(c = applyBtn);
-            PositionHelper.PositionControl(c);
+            _options.Add(s = new SettingsOption("", applyBtn, MainContent.RightWidth, (int)PAGE.Sound));
+            PositionHelper.PositionControl(s.FullControl);
         }
 
         private void BuildVideo()
@@ -930,13 +959,13 @@ namespace ClassicUO.Game.UI.Gumps
             #region Game window
 
             int page = ((int)PAGE.Video + 1000);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttongamewindow"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonGameWindow, page, content.LeftWidth));
 
             content.AddToRight
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_fpscap"), 0, ThemeSettings.SLIDER_WIDTH, Constants.MIN_FPS, Constants.MAX_FPS,
+                    lang.GetVideo.FPSCap, 0, ThemeSettings.SLIDER_WIDTH, Constants.MIN_FPS, Constants.MAX_FPS,
                     Settings.GlobalSettings.FPS, (r) =>
                     {
                         Settings.GlobalSettings.FPS = r;
@@ -949,7 +978,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_video_backgroundfps"), isChecked: profile.ReduceFPSWhenInactive,
+                new CheckboxWithLabel(lang.GetVideo.BackgroundFPS, isChecked: profile.ReduceFPSWhenInactive,
                     valueChanged: (b) => { profile.ReduceFPSWhenInactive = b; }), true,
                 page
             );
@@ -960,7 +989,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_video_enablevsync"), isChecked: profile.EnableVSync, valueChanged: (b) =>
+                new CheckboxWithLabel(lang.GetVideo.EnableVSync, isChecked: profile.EnableVSync, valueChanged: (b) =>
                 {
                     profile.EnableVSync = b;
                     Client.Game?.SetVSync(b);
@@ -974,7 +1003,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_video_fullsizeviewport"), isChecked: profile.GameWindowFullSize, valueChanged: (b) =>
+                    lang.GetVideo.FullsizeViewport, isChecked: profile.GameWindowFullSize, valueChanged: (b) =>
                     {
                         profile.GameWindowFullSize = b;
 
@@ -1008,7 +1037,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_video_fullscreen"), isChecked: profile.WindowBorderless, valueChanged: (b) =>
+                    lang.GetVideo.FullScreen, isChecked: profile.WindowBorderless, valueChanged: (b) =>
                     {
                         profile.WindowBorderless = b;
                         Client.Game.SetWindowBorderless(b);
@@ -1019,22 +1048,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (
-                new CheckboxWithLabel
-                (
-                    TazLang.Get("video_borderless_window", "Borderless window (no title bar)"), isChecked: profile.BorderlessWindow, valueChanged: (b) =>
-                    {
-                        profile.BorderlessWindow = b;
-                        if (!profile.WindowBorderless)
-                            Client.Game.SetWindowBordered(!b);
-                    }
-                ), true, page
-            );
-
-            content.BlankLine();
-
-            content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_lockviewport"), isChecked: profile.GameWindowLock, valueChanged: (b) => { profile.GameWindowLock = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.LockViewport, isChecked: profile.GameWindowLock, valueChanged: (b) => { profile.GameWindowLock = b; }),
                 true, page);
 
             content.BlankLine();
@@ -1043,7 +1057,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_viewportx"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Width,
+                    lang.GetVideo.ViewportX, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Width,
                     profile.GameWindowPosition.X, (r) =>
                     {
                         profile.GameWindowPosition = new Point(r, profile.GameWindowPosition.Y);
@@ -1056,7 +1070,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_viewporty"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Height,
+                    lang.GetVideo.ViewportY, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Height,
                     profile.GameWindowPosition.Y, (r) =>
                     {
                         profile.GameWindowPosition = new Point(profile.GameWindowPosition.X, r);
@@ -1071,7 +1085,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_viewportw"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Width,
+                    lang.GetVideo.ViewportW, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Width,
                     profile.GameWindowSize.X, (r) =>
                     {
                         profile.GameWindowSize = new Point(r, profile.GameWindowSize.Y);
@@ -1084,7 +1098,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_viewporth"), 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Height,
+                    lang.GetVideo.ViewportH, 0, ThemeSettings.SLIDER_WIDTH, 0, Client.Game.Window.ClientBounds.Height,
                     profile.GameWindowSize.Y, (r) =>
                     {
                         profile.GameWindowSize = new Point(profile.GameWindowSize.X, r);
@@ -1098,7 +1112,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Zoom
 
             page = ((int)PAGE.Video + 1001);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonzoom"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonZoom, page, content.LeftWidth));
             content.ResetRightSide();
 
             int cameraZoomCount = (int)((Client.Game.Scene.Camera.ZoomMax - Client.Game.Scene.Camera.ZoomMin) /
@@ -1111,7 +1125,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_defaultzoom"), 0, ThemeSettings.SLIDER_WIDTH, 0, cameraZoomCount, cameraZoomIndex,
+                    lang.GetVideo.DefaultZoom, 0, ThemeSettings.SLIDER_WIDTH, 0, cameraZoomCount, cameraZoomIndex,
                     (r) =>
                     {
                         profile.DefaultScale = Client.Game.Scene.Camera.Zoom =
@@ -1124,7 +1138,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_video_zoomwheel"), isChecked: profile.EnableMousewheelScaleZoom,
+                new CheckboxWithLabel(lang.GetVideo.ZoomWheel, isChecked: profile.EnableMousewheelScaleZoom,
                     valueChanged: (b) => { profile.EnableMousewheelScaleZoom = b; }), true,
                 page
             );
@@ -1134,7 +1148,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_video_returndefaultzoom"), isChecked: profile.RestoreScaleAfterUnpressCtrl,
+                (lang.GetVideo.ReturnDefaultZoom, isChecked: profile.RestoreScaleAfterUnpressCtrl,
                     valueChanged: (b) => { profile.RestoreScaleAfterUnpressCtrl = b; }), true,
                 page
             );
@@ -1144,11 +1158,11 @@ namespace ClassicUO.Game.UI.Gumps
             #region Lighting
 
             page = ((int)PAGE.Video + 1002);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonlighting"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonLighting, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_altlights"), isChecked: profile.UseAlternativeLights, valueChanged: (b) => { profile.UseAlternativeLights = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.AltLights, isChecked: profile.UseAlternativeLights, valueChanged: (b) => { profile.UseAlternativeLights = b; }),
                 true, page);
 
             content.BlankLine();
@@ -1157,7 +1171,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_video_customllevel"), isChecked: profile.UseCustomLightLevel, valueChanged: (b) =>
+                    lang.GetVideo.CustomLLevel, isChecked: profile.UseCustomLightLevel, valueChanged: (b) =>
                     {
                         profile.UseCustomLightLevel = b;
 
@@ -1183,7 +1197,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_level"), 0, ThemeSettings.SLIDER_WIDTH, 0, 0x1E, 0x1E - profile.LightLevel, (r) =>
+                    lang.GetVideo.Level, 0, ThemeSettings.SLIDER_WIDTH, 0, 0x1E, 0x1E - profile.LightLevel, (r) =>
                     {
                         profile.LightLevel = (byte)(0x1E - r);
 
@@ -1211,8 +1225,8 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_video_lighttype"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    new string[] { TazLang.Get("mog_video_lighttype_absolute"), TazLang.Get("mog_video_lighttype_minimum") },
+                    lang.GetVideo.LightType, 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    new string[] { lang.GetVideo.LightType_Absolute, lang.GetVideo.LightType_Minimum },
                     profile.LightLevelType, (s, n) => { profile.LightLevelType = s; }
                 ), true, page
             );
@@ -1220,13 +1234,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_video_darknight"), isChecked: profile.UseDarkNights,
+                new CheckboxWithLabel(lang.GetVideo.DarkNight, isChecked: profile.UseDarkNights,
                     valueChanged: (b) => { profile.UseDarkNights = b; }), true, page);
 
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_coloredlight"), isChecked: profile.UseColoredLights, valueChanged: (b) => { profile.UseColoredLights = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.ColoredLight, isChecked: profile.UseColoredLights, valueChanged: (b) => { profile.UseColoredLights = b; }),
                 true, page);
 
             #endregion
@@ -1234,17 +1248,17 @@ namespace ClassicUO.Game.UI.Gumps
             #region Misc
 
             page = ((int)PAGE.Video + 1003);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonmisc"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonMisc, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_enabledeathscreen"), isChecked: profile.EnableDeathScreen, valueChanged: (b) => { profile.EnableDeathScreen = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.EnableDeathScreen, isChecked: profile.EnableDeathScreen, valueChanged: (b) => { profile.EnableDeathScreen = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_bwdead"), isChecked: profile.EnableBlackWhiteEffect, valueChanged: (b) => { profile.EnableBlackWhiteEffect = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.BWDead, isChecked: profile.EnableBlackWhiteEffect, valueChanged: (b) => { profile.EnableBlackWhiteEffect = b; }),
                 true, page);
 
             content.RemoveIndent();
@@ -1255,7 +1269,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_video_mousethread"), isChecked: Settings.GlobalSettings.RunMouseInASeparateThread,
+                    lang.GetVideo.MouseThread, isChecked: Settings.GlobalSettings.RunMouseInASeparateThread,
                     valueChanged: (b) => { Settings.GlobalSettings.RunMouseInASeparateThread = b; }
                 ), true, page
             );
@@ -1263,36 +1277,14 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_video_targetaura"), isChecked: profile.AuraOnMouse,
+                new CheckboxWithLabel(lang.GetVideo.TargetAura, isChecked: profile.AuraOnMouse,
                     valueChanged: (b) => { profile.AuraOnMouse = b; }), true, page);
 
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_animwater"), isChecked: profile.AnimatedWaterEffect, valueChanged: (b) => { profile.AnimatedWaterEffect = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.AnimWater, isChecked: profile.AnimatedWaterEffect, valueChanged: (b) => { profile.AnimatedWaterEffect = b; }),
                 true, page);
-
-            content.BlankLine();
-
-            content.AddToRight(
-                new CheckboxWithLabel(
-                    TazLang.Get("enhanced_weather"),
-                    isChecked: profile.EnableEnhancedWeather,
-                    valueChanged: (b) =>
-                    {
-                        profile.EnableEnhancedWeather = b;
-                        World.Instance?.SwitchWeather(b);
-                    }), true, page);
-
-            content.Indent();
-
-            content.AddToRight(
-                new CheckboxWithLabel(
-                    TazLang.Get("enhanced_weather_particle_effects"),
-                    isChecked: profile.EnableWeatherEffects,
-                    valueChanged: (b) => { profile.EnableWeatherEffects = b; }), true, page);
-
-            content.RemoveIndent();
 
             content.BlankLine();
 
@@ -1325,17 +1317,17 @@ namespace ClassicUO.Game.UI.Gumps
             #region Shadows
 
             page = ((int)PAGE.Video + 1004);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_buttonshadows"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.ButtonShadows, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_enableshadows"), isChecked: profile.ShadowsEnabled, valueChanged: (b) => { profile.ShadowsEnabled = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.EnableShadows, isChecked: profile.ShadowsEnabled, valueChanged: (b) => { profile.ShadowsEnabled = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_video_rocktreeshadows"), isChecked: profile.ShadowsStatics, valueChanged: (b) => { profile.ShadowsStatics = b; }),
+            (new CheckboxWithLabel(lang.GetVideo.RockTreeShadows, isChecked: profile.ShadowsStatics, valueChanged: (b) => { profile.ShadowsStatics = b; }),
                 true, page);
 
             content.RemoveIndent();
@@ -1346,7 +1338,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_video_terrainshadowlevel"), 0, ThemeSettings.SLIDER_WIDTH,
+                    lang.GetVideo.TerrainShadowLevel, 0, ThemeSettings.SLIDER_WIDTH,
                     Constants.MIN_TERRAIN_SHADOWS_LEVEL, Constants.MAX_TERRAIN_SHADOWS_LEVEL,
                     profile.TerrainShadowsLevel, (r) => { profile.TerrainShadowsLevel = r; }
                 ), true, page
@@ -1370,7 +1362,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToLeft
             (
-                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, TazLang.Get("mog_macros_newmacro"),
+                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, lang.GetMacros.NewMacro,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = page, IsSelectable = false }
             );
 
@@ -1454,7 +1446,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToLeft
             (
-                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, TazLang.Get("mog_macros_delmacro"),
+                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, lang.GetMacros.DelMacro,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = page, IsSelectable = false }
             );
 
@@ -1667,7 +1659,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 b = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_infobars_showinfobar"), 0, profile.ShowInfoBar, (b) =>
+                    lang.GetInfoBars.ShowInfoBar, 0, profile.ShowInfoBar, (b) =>
                     {
                         profile.ShowInfoBar = b;
                         InfoBarGump infoBarGump = UIManager.GetGump<InfoBarGump>();
@@ -1708,8 +1700,8 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_infobars_highlighttype"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    new string[] { TazLang.Get("mog_infobars_highlightopt_textcolor"), TazLang.Get("mog_infobars_highlightopt_coloredbars") },
+                    lang.GetInfoBars.HighlightType, 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    new string[] { lang.GetInfoBars.HighLightOpt_TextColor, lang.GetInfoBars.HighLightOpt_ColoredBars },
                     profile.InfoBarHighlightType,
                     (i, s) => { profile.InfoBarHighlightType = i; }
                 )
@@ -1728,7 +1720,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToLeft
             (
-                addItem = new ModernButton(0, 0, 150, 40, ButtonAction.Activate, TazLang.Get("mog_infobars_additem"),
+                addItem = new ModernButton(0, 0, 150, 40, ButtonAction.Activate, lang.GetInfoBars.AddItem,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = -1, IsSelectable = true, IsSelected = true }
             );
 
@@ -1775,7 +1767,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_infobars_label"), ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                    lang.GetInfoBars.Label, ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
                     ThemeSettings.TEXT_FONT_COLOR,
                     TextBox.RTLOptions.DefaultCentered(100).MouseInput()
                 ), 0, 135
@@ -1785,7 +1777,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_infobars_color"), ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                    lang.GetInfoBars.Color, ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
                     ThemeSettings.TEXT_FONT_COLOR,
                     TextBox.RTLOptions.DefaultCentered(100).MouseInput()
                 ), 120, 135
@@ -1795,7 +1787,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_infobars_data"), ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                    lang.GetInfoBars.Data, ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
                     ThemeSettings.TEXT_FONT_COLOR, TextBox.RTLOptions.DefaultCentered(100).MouseInput()
                 ), 180, 135
             );
@@ -1854,7 +1846,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_tooltips_enabletooltips"), 0, profile.UseTooltip,
+                    new CheckboxWithLabel(lang.GetToolTips.EnableToolTips, 0, profile.UseTooltip,
                         (b) => { profile.UseTooltip = b; }), MainContent.RightWidth, (int)PAGE.Tooltip
                 )
             );
@@ -1869,7 +1861,7 @@ namespace ClassicUO.Game.UI.Gumps
                     "",
                     new SliderWithLabel
                     (
-                        TazLang.Get("mog_tooltips_tooltipdelay"), 0, ThemeSettings.SLIDER_WIDTH, 0, 1000,
+                        lang.GetToolTips.ToolTipDelay, 0, ThemeSettings.SLIDER_WIDTH, 0, 1000,
                         profile.TooltipDelayBeforeDisplay, (i) => { profile.TooltipDelayBeforeDisplay = i; }
                     ), MainContent.RightWidth, (int)PAGE.Tooltip
                 )
@@ -1883,7 +1875,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     new SliderWithLabel
-                    (TazLang.Get("mog_tooltips_tooltipbg"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                    (lang.GetToolTips.ToolTipBG, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
                         profile.TooltipBackgroundOpacity, (i) => { profile.TooltipBackgroundOpacity = i; }),
                     MainContent.RightWidth, (int)PAGE.Tooltip
                 )
@@ -1896,7 +1888,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_tooltips_tooltipfont"), profile.TooltipTextHue,
+                    new ModernColorPickerWithLabel(World, lang.GetToolTips.ToolTipFont, profile.TooltipTextHue,
                         (h) => { profile.TooltipTextHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Tooltip
                 )
@@ -1915,7 +1907,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_scalespeechdelay"), 0, profile.ScaleSpeechDelay,
+                    new CheckboxWithLabel(lang.GetSpeech.ScaleSpeechDelay, 0, profile.ScaleSpeechDelay,
                         (b) => { profile.ScaleSpeechDelay = b; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -1929,7 +1921,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new SliderWithLabel(TazLang.Get("mog_speech_speechdelay"), 0, ThemeSettings.SLIDER_WIDTH, 0, 1000,
+                    new SliderWithLabel(lang.GetSpeech.SpeechDelay, 0, ThemeSettings.SLIDER_WIDTH, 0, 1000,
                         profile.SpeechDelay, (i) => { profile.SpeechDelay = i; }),
                     MainContent.RightWidth, (int)PAGE.Speech
                 )
@@ -1947,7 +1939,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_savejournale"), 0, profile.SaveJournalToFile,
+                    new CheckboxWithLabel(lang.GetSpeech.SaveJournalE, 0, profile.SaveJournalToFile,
                         (b) => { profile.SaveJournalToFile = b; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -1964,7 +1956,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_chatenteractivation"), 0, profile.ActivateChatAfterEnter,
+                    new CheckboxWithLabel(lang.GetSpeech.ChatEnterActivation, 0, profile.ActivateChatAfterEnter,
                         (b) => { profile.ActivateChatAfterEnter = b; }),
                     MainContent.RightWidth, (int)PAGE.Speech
                 )
@@ -1978,7 +1970,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_chatenterspecial"), 0, profile.ActivateChatAdditionalButtons,
+                    new CheckboxWithLabel(lang.GetSpeech.ChatEnterSpecial, 0, profile.ActivateChatAdditionalButtons,
                         (b) => { profile.ActivateChatAdditionalButtons = b; }),
                     MainContent.RightWidth, (int)PAGE.Speech
                 )
@@ -1991,7 +1983,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_shiftenterchat"), 0, profile.ActivateChatShiftEnterSupport,
+                    new CheckboxWithLabel(lang.GetSpeech.ShiftEnterChat, 0, profile.ActivateChatShiftEnterSupport,
                         (b) => { profile.ActivateChatShiftEnterSupport = b; }),
                     MainContent.RightWidth, (int)PAGE.Speech
                 )
@@ -2009,7 +2001,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_chatgradient"), 0, profile.HideChatGradient,
+                    new CheckboxWithLabel(lang.GetSpeech.ChatGradient, 0, profile.HideChatGradient,
                         (b) => { profile.HideChatGradient = b; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2026,7 +2018,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_hideguildchat"), 0, profile.IgnoreGuildMessages,
+                    new CheckboxWithLabel(lang.GetSpeech.HideGuildChat, 0, profile.IgnoreGuildMessages,
                         (b) => { profile.IgnoreGuildMessages = b; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2043,7 +2035,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_speech_hidealliancechat"), 0, profile.IgnoreAllianceMessages,
+                    new CheckboxWithLabel(lang.GetSpeech.HideAllianceChat, 0, profile.IgnoreAllianceMessages,
                         (b) => { profile.IgnoreAllianceMessages = b; }),
                     MainContent.RightWidth, (int)PAGE.Speech
                 )
@@ -2059,7 +2051,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 ("",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_speechcolor"), profile.SpeechHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.SpeechColor, profile.SpeechHue,
                         (h) => { profile.SpeechHue = h; }), MainContent.RightWidth, (int)PAGE.Speech)
             );
 
@@ -2070,7 +2062,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 ("",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_yellcolor"), profile.YellHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.YellColor, profile.YellHue,
                         (h) => { profile.YellHue = h; }), MainContent.RightWidth, (int)PAGE.Speech)
             );
 
@@ -2081,7 +2073,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_partycolor"), profile.PartyMessageHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.PartyColor, profile.PartyMessageHue,
                         (h) => { profile.PartyMessageHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2095,7 +2087,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_alliancecolor"), profile.AllyMessageHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.AllianceColor, profile.AllyMessageHue,
                         (h) => { profile.AllyMessageHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2107,7 +2099,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 ("",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_emotecolor"), profile.EmoteHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.EmoteColor, profile.EmoteHue,
                         (h) => { profile.EmoteHue = h; }), MainContent.RightWidth, (int)PAGE.Speech)
             );
 
@@ -2119,7 +2111,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_whispercolor"), profile.WhisperHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.WhisperColor, profile.WhisperHue,
                         (h) => { profile.WhisperHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2132,7 +2124,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_guildcolor"), profile.GuildMessageHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.GuildColor, profile.GuildMessageHue,
                         (h) => { profile.GuildMessageHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2146,7 +2138,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new ModernColorPickerWithLabel(World, TazLang.Get("mog_speech_charcolor"), profile.ChatMessageHue,
+                    new ModernColorPickerWithLabel(World, lang.GetSpeech.CharColor, profile.ChatMessageHue,
                         (h) => { profile.ChatMessageHue = h; }), MainContent.RightWidth,
                     (int)PAGE.Speech
                 )
@@ -2164,14 +2156,14 @@ namespace ClassicUO.Game.UI.Gumps
             _options.Add(new SettingsOption("", scroll, MainContent.RightWidth, (int)PAGE.CombatSpells));
 
             Control c;
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_holdtabforcombat"), 0, profile.HoldDownKeyTab,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.HoldTabForCombat, 0, profile.HoldDownKeyTab,
                 (b) => { profile.HoldDownKeyTab = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
             scroll.Add
-            (c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_querybeforeattack"), 0,
+            (c = new CheckboxWithLabel(lang.GetCombatSpells.QueryBeforeAttack, 0,
                 profile.EnabledCriminalActionQuery, (b) => { profile.EnabledCriminalActionQuery = b; }));
 
             PositionHelper.PositionControl(c);
@@ -2181,7 +2173,7 @@ namespace ClassicUO.Game.UI.Gumps
             scroll.Add
             (
                 c = new CheckboxWithLabel
-                (TazLang.Get("mog_combatspells_querybeforebeneficial"), 0, profile.EnabledBeneficialCriminalActionQuery,
+                (lang.GetCombatSpells.QueryBeforeBeneficial, 0, profile.EnabledBeneficialCriminalActionQuery,
                     (b) => { profile.EnabledBeneficialCriminalActionQuery = b; })
             );
 
@@ -2189,82 +2181,82 @@ namespace ClassicUO.Game.UI.Gumps
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_enableoverheadspellformat"), 0,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.EnableOverheadSpellFormat, 0,
                 profile.EnabledSpellFormat, (b) => { profile.EnabledSpellFormat = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_enableoverheadspellhue"), 0,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.EnableOverheadSpellHue, 0,
                 profile.EnabledSpellHue, (b) => { profile.EnabledSpellHue = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_singleclickforspellicons"), 0,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.SingleClickForSpellIcons, 0,
                 profile.CastSpellsByOneClick, (b) => { profile.CastSpellsByOneClick = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_showbuffdurationonoldstylebuffbar"), 0,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.ShowBuffDurationOnOldStyleBuffBar, 0,
                 profile.BuffBarTime, (b) => { profile.BuffBarTime = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_enablefastspellhotkeyassigning"), 0,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.EnableFastSpellHotkeyAssigning, 0,
                 profile.FastSpellsAssign, (b) => { profile.FastSpellsAssign = b; }));
 
             PositionHelper.PositionControl(c);
-            c.SetTooltip(TazLang.Get("mog_combatspells_tooltipfastspellassign"));
+            c.SetTooltip(lang.GetCombatSpells.TooltipFastSpellAssign);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new CheckboxWithLabel(TazLang.Get("mog_combatspells_enabledpscounter"), 0, profile.ShowDPS,
+            scroll.Add(c = new CheckboxWithLabel(lang.GetCombatSpells.EnableDPSCounter, 0, profile.ShowDPS,
                 (b) => { profile.ShowDPS = b; }));
             PositionHelper.PositionControl(c);
 
             PositionHelper.BlankLine();
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_innocentcolor"),
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.InnocentColor,
                 profile.InnocentHue, (h) => { profile.InnocentHue = h; }));
 
             PositionHelper.PositionControl(c);
 
             Control clast = c;
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_beneficialspell"),
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.BeneficialSpell,
                 profile.BeneficHue, (h) => { profile.BeneficHue = h; }));
             PositionHelper.PositionExact(c, 200, clast.Y);
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_friendcolor"), profile.FriendHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.FriendColor, profile.FriendHue,
                 (h) => { profile.FriendHue = h; }));
             PositionHelper.PositionControl(c);
             clast = c;
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_harmfulspell"), profile.HarmfulHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.HarmfulSpell, profile.HarmfulHue,
                 (h) => { profile.HarmfulHue = h; }));
             PositionHelper.PositionExact(c, 200, clast.Y);
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_criminal"), profile.CriminalHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.Criminal, profile.CriminalHue,
                 (h) => { profile.CriminalHue = h; }));
             PositionHelper.PositionControl(c);
             clast = c;
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_neutralspell"), profile.NeutralHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.NeutralSpell, profile.NeutralHue,
                 (h) => { profile.NeutralHue = h; }));
             PositionHelper.PositionExact(c, 200, clast.Y);
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_canbeattackedhue"),
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.CanBeAttackedHue,
                 profile.CanAttackHue, (h) => { profile.CanAttackHue = h; }));
             PositionHelper.PositionControl(c);
             clast = c;
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_murderer"), profile.MurdererHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.Murderer, profile.MurdererHue,
                 (h) => { profile.MurdererHue = h; }));
             PositionHelper.PositionExact(c, 200, clast.Y);
 
-            scroll.Add(c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_combatspells_enemy"), profile.EnemyHue,
+            scroll.Add(c = new ModernColorPickerWithLabel(World, lang.GetCombatSpells.Enemy, profile.EnemyHue,
                 (h) => { profile.EnemyHue = h; }));
             PositionHelper.PositionControl(c);
 
@@ -2272,13 +2264,13 @@ namespace ClassicUO.Game.UI.Gumps
 
             InputFieldWithLabel spellFormat = spellFormat = new InputFieldWithLabel
             (
-                TazLang.Get("mog_combatspells_spelloverheadformat"), 200, profile.SpellDisplayFormat,
+                lang.GetCombatSpells.SpellOverheadFormat, 200, profile.SpellDisplayFormat,
                 onTextChange: (s, e) => { profile.SpellDisplayFormat = ((InputField.StbTextBox)s).Text; }
             );
 
             scroll.Add(spellFormat);
             PositionHelper.PositionControl(spellFormat);
-            spellFormat.SetTooltip(TazLang.Get("mog_combatspells_tooltipspellformat"));
+            spellFormat.SetTooltip(lang.GetCombatSpells.TooltipSpellFormat);
         }
 
         private void BuildCounters()
@@ -2292,7 +2284,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "", new CheckboxWithLabel
                     (
-                        TazLang.Get("mog_counters_enablecounters"), 0, profile.CounterBarEnabled, (b) =>
+                        lang.GetCounters.EnableCounters, 0, profile.CounterBarEnabled, (b) =>
                         {
                             profile.CounterBarEnabled = b;
                             CounterBarGump counterGump = UIManager.GetGump<CounterBarGump>();
@@ -2331,7 +2323,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_counters_highlightitemsonuse"), 0, profile.CounterBarHighlightOnUse,
+                    new CheckboxWithLabel(lang.GetCounters.HighlightItemsOnUse, 0, profile.CounterBarHighlightOnUse,
                         (b) => { profile.CounterBarHighlightOnUse = b; }),
                     MainContent.RightWidth, (int)PAGE.Counters
                 )
@@ -2345,7 +2337,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     new CheckboxWithLabel
-                    (TazLang.Get("mog_counters_abbreviatedvalues"), 0, profile.CounterBarDisplayAbbreviatedAmount,
+                    (lang.GetCounters.AbbreviatedValues, 0, profile.CounterBarDisplayAbbreviatedAmount,
                         (b) => { profile.CounterBarDisplayAbbreviatedAmount = b; }),
                     MainContent.RightWidth, (int)PAGE.Counters
                 )
@@ -2358,7 +2350,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 (
-                    TazLang.Get("mog_counters_abbreviateifamountexceeds"), new InputField
+                    lang.GetCounters.AbbreviateIfAmountExceeds, new InputField
                     (
                         100, 40, text: profile.CounterBarAbbreviatedAmount.ToString(), numbersOnly: true,
                         onTextChanges: (s, e) =>
@@ -2382,7 +2374,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     new CheckboxWithLabel
-                    (TazLang.Get("mog_counters_highlightredwhenamountislow"), 0, profile.CounterBarHighlightOnAmount,
+                    (lang.GetCounters.HighlightRedWhenAmountIsLow, 0, profile.CounterBarHighlightOnAmount,
                         (b) => { profile.CounterBarHighlightOnAmount = b; }),
                     MainContent.RightWidth, (int)PAGE.Counters
                 )
@@ -2395,7 +2387,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 (
-                    TazLang.Get("mog_counters_highlightredifamountisbelow"), new InputField
+                    lang.GetCounters.HighlightRedIfAmountIsBelow, new InputField
                     (
                         100, 40, text: profile.CounterBarHighlightAmount.ToString(), numbersOnly: true,
                         onTextChanges: (s, e) =>
@@ -2416,7 +2408,7 @@ namespace ClassicUO.Game.UI.Gumps
             PositionHelper.BlankLine();
             PositionHelper.BlankLine();
 
-            _options.Add(s = new SettingsOption(TazLang.Get("mog_counters_counterlayout"), new Area(false), MainContent.RightWidth,
+            _options.Add(s = new SettingsOption(lang.GetCounters.CounterLayout, new Area(false), MainContent.RightWidth,
                 (int)PAGE.Counters));
             PositionHelper.PositionControl(s.FullControl);
 
@@ -2428,7 +2420,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "", new SliderWithLabel
                     (
-                        TazLang.Get("mog_counters_gridsize"), 0, ThemeSettings.SLIDER_WIDTH, 30, 100, profile.CounterBarCellSize,
+                        lang.GetCounters.GridSize, 0, ThemeSettings.SLIDER_WIDTH, 30, 100, profile.CounterBarCellSize,
                         (v) =>
                         {
                             profile.CounterBarCellSize = v;
@@ -2445,7 +2437,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 (
-                    TazLang.Get("mog_counters_rows"), new InputField
+                    lang.GetCounters.Rows, new InputField
                     (
                         100, 40, text: profile.CounterBarRows.ToString(), numbersOnly: true, onTextChanges: (s, e) =>
                         {
@@ -2468,7 +2460,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 s = new SettingsOption
                 (
-                    TazLang.Get("mog_counters_columns"), new InputField
+                    lang.GetCounters.Columns, new InputField
                     (
                         100, 40, text: profile.CounterBarColumns.ToString(), numbersOnly: true, onTextChanges: (s, e) =>
                         {
@@ -2492,7 +2484,7 @@ namespace ClassicUO.Game.UI.Gumps
             SettingsOption s;
             PositionHelper.Reset();
 
-            _options.Add(s = new SettingsOption(TazLang.Get("mog_containers_description"), new Area(false), MainContent.RightWidth,
+            _options.Add(s = new SettingsOption(lang.GetContainers.Description, new Area(false), MainContent.RightWidth,
                 (int)PAGE.Containers));
             PositionHelper.PositionControl(s.FullControl);
             PositionHelper.BlankLine();
@@ -2509,11 +2501,11 @@ namespace ClassicUO.Game.UI.Gumps
                         new ComboBoxWithLabel
                         (
                             World,
-                            TazLang.Get("mog_containers_characterbackpackstyle"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                            lang.GetContainers.CharacterBackpackStyle, 0, ThemeSettings.COMBO_BOX_WIDTH,
                             new string[]
                             {
-                                TazLang.Get("mog_containers_backpackopt_default"), TazLang.Get("mog_containers_backpackopt_suede"),
-                                TazLang.Get("mog_containers_backpackopt_polarbear"), TazLang.Get("mog_containers_backpackopt_ghoulskin")
+                                lang.GetContainers.BackpackOpt_Default, lang.GetContainers.BackpackOpt_Suede,
+                                lang.GetContainers.BackpackOpt_PolarBear, lang.GetContainers.BackpackOpt_GhoulSkin
                             }, profile.BackpackStyle, (i, s) => { profile.BackpackStyle = i; }
                         ), MainContent.RightWidth, (int)PAGE.Containers
                     )
@@ -2529,7 +2521,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "", new SliderWithLabel
                     (
-                        TazLang.Get("mog_containers_containerscale"), 0, ThemeSettings.SLIDER_WIDTH,
+                        lang.GetContainers.ContainerScale, 0, ThemeSettings.SLIDER_WIDTH,
                         Constants.MIN_CONTAINER_SIZE_PERC, Constants.MAX_CONTAINER_SIZE_PERC,
                         profile.ContainersScale, (i) =>
                         {
@@ -2550,7 +2542,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_containers_alsoscaleitems"), 0, profile.ScaleItemsInsideContainers,
+                    new CheckboxWithLabel(lang.GetContainers.AlsoScaleItems, 0, profile.ScaleItemsInsideContainers,
                         (b) => { profile.ScaleItemsInsideContainers = b; }),
                     MainContent.RightWidth, (int)PAGE.Containers
                 )
@@ -2567,7 +2559,7 @@ namespace ClassicUO.Game.UI.Gumps
                     s = new SettingsOption
                     (
                         "",
-                        new CheckboxWithLabel(TazLang.Get("mog_containers_uselargecontainergumps"), 0,
+                        new CheckboxWithLabel(lang.GetContainers.UseLargeContainerGumps, 0,
                             profile.UseLargeContainerGumps, (b) => { profile.UseLargeContainerGumps = b; }),
                         MainContent.RightWidth, (int)PAGE.Containers
                     )
@@ -2584,7 +2576,7 @@ namespace ClassicUO.Game.UI.Gumps
                     "",
                     new CheckboxWithLabel
                     (
-                        TazLang.Get("mog_containers_doubleclicktolootitemsinsidecontainers"), 0,
+                        lang.GetContainers.DoubleClickToLootItemsInsideContainers, 0,
                         profile.DoubleClickToLootInsideContainers,
                         (b) => { profile.DoubleClickToLootInsideContainers = b; }
                     ), MainContent.RightWidth, (int)PAGE.Containers
@@ -2600,7 +2592,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     new CheckboxWithLabel
-                    (TazLang.Get("mog_containers_relativedraganddropitemsincontainers"), 0, profile.RelativeDragAndDropItems,
+                    (lang.GetContainers.RelativeDragAndDropItemsInContainers, 0, profile.RelativeDragAndDropItems,
                         (b) => { profile.RelativeDragAndDropItems = b; }),
                     MainContent.RightWidth, (int)PAGE.Containers
                 )
@@ -2617,7 +2609,7 @@ namespace ClassicUO.Game.UI.Gumps
                     "",
                     new CheckboxWithLabel
                     (
-                        TazLang.Get("mog_containers_highlightcontainerongroundwhenmouseisoveracontainergump"), 0,
+                        lang.GetContainers.HighlightContainerOnGroundWhenMouseIsOverAContainerGump, 0,
                         profile.HighlightContainerWhenSelected,
                         (b) => { profile.HighlightContainerWhenSelected = b; }
                     ), MainContent.RightWidth, (int)PAGE.Containers
@@ -2633,7 +2625,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_containers_recolorcontainergumpbywithcontainerhue"), 0,
+                    new CheckboxWithLabel(lang.GetContainers.RecolorContainerGumpByWithContainerHue, 0,
                         profile.HueContainerGumps, (b) => { profile.HueContainerGumps = b; }),
                     MainContent.RightWidth, (int)PAGE.Containers
                 )
@@ -2648,7 +2640,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     new CheckboxWithLabel
-                    (TazLang.Get("mog_containers_overridecontainergumplocations"), 0, profile.OverrideContainerLocation,
+                    (lang.GetContainers.OverrideContainerGumpLocations, 0, profile.OverrideContainerLocation,
                         (b) => { profile.OverrideContainerLocation = b; }),
                     MainContent.RightWidth, (int)PAGE.Containers
                 )
@@ -2664,12 +2656,12 @@ namespace ClassicUO.Game.UI.Gumps
                     "",
                     new ComboBoxWithLabel
                     (World,
-                        TazLang.Get("mog_containers_overrideposition"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                        lang.GetContainers.OverridePosition, 0, ThemeSettings.COMBO_BOX_WIDTH,
                         new string[]
                         {
-                            TazLang.Get("mog_containers_positionopt_nearcontainer"), TazLang.Get("mog_containers_positionopt_topright"),
-                            TazLang.Get("mog_containers_positionopt_lastdraggedposition"),
-                            TazLang.Get("mog_containers_remembereachcontainer")
+                            lang.GetContainers.PositionOpt_NearContainer, lang.GetContainers.PositionOpt_TopRight,
+                            lang.GetContainers.PositionOpt_LastDraggedPosition,
+                            lang.GetContainers.RememberEachContainer
                         }, profile.OverrideContainerLocationSetting,
                         (i, s) => { profile.OverrideContainerLocationSetting = i; }
                     ), MainContent.RightWidth, (int)PAGE.Containers
@@ -2687,7 +2679,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     "",
                     rebuildContainers =
-                        new ModernButton(0, 0, 130, 40, ButtonAction.Activate, TazLang.Get("mog_containers_rebuildcontainerstxt"),
+                        new ModernButton(0, 0, 130, 40, ButtonAction.Activate, lang.GetContainers.RebuildContainersTxt,
                             ThemeSettings.BUTTON_FONT_COLOR, 999) { IsSelected = true, IsSelectable = true },
                     MainContent.RightWidth, (int)PAGE.Containers
                 )
@@ -2707,7 +2699,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_experimental_disabledefaultuohotkeys"), 0,
+                    new CheckboxWithLabel(lang.GetExperimental.DisableDefaultUoHotkeys, 0,
                         profile.DisableDefaultHotkeys, (b) => { profile.DisableDefaultHotkeys = b; }),
                     MainContent.RightWidth, (int)PAGE.Experimental
                 )
@@ -2721,7 +2713,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_experimental_disablearrowsnumlockarrowsplayermovement"), 0,
+                    new CheckboxWithLabel(lang.GetExperimental.DisableArrowsNumlockArrowsPlayerMovement, 0,
                         profile.DisableArrowBtn, (b) => { profile.DisableArrowBtn = b; }),
                     MainContent.RightWidth, (int)PAGE.Experimental
                 )
@@ -2735,7 +2727,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_experimental_disabletabtogglewarmode"), 0, profile.DisableTabBtn,
+                    new CheckboxWithLabel(lang.GetExperimental.DisableTabToggleWarmode, 0, profile.DisableTabBtn,
                         (b) => { profile.DisableTabBtn = b; }),
                     MainContent.RightWidth, (int)PAGE.Experimental
                 )
@@ -2749,7 +2741,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_experimental_disablectrlqwmessagehistory"), 0, profile.DisableCtrlQWBtn,
+                    new CheckboxWithLabel(lang.GetExperimental.DisableCtrlQWMessageHistory, 0, profile.DisableCtrlQWBtn,
                         (b) => { profile.DisableCtrlQWBtn = b; }),
                     MainContent.RightWidth, (int)PAGE.Experimental
                 )
@@ -2763,7 +2755,7 @@ namespace ClassicUO.Game.UI.Gumps
                 s = new SettingsOption
                 (
                     "",
-                    new CheckboxWithLabel(TazLang.Get("mog_experimental_disablerightleftclickautomove"), 0,
+                    new CheckboxWithLabel(lang.GetExperimental.DisableRightLeftClickAutoMove, 0,
                         profile.DisableAutoMove, (b) => { profile.DisableAutoMove = b; }),
                     MainContent.RightWidth, (int)PAGE.Experimental
                 )
@@ -2784,7 +2776,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToLeft
             (
-                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, TazLang.Get("mog_nameplates_newentry"),
+                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, lang.GetNamePlates.NewEntry,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = page, IsSelectable = false }
             );
 
@@ -2792,7 +2784,7 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 EntryDialog dialog = new
                 (
-                    World, 250, 150, TazLang.Get("mog_nameplates_nameoverheadentryname"), name =>
+                    World, 250, 150, lang.GetNamePlates.NameOverheadEntryName, name =>
                     {
                         if (string.IsNullOrWhiteSpace(name))
                         {
@@ -2836,7 +2828,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToLeft
             (
-                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, TazLang.Get("mog_nameplates_deleteentry"),
+                b = new ModernButton(0, 0, content.LeftWidth, 40, ButtonAction.Activate, lang.GetNamePlates.DeleteEntry,
                     ThemeSettings.BUTTON_FONT_COLOR) { ButtonParameter = page, IsSelectable = false }
             );
 
@@ -2909,179 +2901,126 @@ namespace ClassicUO.Game.UI.Gumps
             SettingsOption s;
             PositionHelper.Reset();
 
-            _options.Add(s = new SettingsOption(TazLang.Get("mog_cooldowns_customcooldownbars"), new Area(false),
+            _options.Add(s = new SettingsOption(lang.GetCooldowns.CustomCooldownBars, new Area(false),
                 MainContent.RightWidth, (int)PAGE.TUOCooldowns));
             PositionHelper.PositionControl(s.FullControl);
             PositionHelper.Indent();
 
-            // Cooldown bar configuration now lives in the new (Myra) options menu, backed by cooldownbars.json.
             _options.Add
             (
                 s = new SettingsOption
                 (
-                    "",
-                    TextBox.GetOne(
-                        TazLang.Get("mog_cooldowns_movednotice"),
-                        ThemeSettings.FONT,
-                        ThemeSettings.STANDARD_TEXT_SIZE,
-                        ThemeSettings.TEXT_FONT_COLOR,
-                        TextBox.RTLOptions.Default(MainContent.RightWidth)
-                    ),
-                    MainContent.RightWidth,
-                    (int)PAGE.TUOCooldowns
+                    lang.GetCooldowns.PositionX, new InputField
+                    (
+                        100, 40, text: profile.CoolDownX.ToString(), numbersOnly: true, onTextChanges: (s, e) =>
+                        {
+                            if (int.TryParse(((InputField.StbTextBox)s).Text, out int v))
+                            {
+                                profile.CoolDownX = v;
+                            }
+                        }
+                    ), MainContent.RightWidth, (int)PAGE.TUOCooldowns
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
+            PositionHelper.BlankLine();
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    lang.GetCooldowns.PositionY, new InputField
+                    (
+                        100, 40, text: profile.CoolDownY.ToString(), numbersOnly: true, onTextChanges: (s, e) =>
+                        {
+                            if (int.TryParse(((InputField.StbTextBox)s).Text, out int v))
+                            {
+                                profile.CoolDownY = v;
+                            }
+                        }
+                    ), MainContent.RightWidth, (int)PAGE.TUOCooldowns
+                )
+            );
+
+            PositionHelper.PositionControl(s.FullControl);
+            PositionHelper.BlankLine();
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    string.Empty,
+                    new CheckboxWithLabel(lang.GetCooldowns.UseLastMovedBarPosition, 0,
+                        profile.UseLastMovedCooldownPosition, (b) => { profile.UseLastMovedCooldownPosition = b; }),
+                    MainContent.RightWidth, (int)PAGE.TUOCooldowns
                 )
             );
 
             PositionHelper.PositionControl(s.FullControl);
             PositionHelper.RemoveIndent();
-        }
 
-        private void SetNamePlatePresetCustom()
-        {
-            if (profile.NamePlatePreset != NamePlatePreset.Custom)
+            PositionHelper.BlankLine();
+            PositionHelper.BlankLine();
+
+            _options.Add(s = new SettingsOption(lang.GetCooldowns.Conditions, new Area(false), MainContent.RightWidth,
+                (int)PAGE.TUOCooldowns));
+            PositionHelper.PositionControl(s.FullControl);
+
+            var conditionsDataBox = new DataBox(0, 0, 0, 0) { WantUpdateSize = true };
+
+            ModernButton addcond;
+
+            _options.Add
+            (
+                s = new SettingsOption
+                (
+                    "",
+                    addcond = new ModernButton(0, 0, 175, 40, ButtonAction.Activate, lang.GetCooldowns.AddCondition,
+                        ThemeSettings.BUTTON_FONT_COLOR), MainContent.RightWidth,
+                    (int)PAGE.TUOCooldowns
+                )
+            );
+
+            addcond.MouseUp += (s, e) =>
             {
-                profile.NamePlatePreset = NamePlatePreset.Custom;
+                CoolDownBar.CoolDownConditionData.GetConditionData(profile.CoolDownConditionCount, true);
+
+                Gump g = UIManager.GetGump<ModernOptionsGump>();
+
+                if (g != null)
+                {
+                    Point pos = g.Location;
+                    g.Dispose();
+
+                    g = new ModernOptionsGump(World) { Location = pos };
+
+                    g.ChangePage((int)PAGE.TUOCooldowns);
+                    UIManager.Add(g);
+                }
+            };
+
+            PositionHelper.PositionControl(s.FullControl);
+
+            int count = profile.CoolDownConditionCount;
+
+            for (int i = 0; i < count; i++)
+            {
+                conditionsDataBox.Add(GenConditionControl(i, MainContent.RightWidth - 19, false));
             }
 
-            NameOverheadGump.InvalidateAllLayouts();
-        }
+            conditionsDataBox.ReArrangeChildren();
+            conditionsDataBox.ForceSizeUpdate();
 
-        private void ApplyNamePlatePreset(NamePlatePreset preset)
-        {
-            profile.NamePlatePreset = preset;
-
-            switch (preset)
+            var scroll = new ScrollArea(0, 0, MainContent.RightWidth, MainContent.Height - PositionHelper.Y)
             {
-                case NamePlatePreset.Orion:
-                    profile.NamePlateUseFixedWidth = true;
-                    profile.NamePlateFixedWidth = 160;
-                    profile.NamePlateUseFixedHealthBarWidth = false;
-                    profile.NamePlateHealthBarFixedWidth = 160;
-                    profile.NamePlateHeight = 0;
-                    profile.NamePlateSplitHealthBar = false;
-                    profile.NamePlateCornerRadius = 18;
-                    profile.NamePlateHealthBarMode = NamePlateHealthBarMode.StatusColor;
-                    profile.NamePlateBackgroundMode = NamePlateBackgroundMode.NotorietyColor;
-                    profile.NamePlateBackgroundR = 0;
-                    profile.NamePlateBackgroundG = 0;
-                    profile.NamePlateBackgroundB = 0;
-                    profile.NamePlateHealthBar = true;
-                    profile.NamePlateHealthBarOpacity = 75;
-                    profile.NamePlateOpacity = 70;
-                    profile.NamePlateBorderOpacity = 80;
-                    profile.NamePlateAvoidOverlap = true;
-                    profile.NamePlateHideAtFullHealth = false;
-                    profile.NamePlateHideAtFullHealthInWarmode = false;
-                    profile.NamePlateShowWordOfDeathIcon = false;
-                    profile.NamePlateFont = "avadonian";
-                    profile.NamePlateFontSize = 16;
-                    break;
+                CanMove = true, AcceptMouseInput = true
+            };
 
-                case NamePlatePreset.WorldOfWarcraftBlockyBars:
-                    profile.NamePlateUseFixedWidth = true;
-                    profile.NamePlateFixedWidth = 220;
-                    profile.NamePlateUseFixedHealthBarWidth = false;
-                    profile.NamePlateHealthBarFixedWidth = 220;
-                    profile.NamePlateHeight = 44;
-                    profile.NamePlateSplitHealthBar = true;
-                    profile.NamePlateCornerRadius = 2;
-                    profile.NamePlateHealthBarMode = NamePlateHealthBarMode.Green;
-                    profile.NamePlateBackgroundMode = NamePlateBackgroundMode.FixedColor;
-                    profile.NamePlateBackgroundR = 18;
-                    profile.NamePlateBackgroundG = 14;
-                    profile.NamePlateBackgroundB = 14;
-                    profile.NamePlateHealthBar = true;
-                    profile.NamePlateHealthBarOpacity = 100;
-                    profile.NamePlateOpacity = 85;
-                    profile.NamePlateBorderOpacity = 85;
-                    profile.NamePlateAvoidOverlap = true;
-                    profile.NamePlateHideAtFullHealth = false;
-                    profile.NamePlateHideAtFullHealthInWarmode = false;
-                    profile.NamePlateShowWordOfDeathIcon = false;
-                    profile.NamePlateFont = "avadonian";
-                    profile.NamePlateFontSize = 17;
-                    break;
+            scroll.Add(conditionsDataBox);
 
-                case NamePlatePreset.WorldOfWarcraftCleanHealth:
-                    profile.NamePlateUseFixedWidth = true;
-                    profile.NamePlateFixedWidth = 220;
-                    profile.NamePlateUseFixedHealthBarWidth = false;
-                    profile.NamePlateHealthBarFixedWidth = 220;
-                    profile.NamePlateHeight = 54;
-                    profile.NamePlateSplitHealthBar = true;
-                    profile.NamePlateCornerRadius = 3;
-                    profile.NamePlateHealthBarMode = NamePlateHealthBarMode.Green;
-                    profile.NamePlateBackgroundMode = NamePlateBackgroundMode.FixedColor;
-                    profile.NamePlateBackgroundR = 20;
-                    profile.NamePlateBackgroundG = 18;
-                    profile.NamePlateBackgroundB = 18;
-                    profile.NamePlateHealthBar = true;
-                    profile.NamePlateHealthBarOpacity = 100;
-                    profile.NamePlateOpacity = 85;
-                    profile.NamePlateBorderOpacity = 90;
-                    profile.NamePlateAvoidOverlap = true;
-                    profile.NamePlateHideAtFullHealth = false;
-                    profile.NamePlateHideAtFullHealthInWarmode = false;
-                    profile.NamePlateShowWordOfDeathIcon = false;
-                    profile.NamePlateFont = "avadonian";
-                    profile.NamePlateFontSize = 18;
-                    break;
-
-                case NamePlatePreset.WorldOfWarcraftBlockyCast:
-                    profile.NamePlateUseFixedWidth = true;
-                    profile.NamePlateFixedWidth = 220;
-                    profile.NamePlateUseFixedHealthBarWidth = false;
-                    profile.NamePlateHealthBarFixedWidth = 220;
-                    profile.NamePlateHeight = 36;
-                    profile.NamePlateSplitHealthBar = true;
-                    profile.NamePlateCornerRadius = 1;
-                    profile.NamePlateHealthBarMode = NamePlateHealthBarMode.Green;
-                    profile.NamePlateBackgroundMode = NamePlateBackgroundMode.FixedColor;
-                    profile.NamePlateBackgroundR = 24;
-                    profile.NamePlateBackgroundG = 18;
-                    profile.NamePlateBackgroundB = 18;
-                    profile.NamePlateHealthBar = true;
-                    profile.NamePlateHealthBarOpacity = 100;
-                    profile.NamePlateOpacity = 82;
-                    profile.NamePlateBorderOpacity = 90;
-                    profile.NamePlateAvoidOverlap = true;
-                    profile.NamePlateHideAtFullHealth = false;
-                    profile.NamePlateHideAtFullHealthInWarmode = false;
-                    profile.NamePlateShowWordOfDeathIcon = false;
-                    profile.NamePlateFont = "avadonian";
-                    profile.NamePlateFontSize = 17;
-                    break;
-
-                case NamePlatePreset.WorldOfWarcraftRedName:
-                    profile.NamePlateUseFixedWidth = true;
-                    profile.NamePlateFixedWidth = 220;
-                    profile.NamePlateUseFixedHealthBarWidth = false;
-                    profile.NamePlateHealthBarFixedWidth = 220;
-                    profile.NamePlateHeight = 38;
-                    profile.NamePlateSplitHealthBar = true;
-                    profile.NamePlateCornerRadius = 1;
-                    profile.NamePlateHealthBarMode = NamePlateHealthBarMode.Green;
-                    profile.NamePlateBackgroundMode = NamePlateBackgroundMode.FixedColor;
-                    profile.NamePlateBackgroundR = 28;
-                    profile.NamePlateBackgroundG = 12;
-                    profile.NamePlateBackgroundB = 12;
-                    profile.NamePlateHealthBar = true;
-                    profile.NamePlateHealthBarOpacity = 100;
-                    profile.NamePlateOpacity = 85;
-                    profile.NamePlateBorderOpacity = 90;
-                    profile.NamePlateAvoidOverlap = true;
-                    profile.NamePlateHideAtFullHealth = false;
-                    profile.NamePlateHideAtFullHealthInWarmode = false;
-                    profile.NamePlateShowWordOfDeathIcon = false;
-                    profile.NamePlateFont = "avadonian";
-                    profile.NamePlateFontSize = 18;
-                    break;
-
-                default:
-                    break;
-            }
-
-            NameOverheadGump.InvalidateAllLayouts();
+            _options.Add(s = new SettingsOption("", scroll, MainContent.RightWidth, (int)PAGE.TUOCooldowns));
+            PositionHelper.PositionControl(s.FullControl);
         }
 
         private void BuildTazUO()
@@ -3094,7 +3033,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region General
 
             page = ((int)PAGE.TUOOptions + 1000);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_gridcontainers"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.GridContainers, page, content.LeftWidth));
 
             content.AddToRight
             (new HttpClickableLink("Grid Containers Wiki", "https://github.com/PlayTazUO/TazUO/wiki/TazUO.Grid-Containers", ThemeSettings.TEXT_FONT_COLOR),
@@ -3104,7 +3043,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_enablegridcontainers"), 0, profile.UseGridLayoutContainerGumps,
+                new CheckboxWithLabel(lang.GetTazUO.EnableGridContainers, 0, profile.UseGridLayoutContainerGumps,
                     (b) => { profile.UseGridLayoutContainerGumps = b; }), true, page
             );
 
@@ -3112,7 +3051,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_gridcontainersdefaulttooldstyleview"), 0,
+                new CheckboxWithLabel(lang.GetTazUO.GridContainersDefaultToOldStyleView, 0,
                     profile.GridContainersDefaultToOldStyleView,
                     (b) => { profile.GridContainersDefaultToOldStyleView = b; }), true, page
             );
@@ -3122,7 +3061,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_gridcontainerscale"), 0, ThemeSettings.SLIDER_WIDTH, 50, 200,
+                (lang.GetTazUO.GridContainerScale, 0, ThemeSettings.SLIDER_WIDTH, 50, 200,
                     profile.GridContainersScale, (i) => { profile.GridContainersScale = (byte)i; }),
                 true, page
             );
@@ -3130,23 +3069,8 @@ namespace ClassicUO.Game.UI.Gumps
             content.Indent();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_alsoscaleitems"), 0, profile.GridContainerScaleItems, (b) => { profile.GridContainerScaleItems = b; }),
+            (new CheckboxWithLabel(lang.GetTazUO.AlsoScaleItems, 0, profile.GridContainerScaleItems, (b) => { profile.GridContainerScaleItems = b; }),
                 true, page);
-
-            content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_highlightlowcontrastitems"), 0, profile.GridHighlightLowContrastItems, (b) => { profile.GridHighlightLowContrastItems = b; }),
-                true, page);
-
-            content.AddToRight
-            (
-                new ComboBoxWithLabel
-                (
-                    World,
-                    TazLang.Get("mog_tazuo_lowcontrasthighlightstyle"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    Enum.GetNames(typeof(LowContrastHighlightStyle)), profile.GridHighlightLowContrastItemsStyle,
-                    (i, s) => { profile.GridHighlightLowContrastItemsStyle = i; }
-                ), true, page
-            );
 
             content.RemoveIndent();
 
@@ -3155,20 +3079,20 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_griditemborderopacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.GridBorderAlpha,
+                (lang.GetTazUO.GridItemBorderOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.GridBorderAlpha,
                     (i) =>
                     {
                         profile.GridBorderAlpha = (byte)i;
-                        GridItem.StaticGridContainerSettingUpdated();
+                        GridContainer.GridItem.StaticGridContainerSettingUpdated();
                     }), true, page
             );
 
             content.Indent();
-            content.AddToRight(new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_bordercolor"), profile.GridBorderHue,
+            content.AddToRight(new ModernColorPickerWithLabel(World, lang.GetTazUO.BorderColor, profile.GridBorderHue,
                 (h) =>
                 {
                     profile.GridBorderHue = h;
-                    GridItem.StaticGridContainerSettingUpdated();
+                    GridContainer.GridItem.StaticGridContainerSettingUpdated();
                 }), true, page);
             content.RemoveIndent();
 
@@ -3178,7 +3102,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_containeropacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.ContainerOpacity,
+                    lang.GetTazUO.ContainerOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.ContainerOpacity,
                     (i) =>
                     {
                         profile.ContainerOpacity = (byte)i;
@@ -3193,7 +3117,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ModernColorPickerWithLabel
                 (
-                    World, TazLang.Get("mog_tazuo_backgroundcolor"), profile.AltGridContainerBackgroundHue, (h) =>
+                    World, lang.GetTazUO.BackgroundColor, profile.AltGridContainerBackgroundHue, (h) =>
                     {
                         profile.AltGridContainerBackgroundHue = h;
                         GridContainer.UpdateAllGridContainers();
@@ -3205,7 +3129,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_usecontainershue"), 0, profile.Grid_UseContainerHue, (b) =>
+                    lang.GetTazUO.UseContainersHue, 0, profile.Grid_UseContainerHue, (b) =>
                     {
                         profile.Grid_UseContainerHue = b;
                         GridContainer.UpdateAllGridContainers();
@@ -3221,24 +3145,8 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("gridcontainer_defaultview", "Default container view"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    new string[] { TazLang.Get("gridcontainer_view_grid_short", "Grid"), TazLang.Get("gridcontainer_view_list_short", "List") }, profile.GridContainerViewMode,
-                    (i, s) =>
-                    {
-                        profile.GridContainerViewMode = i;
-                        GridContainer.UpdateAllGridContainers();
-                    }
-                ), true, page
-            );
-
-            content.BlankLine();
-
-            content.AddToRight
-            (
-                new ComboBoxWithLabel
-                (World,
-                    TazLang.Get("mog_tazuo_searchstyle"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    new string[] { TazLang.Get("mog_tazuo_onlyshow"), TazLang.Get("mog_tazuo_highlight") }, profile.GridContainerSearchMode,
+                    lang.GetTazUO.SearchStyle, 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    new string[] { lang.GetTazUO.OnlyShow, lang.GetTazUO.Highlight }, profile.GridContainerSearchMode,
                     (i, s) => { profile.GridContainerSearchMode = i; }
                 ), true, page
             );
@@ -3246,10 +3154,10 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_enablecontainerpreview"), 0, profile.GridEnableContPreview, (b) => { profile.GridEnableContPreview = b; }),
+            (c = new CheckboxWithLabel(lang.GetTazUO.EnableContainerPreview, 0, profile.GridEnableContPreview, (b) => { profile.GridEnableContPreview = b; }),
                 true, page);
 
-            c.SetTooltip(TazLang.Get("mog_tazuo_tooltippreview"));
+            c.SetTooltip(lang.GetTazUO.TooltipPreview);
 
             content.BlankLine();
 
@@ -3257,7 +3165,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_makeanchorable"), 0, profile.EnableGridContainerAnchor, (b) =>
+                    lang.GetTazUO.MakeAnchorable, 0, profile.EnableGridContainerAnchor, (b) =>
                     {
                         profile.EnableGridContainerAnchor = b;
                         GridContainer.UpdateAllGridContainers();
@@ -3265,7 +3173,7 @@ namespace ClassicUO.Game.UI.Gumps
                 ), true, page
             );
 
-            c.SetTooltip(TazLang.Get("mog_tazuo_tooltipgridanchor"));
+            c.SetTooltip(lang.GetTazUO.TooltipGridAnchor);
 
             content.BlankLine();
 
@@ -3273,8 +3181,8 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_tazuo_containerstyle"), 0, ThemeSettings.COMBO_BOX_WIDTH,
-                    Enum.GetNames(typeof(BorderStyle)), profile.Grid_BorderStyle, (i, s) =>
+                    lang.GetTazUO.ContainerStyle, 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    Enum.GetNames(typeof(GridContainer.BorderStyle)), profile.Grid_BorderStyle, (i, s) =>
                     {
                         profile.Grid_BorderStyle = i;
                         GridContainer.UpdateAllGridContainers();
@@ -3288,7 +3196,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_hideborders"), 0, profile.Grid_HideBorder, (b) =>
+                    lang.GetTazUO.HideBorders, 0, profile.Grid_HideBorder, (b) =>
                     {
                         profile.Grid_HideBorder = b;
                         GridContainer.UpdateAllGridContainers();
@@ -3300,7 +3208,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_defaultgridrows"), 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
+                new SliderWithLabel(lang.GetTazUO.DefaultGridRows, 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
                     profile.Grid_DefaultRows, (i) => { profile.Grid_DefaultRows = i; }), true,
                 page
             );
@@ -3308,7 +3216,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_defaultgridcolumns"), 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
+                (lang.GetTazUO.DefaultGridColumns, 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
                     profile.Grid_DefaultColumns, (i) => { profile.Grid_DefaultColumns = i; }), true, page
             );
 
@@ -3324,7 +3232,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new ModernButton(0, 0, 200, 40, ButtonAction.Activate, TazLang.Get("mog_tazuo_gridhighlightsettings"),
+                c = new ModernButton(0, 0, 200, 40, ButtonAction.Activate, lang.GetTazUO.GridHighlightSettings,
                     ThemeSettings.BUTTON_FONT_COLOR) { IsSelected = true }, true, page
             );
 
@@ -3332,7 +3240,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_gridhighlightsize"), 0, ThemeSettings.SLIDER_WIDTH, 1, 5,
+                new SliderWithLabel(lang.GetTazUO.GridHighlightSize, 0, ThemeSettings.SLIDER_WIDTH, 1, 5,
                     profile.GridHighlightSize, (i) => { profile.GridHighlightSize = i; }),
                 true, page
             );
@@ -3341,21 +3249,21 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_gridhighlightproperties"), 0, profile.GridHighlightProperties,
+                c = new CheckboxWithLabel(lang.GetTazUO.GridHighlightProperties, 0, profile.GridHighlightProperties,
                     (b) => { profile.GridHighlightProperties = b; }),
                 true, page
             );
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_gridhighlightshowrulename"), 0, profile.GridHighlightShowRuleName,
+                c = new CheckboxWithLabel(lang.GetTazUO.GridHighlightShowRuleName, 0, profile.GridHighlightShowRuleName,
                     (b) => { profile.GridHighlightShowRuleName = b; }),
                 true, page
             );
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_griddisabletargeting"), 0, profile.DisableTargetingGridContainers,
+                c = new CheckboxWithLabel(lang.GetTazUO.GridDisableTargeting, 0, profile.DisableTargetingGridContainers,
                     (b) => { profile.DisableTargetingGridContainers = b; }),
                 true, page
             );
@@ -3372,12 +3280,12 @@ namespace ClassicUO.Game.UI.Gumps
                     ThemeSettings.TEXT_FONT_COLOR), true, page);
             content.BlankLine();
 
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_journal"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Journal, page, content.LeftWidth));
 
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_maxjournalentries"), 0, ThemeSettings.SLIDER_WIDTH, 100, 2000,
+                (lang.GetTazUO.MaxJournalEntries, 0, ThemeSettings.SLIDER_WIDTH, 100, 2000,
                     profile.MaxJournalEntries, (i) => { profile.MaxJournalEntries = i; }), true, page
             );
 
@@ -3387,7 +3295,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_journalopacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.JournalOpacity, (i) =>
+                    lang.GetTazUO.JournalOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.JournalOpacity, (i) =>
                     {
                         profile.JournalOpacity = (byte)i;
                         ResizableJournal.UpdateJournalOptions();
@@ -3401,7 +3309,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ModernColorPickerWithLabel
                 (
-                    World, TazLang.Get("mog_tazuo_journalbackgroundcolor"), profile.AltJournalBackgroundHue, (h) =>
+                    World, lang.GetTazUO.JournalBackgroundColor, profile.AltJournalBackgroundHue, (h) =>
                     {
                         profile.AltJournalBackgroundHue = h;
                         ResizableJournal.UpdateJournalOptions();
@@ -3416,7 +3324,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ComboBoxWithLabel
                 (World,
-                    TazLang.Get("mog_tazuo_journalstyle"), 0, ThemeSettings.COMBO_BOX_WIDTH,
+                    lang.GetTazUO.JournalStyle, 0, ThemeSettings.COMBO_BOX_WIDTH,
                     Enum.GetNames(typeof(ResizableJournal.BorderStyle)), profile.JournalStyle, (i, s) =>
                     {
                         profile.JournalStyle = i;
@@ -3431,7 +3339,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_journalhideborders"), 0, profile.HideJournalBorder, (b) =>
+                    lang.GetTazUO.JournalHideBorders, 0, profile.HideJournalBorder, (b) =>
                     {
                         profile.HideJournalBorder = b;
                         ResizableJournal.UpdateJournalOptions();
@@ -3441,11 +3349,11 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.BlankLine();
             content.AddToRight(
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_hidetimestamp"), 0, profile.HideJournalTimestamp,
+                c = new CheckboxWithLabel(lang.GetTazUO.HideTimestamp, 0, profile.HideJournalTimestamp,
                     (b) => { profile.HideJournalTimestamp = b; }), true, page);
             content.BlankLine();
             content.AddToRight(
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_journalhidesystemprefix"), 0, profile.HideJournalSystemPrefix,
+                c = new CheckboxWithLabel(lang.GetTazUO.JournalHideSystemPrefix, 0, profile.HideJournalSystemPrefix,
                     (b) => { profile.HideJournalSystemPrefix = b; }), true, page);
             content.BlankLine();
 
@@ -3453,7 +3361,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_makeanchorable"), 0, profile.JournalAnchorEnabled, (b) =>
+                    lang.GetTazUO.MakeAnchorable, 0, profile.JournalAnchorEnabled, (b) =>
                     {
                         profile.JournalAnchorEnabled = b;
                         ResizableJournal.UpdateJournalOptions();
@@ -3466,7 +3374,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Modern paperdoll
 
             page = ((int)PAGE.TUOOptions + 1002);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_modernpaperdoll"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.ModernPaperdoll, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
@@ -3476,7 +3384,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_enablemodernpaperdoll"), 0, profile.UseModernPaperdoll, (b) => { profile.UseModernPaperdoll = b; }),
+            (c = new CheckboxWithLabel(lang.GetTazUO.EnableModernPaperdoll, 0, profile.UseModernPaperdoll, (b) => { profile.UseModernPaperdoll = b; }),
                 true, page);
 
             content.Indent();
@@ -3486,7 +3394,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ModernColorPickerWithLabel
                 (
-                    World, TazLang.Get("mog_tazuo_paperdollhue"), profile.ModernPaperDollHue, (h) =>
+                    World, lang.GetTazUO.PaperdollHue, profile.ModernPaperDollHue, (h) =>
                     {
                         profile.ModernPaperDollHue = h;
                         ModernPaperdoll.UpdateAllOptions();
@@ -3500,7 +3408,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ModernColorPickerWithLabel
                 (
-                    World, TazLang.Get("mog_tazuo_durabilitybarhue"), profile.ModernPaperDollDurabilityHue, (h) =>
+                    World, lang.GetTazUO.DurabilityBarHue, profile.ModernPaperDollDurabilityHue, (h) =>
                     {
                         profile.ModernPaperDollDurabilityHue = h;
                         ModernPaperdoll.UpdateAllOptions();
@@ -3515,7 +3423,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_showdurabilitybarbelow"), 0, ThemeSettings.SLIDER_WIDTH, 1, 100,
+                    lang.GetTazUO.ShowDurabilityBarBelow, 0, ThemeSettings.SLIDER_WIDTH, 1, 100,
                     profile.ModernPaperDoll_DurabilityPercent,
                     (i) => { profile.ModernPaperDoll_DurabilityPercent = i; }
                 ), true, page
@@ -3527,7 +3435,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_paperdollanchor"), 0, profile.ModernPaperdollAnchorEnabled, (b) =>
+                    lang.GetTazUO.PaperdollAnchor, 0, profile.ModernPaperdollAnchorEnabled, (b) =>
                     {
                         profile.ModernPaperdollAnchorEnabled = b;
                         ModernPaperdoll.UpdateAllOptions();
@@ -3540,7 +3448,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Nameplates
 
             page = ((int)PAGE.TUOOptions + 1003);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("nameplate_title", "Nameplates"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Nameplates, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
@@ -3550,24 +3458,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (
-                new ComboBoxWithLabel
-                (
-                    World,
-                    TazLang.Get("nameplate_preset", "Preset"),
-                    0,
-                    ThemeSettings.COMBO_BOX_WIDTH,
-                    GetNamePlatePresetOptions(),
-                    (int)profile.NamePlatePreset,
-                    (i, s) => { ApplyNamePlatePreset((NamePlatePreset)i); },
-                    false
-                ), true, page
-            );
-
-            content.BlankLine();
-
-            content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("nameplate_healthbars", "Nameplates also act as health bars"), 0, profile.NamePlateHealthBar, (b) => { profile.NamePlateHealthBar = b; SetNamePlatePresetCustom(); }),
+            (new CheckboxWithLabel(lang.GetTazUO.NameplatesAlsoActAsHealthBars, 0, profile.NamePlateHealthBar, (b) => { profile.NamePlateHealthBar = b; }),
                 true, page);
 
             content.Indent();
@@ -3575,29 +3466,23 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("nameplate_hpopacity", "HP opacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateHealthBarOpacity,
-                    (i) => { profile.NamePlateHealthBarOpacity = (byte)i; SetNamePlatePresetCustom(); }),
+                (lang.GetTazUO.HpOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateHealthBarOpacity,
+                    (i) => { profile.NamePlateHealthBarOpacity = (byte)i; }),
                 true, page
             );
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("nameplate_showwordofdeathicon", "Show Word of Death icon at 30% health"), 0, profile.NamePlateShowWordOfDeathIcon,
-                    (b) => { profile.NamePlateShowWordOfDeathIcon = b; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new CheckboxWithLabel(TazLang.Get("nameplate_hidefullhealth", "Hide nameplates if full health"), 0, profile.NamePlateHideAtFullHealth,
-                    (b) => { profile.NamePlateHideAtFullHealth = b; SetNamePlatePresetCustom(); }), true, page
+                new CheckboxWithLabel(lang.GetTazUO.HideNameplatesIfFullHealth, 0, profile.NamePlateHideAtFullHealth,
+                    (b) => { profile.NamePlateHideAtFullHealth = b; }), true, page
             );
 
             content.Indent();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("nameplate_onlywarmode", "Only in warmode"), 0, profile.NamePlateHideAtFullHealthInWarmode,
-                    (b) => { profile.NamePlateHideAtFullHealthInWarmode = b; SetNamePlatePresetCustom(); }), true,
+                new CheckboxWithLabel(lang.GetTazUO.OnlyInWarmode, 0, profile.NamePlateHideAtFullHealthInWarmode,
+                    (b) => { profile.NamePlateHideAtFullHealthInWarmode = b; }), true,
                 page
             );
 
@@ -3607,121 +3492,23 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("nameplate_fixedwidth", "Fixed width"), 0, profile.NamePlateUseFixedWidth,
-                    (b) => { profile.NamePlateUseFixedWidth = b; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.Indent();
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_width", "Name width"), 0, ThemeSettings.SLIDER_WIDTH, 60, 300, profile.NamePlateFixedWidth,
-                    (i) => { profile.NamePlateFixedWidth = i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new CheckboxWithLabel(TazLang.Get("nameplate_separatehealthbarwidth", "Separate health bar width"), 0, profile.NamePlateUseFixedHealthBarWidth,
-                    (b) => { profile.NamePlateUseFixedHealthBarWidth = b; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.Indent();
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_healthbarwidth", "Health bar width"), 0, ThemeSettings.SLIDER_WIDTH, 60, 300, profile.NamePlateHealthBarFixedWidth,
-                    (i) => { profile.NamePlateHealthBarFixedWidth = i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.RemoveIndent();
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_height", "Height"), 0, ThemeSettings.SLIDER_WIDTH, 0, 80, profile.NamePlateHeight,
-                    (i) => { profile.NamePlateHeight = i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.RemoveIndent();
-
-            content.AddToRight
-            (
-                new CheckboxWithLabel(TazLang.Get("nameplate_splithealthbar", "Split health bar"), 0, profile.NamePlateSplitHealthBar,
-                    (b) => { profile.NamePlateSplitHealthBar = b; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_cornerradius", "Corner radius"), 0, ThemeSettings.SLIDER_WIDTH, 0, 40, profile.NamePlateCornerRadius,
-                    (i) => { profile.NamePlateCornerRadius = i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new ComboBoxWithLabel
-                (
-                    World,
-                    TazLang.Get("nameplate_healthfill", "Health fill"),
-                    0,
-                    ThemeSettings.COMBO_BOX_WIDTH,
-                    GetNamePlateHealthBarModeOptions(),
-                    (int)profile.NamePlateHealthBarMode,
-                    (i, s) => { profile.NamePlateHealthBarMode = (NamePlateHealthBarMode)i; SetNamePlatePresetCustom(); },
-                    false
-                ), true, page
-            );
-
-            content.AddToRight
-            (
-                new ComboBoxWithLabel
-                (
-                    World,
-                    TazLang.Get("nameplate_backgroundmode", "Background mode"),
-                    0,
-                    ThemeSettings.COMBO_BOX_WIDTH,
-                    GetNamePlateBackgroundModeOptions(),
-                    (int)profile.NamePlateBackgroundMode,
-                    (i, s) => { profile.NamePlateBackgroundMode = (NamePlateBackgroundMode)i; SetNamePlatePresetCustom(); },
-                    false
-                ), true, page
-            );
-
-            content.AddToRight
-            (
                 new SliderWithLabel
-                (TazLang.Get("nameplate_borderopacity", "Border opacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateBorderOpacity,
-                    (i) => { profile.NamePlateBorderOpacity = (byte)i; SetNamePlatePresetCustom(); }),
+                (lang.GetTazUO.BorderOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateBorderOpacity,
+                    (i) => { profile.NamePlateBorderOpacity = (byte)i; }),
                 true, page
             );
 
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("nameplate_backgroundopacity", "Background opacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateOpacity,
-                    (i) => { profile.NamePlateOpacity = (byte)i; SetNamePlatePresetCustom(); }), true, page
+                (lang.GetTazUO.BackgroundOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.NamePlateOpacity,
+                    (i) => { profile.NamePlateOpacity = (byte)i; }), true, page
             );
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("nameplate_backgroundred", "Background red"), 0, ThemeSettings.SLIDER_WIDTH, 0, 255, profile.NamePlateBackgroundR,
-                    (i) => { profile.NamePlateBackgroundR = (byte)i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_backgroundgreen", "Background green"), 0, ThemeSettings.SLIDER_WIDTH, 0, 255, profile.NamePlateBackgroundG,
-                    (i) => { profile.NamePlateBackgroundG = (byte)i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel(TazLang.Get("nameplate_backgroundblue", "Background blue"), 0, ThemeSettings.SLIDER_WIDTH, 0, 255, profile.NamePlateBackgroundB,
-                    (i) => { profile.NamePlateBackgroundB = (byte)i; SetNamePlatePresetCustom(); }), true, page
-            );
-
-            content.AddToRight
-            (
-                new CheckboxWithLabel(TazLang.Get("nameplate_avoidoverlap", "Avoid overlap"), 0, profile.NamePlateAvoidOverlap,
-                    (b) => { profile.NamePlateAvoidOverlap = b; SetNamePlatePresetCustom(); }), true, page
+                new CheckboxWithLabel("Avoid overlap", 0, profile.NamePlateAvoidOverlap,
+                    (b) => { profile.NamePlateAvoidOverlap = b; }), true, page
             );
 
             #endregion
@@ -3729,59 +3516,59 @@ namespace ClassicUO.Game.UI.Gumps
             #region Mobiles
 
             page = ((int)PAGE.TUOOptions + 1004);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_mobiles"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Mobiles, page, content.LeftWidth));
             content.ResetRightSide();
             content.AddToRight(
-                c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_damagetoself"), profile.DamageHueSelf,
+                c = new ModernColorPickerWithLabel(World, lang.GetTazUO.DamageToSelf, profile.DamageHueSelf,
                     (h) => { profile.DamageHueSelf = h; }), true, page);
 
             content.AddToRight
             (
-                c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_damagetoothers"), profile.DamageHueOther,
+                c = new ModernColorPickerWithLabel(World, lang.GetTazUO.DamageToOthers, profile.DamageHueOther,
                     (h) => { profile.DamageHueOther = h; }) { X = 250, Y = c.Y }, false, page
             );
 
             content.AddToRight(
-                c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_damagetopets"), profile.DamageHuePet,
+                c = new ModernColorPickerWithLabel(World, lang.GetTazUO.DamageToPets, profile.DamageHuePet,
                     (h) => { profile.DamageHuePet = h; }), true, page);
 
             content.AddToRight
             (
-                c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_damagetoallies"), profile.DamageHueAlly,
+                c = new ModernColorPickerWithLabel(World, lang.GetTazUO.DamageToAllies, profile.DamageHueAlly,
                     (h) => { profile.DamageHueAlly = h; }) { X = 250, Y = c.Y }, false, page
             );
 
             content.AddToRight
-            (c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_damagetolastattack"), profile.DamageHueLastAttck, (h) => { profile.DamageHueLastAttck = h; }),
+            (c = new ModernColorPickerWithLabel(World, lang.GetTazUO.DamageToLastAttack, profile.DamageHueLastAttck, (h) => { profile.DamageHueLastAttck = h; }),
                 true, page);
 
             content.BlankLine();
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_displaypartychatoverplayerheads"), 0,
+                c = new CheckboxWithLabel(lang.GetTazUO.DisplayPartyChatOverPlayerHeads, 0,
                     profile.DisplayPartyChatOverhead, (b) => { profile.DisplayPartyChatOverhead = b; }),
                 true, page
             );
 
-            c.SetTooltip(TazLang.Get("mog_tazuo_tooltippartychat"));
+            c.SetTooltip(lang.GetTazUO.TooltipPartyChat);
             content.BlankLine();
 
             content.AddToRight
             (
                 c = new SliderWithLabel
-                (TazLang.Get("mog_tazuo_overheadtextwidth"), 0, ThemeSettings.SLIDER_WIDTH, 0, 600, profile.OverheadChatWidth,
+                (lang.GetTazUO.OverheadTextWidth, 0, ThemeSettings.SLIDER_WIDTH, 0, 600, profile.OverheadChatWidth,
                     (i) => { profile.OverheadChatWidth = i; }), true, page
             );
 
-            c.SetTooltip(TazLang.Get("mog_tazuo_tooltipoverheadtext"));
+            c.SetTooltip(lang.GetTazUO.TooltipOverheadText);
             content.BlankLine();
 
             content.AddToRight
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_belowmobilehealthbarscale"), 0, ThemeSettings.SLIDER_WIDTH, 1, 5,
+                    lang.GetTazUO.BelowMobileHealthBarScale, 0, ThemeSettings.SLIDER_WIDTH, 1, 5,
                     profile.HealthLineSizeMultiplier,
                     (i) => { profile.HealthLineSizeMultiplier = (byte)i; }
                 ), true, page
@@ -3792,7 +3579,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 c = new CheckboxWithLabel
-                (TazLang.Get("mog_tazuo_automaticallyopenhealthbarsforlastattack"), 0, profile.OpenHealthBarForLastAttack,
+                (lang.GetTazUO.AutomaticallyOpenHealthBarsForLastAttack, 0, profile.OpenHealthBarForLastAttack,
                     (b) => { profile.OpenHealthBarForLastAttack = b; }), true, page
             );
 
@@ -3800,7 +3587,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_updateonebaraslastattack"), 0, profile.UseOneHPBarForLastAttack,
+                c = new CheckboxWithLabel(lang.GetTazUO.UpdateOneBarAsLastAttack, 0, profile.UseOneHPBarForLastAttack,
                     (b) => { profile.UseOneHPBarForLastAttack = b; }), true, page
             );
 
@@ -3810,13 +3597,13 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_hiddenplayeropacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.HiddenBodyAlpha,
+                (lang.GetTazUO.HiddenPlayerOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100, profile.HiddenBodyAlpha,
                     (i) => { profile.HiddenBodyAlpha = (byte)i; }), true, page
             );
 
             content.Indent();
             content.AddToRight(
-                c = new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_hiddenplayerhue"), profile.HiddenBodyHue,
+                c = new ModernColorPickerWithLabel(World, lang.GetTazUO.HiddenPlayerHue, profile.HiddenBodyHue,
                     (h) => { profile.HiddenBodyHue = h; }), true, page);
             content.RemoveIndent();
             content.BlankLine();
@@ -3824,7 +3611,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_regularplayeropacity"), 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
+                (lang.GetTazUO.RegularPlayerOpacity, 0, ThemeSettings.SLIDER_WIDTH, 0, 100,
                     profile.PlayerConstantAlpha, (i) => { profile.PlayerConstantAlpha = i; }), true,
                 page
             );
@@ -3833,14 +3620,14 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_autofollowdistance"), 0, ThemeSettings.SLIDER_WIDTH, 1, 10,
+                new SliderWithLabel(lang.GetTazUO.AutoFollowDistance, 0, ThemeSettings.SLIDER_WIDTH, 1, 10,
                     profile.AutoFollowDistance, (i) => { profile.AutoFollowDistance = i; }),
                 true, page
             );
 
             content.Indent();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_disableautofollow"), 0, profile.DisableAutoFollowAlt,
+                new CheckboxWithLabel(lang.GetTazUO.DisableAutoFollow, 0, profile.DisableAutoFollowAlt,
                     (i) => { profile.DisableAutoFollowAlt = i; }), true, page);
             content.RemoveIndent();
             content.BlankLine();
@@ -3849,7 +3636,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_disablemouseinteractionsforoverheadtext"), 0,
+                    lang.GetTazUO.DisableMouseInteractionsForOverheadText, 0,
                     profile.DisableMouseInteractionOverheadText,
                     (b) => { profile.DisableMouseInteractionOverheadText = b; }
                 ), true, page
@@ -3859,7 +3646,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_overridepartymemberhues"), 0, profile.OverridePartyAndGuildHue,
+                c = new CheckboxWithLabel(lang.GetTazUO.OverridePartyMemberHues, 0, profile.OverridePartyAndGuildHue,
                     (b) => { profile.OverridePartyAndGuildHue = b; }), true, page
             );
 
@@ -3867,7 +3654,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_showtargetindicator"), isChecked: profile.ShowTargetIndicator,
+                new CheckboxWithLabel(lang.GetGeneral.ShowTargetIndicator, isChecked: profile.ShowTargetIndicator,
                     valueChanged: (b) => { profile.ShowTargetIndicator = b; }), true,
                 page
             );
@@ -3875,24 +3662,24 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (c = new SliderWithLabel(TazLang.Get("mog_tazuo_turndelay"), 0, ThemeSettings.SLIDER_WIDTH, 45, 120, profile.TurnDelay, i => profile.TurnDelay = (ushort)i),
+            (c = new SliderWithLabel(lang.GetTazUO.TurnDelay, 0, ThemeSettings.SLIDER_WIDTH, 45, 120, profile.TurnDelay, i => profile.TurnDelay = (ushort)i),
                 true, page);
 
             c.SetTooltip("This settting may cause throttling, Use with caution.");
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_ignorestaminacheck"), 0, profile.IgnoreStaminaCheck,
+                new CheckboxWithLabel(lang.GetGeneral.IgnoreStaminaCheck, 0, profile.IgnoreStaminaCheck,
                     (b) => profile.IgnoreStaminaCheck = b), true, page);
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_disablegrayenemies"), 0, profile.DisableGrayEnemies,
+                new CheckboxWithLabel(lang.GetGeneral.DisableGrayEnemies, 0, profile.DisableGrayEnemies,
                     (b) => profile.DisableGrayEnemies = b), true, page);
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_general_disabledismountwarmode"), 0, profile.DisableDismountInWarMode,
+                new CheckboxWithLabel(lang.GetGeneral.DisableDismountWarmode, 0, profile.DisableDismountInWarMode,
                     (b) => profile.DisableDismountInWarMode = b), true, page);
 
             #endregion
@@ -3900,7 +3687,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Misc
 
             page = ((int)PAGE.TUOOptions + 1005);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_misc"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Misc, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight(
@@ -3909,29 +3696,24 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_disablesystemchat"), 0, profile.DisableSystemChat,
+                new CheckboxWithLabel(lang.GetTazUO.DisableSystemChat, 0, profile.DisableSystemChat,
                     (b) => { profile.DisableSystemChat = b; }), true, page);
-            content.BlankLine();
-
-            content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("disablesystemchat_journalopen", "Disable system chat while Resizable Journal is open"), 0, profile.DisableSystemChatWhileJournalOpen,
-                    (b) => { profile.DisableSystemChatWhileJournalOpen = b; }), true, page);
             content.BlankLine();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_general_autoavoidobstacules"), isChecked: profile.AutoAvoidObstacules,
+                new CheckboxWithLabel(lang.GetGeneral.AutoAvoidObstacules, isChecked: profile.AutoAvoidObstacules,
                     valueChanged: (b) => { profile.AutoAvoidObstacules = b; }), true,
                 page
             );
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_enableimprovedbuffgump"), 0, profile.UseImprovedBuffBar,
+                new CheckboxWithLabel(lang.GetTazUO.EnableImprovedBuffGump, 0, profile.UseImprovedBuffBar,
                     (b) => { profile.UseImprovedBuffBar = b; }), true, page);
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_buffgumphue"), profile.ImprovedBuffBarHue,
+                new ModernColorPickerWithLabel(World, lang.GetTazUO.BuffGumpHue, profile.ImprovedBuffBarHue,
                     (h) => { profile.ImprovedBuffBarHue = h; }), true, page);
             content.RemoveIndent();
             content.BlankLine();
@@ -3940,7 +3722,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new ModernColorPickerWithLabel
                 (
-                    World, TazLang.Get("mog_tazuo_maingamewindowbackground"), profile.MainWindowBackgroundHue, (h) =>
+                    World, lang.GetTazUO.MainGameWindowBackground, profile.MainWindowBackgroundHue, (h) =>
                     {
                         profile.MainWindowBackgroundHue = h;
                         GameController.UpdateBackgroundHueShader();
@@ -3951,7 +3733,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_healthbarindicator"), 0, profile.EnableHealthIndicator, (b) => { profile.EnableHealthIndicator = b; }),
+            (new CheckboxWithLabel(lang.GetTazUO.EnableHealthIndicatorBorder, 0, profile.EnableHealthIndicator, (b) => { profile.EnableHealthIndicator = b; }),
                 true, page);
 
             content.Indent();
@@ -3960,7 +3742,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_onlyshowbelowhp"), 0, ThemeSettings.SLIDER_WIDTH, 1, 100,
+                    lang.GetTazUO.OnlyShowBelowHp, 0, ThemeSettings.SLIDER_WIDTH, 1, 100,
                     (int)profile.ShowHealthIndicatorBelow * 100,
                     (i) => { profile.ShowHealthIndicatorBelow = i / 100f; }
                 ), true, page
@@ -3968,7 +3750,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_size"), 0, ThemeSettings.SLIDER_WIDTH, 1, 25,
+                new SliderWithLabel(lang.GetTazUO.Size, 0, ThemeSettings.SLIDER_WIDTH, 1, 25,
                     profile.HealthIndicatorWidth, (i) => { profile.HealthIndicatorWidth = i; }), true,
                 page
             );
@@ -3978,21 +3760,21 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_spelliconscale"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
+                new SliderWithLabel(lang.GetTazUO.SpellIconScale, 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
                     profile.SpellIconScale, (i) => { profile.SpellIconScale = i; }), true,
                 page
             );
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_displaymatchinghotkeysonspellicons"), 0,
+                new CheckboxWithLabel(lang.GetTazUO.DisplayMatchingHotkeysOnSpellIcons, 0,
                     profile.SpellIcon_DisplayHotkey, (b) => { profile.SpellIcon_DisplayHotkey = b; }), true,
                 page
             );
 
             content.Indent();
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_hotkeytexthue"), profile.SpellIcon_HotkeyHue,
+                new ModernColorPickerWithLabel(World, lang.GetTazUO.HotkeyTextHue, profile.SpellIcon_HotkeyHue,
                     (h) => { profile.SpellIcon_HotkeyHue = h; }), true, page);
             content.RemoveIndent();
             content.BlankLine();
@@ -4000,19 +3782,19 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new CheckboxWithLabel
-                (TazLang.Get("mog_tazuo_enablegumpopacityadjustviaaltscroll"), 0, profile.EnableAlphaScrollingOnGumps,
+                (lang.GetTazUO.EnableGumpOpacityAdjustViaAltScroll, 0, profile.EnableAlphaScrollingOnGumps,
                     (b) => { profile.EnableAlphaScrollingOnGumps = b; }), true, page
             );
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_enableadvancedshopgump"), 0, profile.UseModernShopGump,
+                new CheckboxWithLabel(lang.GetTazUO.EnableAdvancedShopGump, 0, profile.UseModernShopGump,
                     (b) => { profile.UseModernShopGump = b; }), true, page);
             content.BlankLine();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_displayskillprogressbaronskillchanges"), 0,
+                new CheckboxWithLabel(lang.GetTazUO.DisplaySkillProgressBarOnSkillChanges, 0,
                     profile.DisplaySkillBarOnChange, (b) => { profile.DisplaySkillBarOnChange = b; }),
                 true, page
             );
@@ -4022,7 +3804,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new InputFieldWithLabel
-                (TazLang.Get("mog_tazuo_textformat"), ThemeSettings.INPUT_WIDTH, profile.SkillBarFormat, false,
+                (lang.GetTazUO.TextFormat, ThemeSettings.INPUT_WIDTH, profile.SkillBarFormat, false,
                     (s, e) => { profile.SkillBarFormat = ((InputField.StbTextBox)s).Text; }),
                 true, page
             );
@@ -4031,14 +3813,14 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_enablespellindicatorsystem"), 0, profile.EnableSpellIndicators, (b) => { profile.EnableSpellIndicators = b; }),
+            (new CheckboxWithLabel(lang.GetTazUO.EnableSpellIndicatorSystem, 0, profile.EnableSpellIndicators, (b) => { profile.EnableSpellIndicators = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
             (
-                c = new ModernButton(0, 0, 200, 40, ButtonAction.Activate, TazLang.Get("mog_tazuo_importfromurl"),
+                c = new ModernButton(0, 0, 200, 40, ButtonAction.Activate, lang.GetTazUO.ImportFromUrl,
                     ThemeSettings.BUTTON_FONT_COLOR) { IsSelectable = true, IsSelected = true }, true, page
             );
 
@@ -4046,45 +3828,51 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 if (e.Button == MouseButtonType.Left)
                 {
-                    new PromptPopupWindow
+                    UIManager.Add
                     (
-                        TazLang.Get("mog_tazuo_importfromurl"), TazLang.Get("mog_tazuo_inputrequesturl"),
-                        url =>
-                        {
-                            if (!string.IsNullOrEmpty(url))
+                        new InputRequest
+                        (
+                            World, lang.GetTazUO.InputRequestUrl, lang.GetTazUO.Download, lang.GetTazUO.Cancel,
+                            (r, s) =>
                             {
-                                if (Uri.TryCreate(url, UriKind.Absolute, out Uri uri))
+                                if (r == InputRequest.Result.BUTTON1 && !string.IsNullOrEmpty(s))
                                 {
-                                    GameActions.Print(World, TazLang.Get("mog_tazuo_attemptingtodownloadspellconfig"));
+                                    if (Uri.TryCreate(s, UriKind.Absolute, out Uri uri))
+                                    {
+                                        GameActions.Print(World, lang.GetTazUO.AttemptingToDownloadSpellConfig);
 
-                                    Task.Factory.StartNew
-                                    (() =>
-                                        {
-                                            try
+                                        Task.Factory.StartNew
+                                        (() =>
                                             {
-                                                using var httpClient = new HttpClient();
-                                                string result = httpClient.GetStringAsync(uri).Result;
+                                                try
+                                                {
+                                                    using var httpClient = new HttpClient();
+                                                    string result = httpClient.GetStringAsync(uri).Result;
 
-                                                if (SpellVisualRangeManager.Instance.LoadFromString(result))
+                                                    if (SpellVisualRangeManager.Instance.LoadFromString(result))
+                                                    {
+                                                        GameActions.Print(World,
+                                                            lang.GetTazUO.SuccesfullyDownloadedNewSpellConfig);
+                                                    }
+                                                }
+                                                catch (Exception ex)
                                                 {
                                                     GameActions.Print(World,
-                                                        TazLang.Get("mog_tazuo_succesfullydownloadednewspellconfig"));
+                                                        string.Format(
+                                                            lang.GetTazUO.FailedToDownloadTheSpellConfigExMessage,
+                                                            ex.Message));
                                                 }
                                             }
-                                            catch (Exception ex)
-                                            {
-                                                GameActions.Print(World,
-                                                    string.Format(
-                                                        TazLang.Get("mog_tazuo_failedtodownloadthespellconfigexmessage"),
-                                                        ex.Message));
-                                            }
-                                        }
-                                    );
+                                        );
+                                    }
                                 }
-                            }
-                        },
-                        TazLang.Get("mog_tazuo_download"), TazLang.Get("mog_tazuo_cancel"), null,
-                        "https://github.com/PlayTazUO/TazUO/raw/refs/heads/dev/src/ClassicUO.Client/Game/Managers/DefaultSpellIndicatorConfig.json"
+                            },
+                            "https://github.com/PlayTazUO/TazUO/raw/refs/heads/dev/src/ClassicUO.Client/Game/Managers/DefaultSpellIndicatorConfig.json"
+                        )
+                        {
+                            X = (Client.Game.Window.ClientBounds.Width >> 1) - 50,
+                            Y = (Client.Game.Window.ClientBounds.Height >> 1) - 50
+                        }
                     );
                 }
             };
@@ -4096,7 +3884,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_alsocloseanchoredhealthbarswhenautoclosinghealthbars"), content.RightWidth - 30,
+                    lang.GetTazUO.AlsoCloseAnchoredHealthbarsWhenAutoClosingHealthbars, content.RightWidth - 30,
                     profile.CloseHealthBarIfAnchored,
                     (b) => { profile.CloseHealthBarIfAnchored = b; }
                 ), true, page
@@ -4105,7 +3893,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_enableautoresynconhangdetection"), 0, profile.ForceResyncOnHang, (b) => { profile.ForceResyncOnHang = b; }),
+            (new CheckboxWithLabel(lang.GetTazUO.EnableAutoResyncOnHangDetection, 0, profile.ForceResyncOnHang, (b) => { profile.ForceResyncOnHang = b; }),
                 true, page);
 
             content.BlankLine();
@@ -4114,7 +3902,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_playeroffsetx"), 0, ThemeSettings.SLIDER_WIDTH, -20, 20, profile.PlayerOffset.X,
+                    lang.GetTazUO.PlayerOffsetX, 0, ThemeSettings.SLIDER_WIDTH, -20, 20, profile.PlayerOffset.X,
                     (i) => { profile.PlayerOffset = new Point(i, profile.PlayerOffset.Y); }
                 ), true, page
             );
@@ -4123,7 +3911,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_playeroffsety"), 0, ThemeSettings.SLIDER_WIDTH, -20, 20, profile.PlayerOffset.Y,
+                    lang.GetTazUO.PlayerOffsetY, 0, ThemeSettings.SLIDER_WIDTH, -20, 20, profile.PlayerOffset.Y,
                     (i) => { profile.PlayerOffset = new Point(profile.PlayerOffset.X, i); }
                 ), true, page
             );
@@ -4134,7 +3922,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new InputFieldWithLabel
                 (
-                    TazLang.Get("mog_tazuo_sosgumpid"), ThemeSettings.INPUT_WIDTH, profile.SOSGumpID.ToString(), true, (s, e) =>
+                    lang.GetTazUO.SOSGumpID, ThemeSettings.INPUT_WIDTH, profile.SOSGumpID.ToString(), true, (s, e) =>
                     {
                         if (StringHelper.TryParseUint(((InputField.StbTextBox)s).Text, out uint id))
                         {
@@ -4148,7 +3936,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_usewasdmovement"), isChecked: profile.UseWASDInsteadArrowKeys,
+                c = new CheckboxWithLabel(lang.GetTazUO.UseWASDMovement, isChecked: profile.UseWASDInsteadArrowKeys,
                     valueChanged: (e) => { profile.UseWASDInsteadArrowKeys = e; }),
                 true, page
             );
@@ -4159,7 +3947,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_applybordercavetiles"), isChecked: profile.EnableCaveBorder,
+                c = new CheckboxWithLabel(lang.GetTazUO.ApplyBorderCaveTiles, isChecked: profile.EnableCaveBorder,
                     valueChanged: (e) =>
                     {
                         profile.EnableCaveBorder = e;
@@ -4174,7 +3962,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_enableasyncmaploading"), isChecked: profile.EnableASyncMapLoading,
+                c = new CheckboxWithLabel(lang.GetTazUO.EnableASyncMapLoading, isChecked: profile.EnableASyncMapLoading,
                     valueChanged: (e) =>
                     {
                         profile.EnableASyncMapLoading = e;
@@ -4188,7 +3976,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_forcemanagedzlib"), isChecked: ZLib.ManagedZlibForced,
+                c = new CheckboxWithLabel(lang.GetTazUO.ForceManagedZlib, isChecked: ZLib.ManagedZlibForced,
                     valueChanged: (e) =>
                     {
                         _ = Client.Settings.SetAsync(SettingsScope.Global, Constants.SqlSettings.MANAGED_ZLIB, e);
@@ -4212,7 +4000,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new CheckboxWithLabel
                 (
-                    TazLang.Get("mog_tazuo_enablehousetransparency"), 0, profile.ForceHouseTransparency, (b) =>
+                    lang.GetTazUO.EnableHouseTransparency, 0, profile.ForceHouseTransparency, (b) =>
                     {
                         profile.ForceHouseTransparency = b;
                     }
@@ -4223,7 +4011,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.Indent();
             content.AddToRight
             (
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_housetransparencytilehue"),
+                new ModernColorPickerWithLabel(World, lang.GetTazUO.HouseTransparencyTileHue,
                     profile.ForcedTransparencyHouseTileHue, (h) => { profile.ForcedTransparencyHouseTileHue = h; }),
                 true, page
             );
@@ -4236,44 +4024,13 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_forcedhousetransparencylevel"), 0, ThemeSettings.SLIDER_WIDTH, 0, 255,
+                    lang.GetTazUO.ForcedHouseTransparencyLevel, 0, ThemeSettings.SLIDER_WIDTH, 0, 255,
                     profile.ForcedHouseTransparency, (i) =>
                     {
                         profile.ForcedHouseTransparency = (byte)i;
                     }
                 ), true, page
             );
-
-            content.RemoveIndent();
-            content.BlankLine();
-
-            content.AddToRight(TextBox.GetOne(
-                    "Disable overhead messages of these types:",
-                    ThemeSettings.FONT,
-                    ThemeSettings.STANDARD_TEXT_SIZE,
-                    ThemeSettings.TEXT_FONT_COLOR,
-                    TextBox.RTLOptions.Default()),
-                true, page);
-
-            content.Indent();
-            foreach (MessageType mtype in Enum.GetValues<MessageType>())
-            {
-                if(mtype == MessageType.Discord || mtype == MessageType.ChatSystem || mtype == MessageType.Encoded)
-                    continue;
-
-                content.AddToRight
-                (
-                    c = new CheckboxWithLabel
-                    (
-                        Enum.GetName(mtype), 0, MessageTypeFilter.IsEnabled(profile.DisabledOverheadMessageTypes, mtype), (b) =>
-                        {
-                            profile.DisabledOverheadMessageTypes = MessageTypeFilter.SetEnabled(profile.DisabledOverheadMessageTypes, mtype, b);
-                        }
-                    ), true, page
-                );
-            }
-
-            content.BlankLine();
 
             #endregion
 
@@ -4282,18 +4039,18 @@ namespace ClassicUO.Game.UI.Gumps
             #region Tooltips
 
             page = ((int)PAGE.TUOOptions + 1006);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_tooltips"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Tooltips, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
-            (new CheckboxWithLabel(TazLang.Get("mog_tazuo_aligntooltipstotheleftside"), 0, profile.LeftAlignToolTips, (b) => { profile.LeftAlignToolTips = b; }),
+            (new CheckboxWithLabel(lang.GetTazUO.AlignTooltipsToTheLeftSide, 0, profile.LeftAlignToolTips, (b) => { profile.LeftAlignToolTips = b; }),
                 true, page);
 
             content.Indent();
 
             content.AddToRight
             (
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_alignmobiletooltipstocenter"), 0,
+                new CheckboxWithLabel(lang.GetTazUO.AlignMobileTooltipsToCenter, 0,
                     profile.ForceCenterAlignTooltipMobiles, (b) => { profile.ForceCenterAlignTooltipMobiles = b; }),
                 true, page
             );
@@ -4302,7 +4059,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight(
-                new ModernColorPickerWithLabel(World, TazLang.Get("mog_tazuo_backgroundhue"), profile.ToolTipBGHue,
+                new ModernColorPickerWithLabel(World, lang.GetTazUO.BackgroundHue, profile.ToolTipBGHue,
                     (h) => { profile.ToolTipBGHue = h; }), true, page);
 
             content.BlankLine();
@@ -4311,7 +4068,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new InputFieldWithLabel
                 (
-                    TazLang.Get("mog_tazuo_headerformatitemname"), ThemeSettings.INPUT_WIDTH, profile.TooltipHeaderFormat, false,
+                    lang.GetTazUO.HeaderFormatItemName, ThemeSettings.INPUT_WIDTH, profile.TooltipHeaderFormat, false,
                     (s, e) => { profile.TooltipHeaderFormat = ((InputField.StbTextBox)s).Text; }
                 ), true, page
             );
@@ -4319,7 +4076,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (c = new CheckboxWithLabel(TazLang.Get("mog_tazuo_forcedtooltips"), 0, profile.ForceTooltipsOnOldClients, b => { profile.ForceTooltipsOnOldClients = b; }),
+            (c = new CheckboxWithLabel(lang.GetTazUO.ForcedTooltips, 0, profile.ForceTooltipsOnOldClients, b => { profile.ForceTooltipsOnOldClients = b; }),
                 true, page);
 
             c.SetTooltip("This feature relies on simulating single clicking items and is not a perfect solution.");
@@ -4355,9 +4112,9 @@ namespace ClassicUO.Game.UI.Gumps
             page = ((int)PAGE.TUOOptions + 1007);
 
             // Enumerate once to save a bit of compute
-            (string[] availableFonts, int maxFontNameLength) = TrueTypeLoader.Instance.GetSortedFontNames(true);
+            (string[] availableFonts, int maxFontNameLength) = GetOrderedFontNames();
 
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_fontsettings"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.FontSettings, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight(
@@ -4366,7 +4123,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.BlankLine();
 
             content.AddToRight
-            (new SliderWithLabel(TazLang.Get("mog_tazuo_ttffontborder"), 0, ThemeSettings.SLIDER_WIDTH, 0, 2, profile.TextBorderSize, (i) => { profile.TextBorderSize = i; }),
+            (new SliderWithLabel(lang.GetTazUO.TtfFontBorder, 0, ThemeSettings.SLIDER_WIDTH, 0, 2, profile.TextBorderSize, (i) => { profile.TextBorderSize = i; }),
                 true, page);
 
             content.BlankLine();
@@ -4378,7 +4135,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_infobarfont"),
+                    lang.GetTazUO.InfobarFont,
                     CurrentProfile.InfoBarFont,
                     (i, s) =>
                     {
@@ -4394,7 +4151,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                    lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.InfoBarFontSize, (i) =>
                     {
                         profile.InfoBarFontSize = i;
@@ -4412,7 +4169,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_systemchatfont"),
+                    lang.GetTazUO.SystemChatFont,
                     CurrentProfile.GameWindowSideChatFont,
                     (i, s) => { CurrentProfile.GameWindowSideChatFont = s; }
                 ),
@@ -4424,7 +4181,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                (lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.GameWindowSideChatFontSize, (i) => { profile.GameWindowSideChatFontSize = i; }), true,
                 page
             );
@@ -4438,7 +4195,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_tooltipfont"),
+                    lang.GetTazUO.TooltipFont,
                     CurrentProfile.SelectedToolTipFont,
                     (i, s) => { CurrentProfile.SelectedToolTipFont = s; }
                 ),
@@ -4450,7 +4207,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                (lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.SelectedToolTipFontSize, (i) => { profile.SelectedToolTipFontSize = i; }), true, page
             );
 
@@ -4462,7 +4219,7 @@ namespace ClassicUO.Game.UI.Gumps
                 GenerateFontSelector(
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_overheadfont"),
+                    lang.GetTazUO.OverheadFont,
                     CurrentProfile.OverheadChatFont,
                     (i, s) => { CurrentProfile.OverheadChatFont = s; }
                 ),
@@ -4473,7 +4230,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                new SliderWithLabel(lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.OverheadChatFontSize, (i) => { profile.OverheadChatFontSize = i; }),
                 true, page
             );
@@ -4487,7 +4244,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_journalfont"),
+                    lang.GetTazUO.JournalFont,
                     CurrentProfile.SelectedTTFJournalFont,
                     (i, s) => { CurrentProfile.SelectedTTFJournalFont = s; }
                 ),
@@ -4499,7 +4256,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                (lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.SelectedJournalFontSize, (i) => { profile.SelectedJournalFontSize = i; }), true, page
             );
 
@@ -4511,9 +4268,9 @@ namespace ClassicUO.Game.UI.Gumps
                 GenerateFontSelector(
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_nameplatefont"),
+                    lang.GetTazUO.NameplateFont,
                     CurrentProfile.NamePlateFont,
-                    (i, s) => { CurrentProfile.NamePlateFont = s; SetNamePlatePresetCustom(); }
+                    (i, s) => { CurrentProfile.NamePlateFont = s; }
                 ),
                 true, page
             );
@@ -4522,8 +4279,8 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
-                    profile.NamePlateFontSize, (i) => { profile.NamePlateFontSize = i; SetNamePlatePresetCustom(); }), true,
+                new SliderWithLabel(lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                    profile.NamePlateFontSize, (i) => { profile.NamePlateFontSize = i; }), true,
                 page
             );
 
@@ -4535,7 +4292,7 @@ namespace ClassicUO.Game.UI.Gumps
                 GenerateFontSelector(
                     availableFonts,
                     maxFontNameLength,
-                    TazLang.Get("mog_tazuo_optionsfont"),
+                    lang.GetTazUO.Optionsfont,
                     CurrentProfile.OptionsFont,
                     (i, s) => { CurrentProfile.OptionsFont = s; }
                 ),
@@ -4546,7 +4303,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.AddToRight
             (
-                new SliderWithLabel(TazLang.Get("mog_tazuo_sharedsize"), 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
+                new SliderWithLabel(lang.GetTazUO.SharedSize, 0, ThemeSettings.SLIDER_WIDTH, minFontSize, maxFontSize,
                     profile.OptionsFontSize, (i) => { profile.OptionsFontSize = i; }), true,
                 page
             );
@@ -4559,11 +4316,11 @@ namespace ClassicUO.Game.UI.Gumps
             #region Controller settings
 
             page = ((int)PAGE.TUOOptions + 1008);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_controller"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Controller, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_enablecontroller"), 0, profile.ControllerEnabled,
+                new CheckboxWithLabel(lang.GetTazUO.EnableController, 0, profile.ControllerEnabled,
                     (b) => profile.ControllerEnabled = b), true, page);
             content.BlankLine();
 
@@ -4576,7 +4333,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 new SliderWithLabel
-                (TazLang.Get("mog_tazuo_mousesesitivity"), 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
+                (lang.GetTazUO.MouseSesitivity, 0, ThemeSettings.SLIDER_WIDTH, 1, 20,
                     profile.ControllerMouseSensativity, (i) => { profile.ControllerMouseSensativity = i; }),
                 true, page
             );
@@ -4586,7 +4343,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Settings transfers
 
             page = ((int)PAGE.TUOOptions + 1009);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_settingstransfers"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.SettingsTransfers, page, content.LeftWidth));
             content.ResetRightSide();
 
             string rootpath;
@@ -4629,7 +4386,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_tazuo_settingswarning", [locations.Count.ToString()]), ThemeSettings.FONT,
+                    string.Format(lang.GetTazUO.SettingsWarning, locations.Count), ThemeSettings.FONT,
                     ThemeSettings.STANDARD_TEXT_SIZE, ThemeSettings.TEXT_FONT_COLOR,
                     TextBox.RTLOptions.DefaultCentered(content.RightWidth - 20)
                 ), true, page
@@ -4639,7 +4396,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new ModernButton
                 (0, 0, content.RightWidth - 20, 40, ButtonAction.Activate,
-                    TazLang.Get("mog_tazuo_overrideall", [(locations.Count - 1).ToString()]), ThemeSettings.BUTTON_FONT_COLOR)
+                    string.Format(lang.GetTazUO.OverrideAll, locations.Count - 1), ThemeSettings.BUTTON_FONT_COLOR)
                 {
                     IsSelectable = true, IsSelected = true
                 }, true, page
@@ -4650,7 +4407,7 @@ namespace ClassicUO.Game.UI.Gumps
                 if (e.Button == MouseButtonType.Left)
                 {
                     OverrideAllProfiles(locations);
-                    GameActions.Print(World, TazLang.Get("mog_tazuo_overridesuccess", [(locations.Count - 1).ToString()]), Constants.HUE_SUCCESS,
+                    GameActions.Print(World, string.Format(lang.GetTazUO.OverrideSuccess, locations.Count - 1), Constants.HUE_SUCCESS,
                         Data.MessageType.System);
                 }
             };
@@ -4660,7 +4417,7 @@ namespace ClassicUO.Game.UI.Gumps
                 c = new ModernButton
                 (
                     0, 0, content.RightWidth - 20, 40, ButtonAction.Activate,
-                    TazLang.Get("mog_tazuo_overridesame", [(sameServerLocations.Count - 1).ToString()]),
+                    string.Format(lang.GetTazUO.OverrideSame, sameServerLocations.Count - 1),
                     ThemeSettings.BUTTON_FONT_COLOR
                 ) { IsSelectable = true, IsSelected = true }, true, page
             );
@@ -4671,7 +4428,7 @@ namespace ClassicUO.Game.UI.Gumps
                 {
                     OverrideAllProfiles(sameServerLocations);
                     GameActions.Print(World,
-                        TazLang.Get("mog_tazuo_overridesuccess", [(sameServerLocations.Count - 1).ToString()]), Constants.HUE_SUCCESS,
+                        string.Format(lang.GetTazUO.OverrideSuccess, sameServerLocations.Count - 1), Constants.HUE_SUCCESS,
                         Data.MessageType.System);
                 }
             };
@@ -4680,7 +4437,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 c = new ModernButton
                 (0, 0, content.RightWidth - 20, 40, ButtonAction.Activate,
-                    TazLang.Get("mog_tazuo_overrideallmacros", [(locations.Count - 1).ToString()]), ThemeSettings.BUTTON_FONT_COLOR)
+                    string.Format(lang.GetTazUO.OverrideAllMacros, locations.Count - 1), ThemeSettings.BUTTON_FONT_COLOR)
                 {
                     IsSelectable = true, IsSelected = true
                 }, true, page
@@ -4691,7 +4448,7 @@ namespace ClassicUO.Game.UI.Gumps
                 if (e.Button == MouseButtonType.Left)
                 {
                     OverrideAllMacros(locations);
-                    GameActions.Print(World, TazLang.Get("mog_tazuo_overridesuccess", [(locations.Count - 1).ToString()]), Constants.HUE_SUCCESS,
+                    GameActions.Print(World, string.Format(lang.GetTazUO.OverrideSuccess, locations.Count - 1), Constants.HUE_SUCCESS,
                         Data.MessageType.System);
                 }
             };
@@ -4700,7 +4457,7 @@ namespace ClassicUO.Game.UI.Gumps
             content.AddToRight
             (
                 c = new ModernButton(0, 0, content.RightWidth - 20, 40, ButtonAction.Activate,
-                    TazLang.Get("mog_tazuo_setasdefault"), ThemeSettings.BUTTON_FONT_COLOR)
+                    lang.GetTazUO.SetAsDefault, ThemeSettings.BUTTON_FONT_COLOR)
                 {
                     IsSelectable = true, IsSelected = true
                 }, true, page
@@ -4711,14 +4468,14 @@ namespace ClassicUO.Game.UI.Gumps
                 if (e.Button == MouseButtonType.Left)
                 {
                     SetProfileAsDefault(CurrentProfile);
-                    GameActions.Print(World, TazLang.Get("mog_tazuo_setasdefaultsuccess"), Constants.HUE_SUCCESS, Data.MessageType.System);
+                    GameActions.Print(World, lang.GetTazUO.SetAsDefaultSuccess, Constants.HUE_SUCCESS, Data.MessageType.System);
                 }
             };
 
             content.AddToRight
             (
                 c = new ModernButton(0, 0, content.RightWidth - 20, 40, ButtonAction.Activate,
-                    TazLang.Get("mog_tazuo_setmacrosasdefault"), ThemeSettings.BUTTON_FONT_COLOR)
+                    lang.GetTazUO.SetMacrosAsDefault, ThemeSettings.BUTTON_FONT_COLOR)
                 {
                     IsSelectable = true, IsSelected = true
                 }, true, page
@@ -4729,7 +4486,7 @@ namespace ClassicUO.Game.UI.Gumps
                 if (e.Button == MouseButtonType.Left)
                 {
                     World.Macros.Save(Path.Combine(RootPath, "macros.xml"));
-                    GameActions.Print(World, TazLang.Get("mog_tazuo_setmacrosasdefaultsuccess"), Constants.HUE_SUCCESS, Data.MessageType.System);
+                    GameActions.Print(World, lang.GetTazUO.SetMacrosAsDefaultSuccess, Constants.HUE_SUCCESS, Data.MessageType.System);
                 }
             };
 
@@ -4738,7 +4495,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Gump scaling
 
             page = ((int)PAGE.TUOOptions + 1010);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_gumpscaling"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.GumpScaling, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight(
@@ -4750,7 +4507,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_tazuo_scalinginfo"), ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                    lang.GetTazUO.ScalingInfo, ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
                     ThemeSettings.TEXT_FONT_COLOR,
                     TextBox.RTLOptions.DefaultCentered(content.RightWidth - 20)
                 ), true, page
@@ -4762,7 +4519,7 @@ namespace ClassicUO.Game.UI.Gumps
             (
                 new SliderWithLabel
                 (
-                    TazLang.Get("mog_tazuo_paperdollgump"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
+                    lang.GetTazUO.PaperdollGump, 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
                     (int)(profile.PaperdollScale * 100), (i) =>
                     {
                         //Must be cast even though VS thinks it's redundant.
@@ -4772,79 +4529,9 @@ namespace ClassicUO.Game.UI.Gumps
                 ), true, page
             );
 
-            content.AddToRight
-            (
-                new SliderWithLabel
-                (
-                    TazLang.Get("gumpscaling_statusgump", "Status Gump"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
-                    (int)(profile.StatusGumpScale * 100), (i) =>
-                    {
-                        //Must be cast even though VS thinks it's redundant.
-                        double v = (double)i / (double)100;
-                        profile.StatusGumpScale = v > 0 ? v : 1f;
-                    }
-                ), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel
-                (
-                    TazLang.Get("gumpscaling_skillgump", "Skills Gump"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
-                    (int)(profile.SkillsGumpScale * 100), (i) =>
-                    {
-                        //Must be cast even though VS thinks it's redundant.
-                        double v = (double)i / (double)100;
-                        profile.SkillsGumpScale = v > 0 ? v : 1f;
-                    }
-                ), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel
-                (
-                    TazLang.Get("gumpscaling_contextmenu", "Context Menus"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
-                    (int)(profile.ContextMenuScale * 100), (i) =>
-                    {
-                        //Must be cast even though VS thinks it's redundant.
-                        double v = (double)i / (double)100;
-                        profile.ContextMenuScale = v > 0 ? v : 1f;
-                    }
-                ), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel
-                (
-                    TazLang.Get("gumpscaling_tradegump", "Trade Gump"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
-                    (int)(profile.TradeGumpScale * 100), (i) =>
-                    {
-                        //Must be cast even though VS thinks it's redundant.
-                        double v = (double)i / (double)100;
-                        profile.TradeGumpScale = v > 0 ? v : 1f;
-                    }
-                ), true, page
-            );
-
-            content.AddToRight
-            (
-                new SliderWithLabel
-                (
-                    TazLang.Get("gumpscaling_servergump", "Server Gumps"), 0, ThemeSettings.SLIDER_WIDTH, 50, 300,
-                    (int)(profile.ServerGumpScale * 100), (i) =>
-                    {
-                        //Must be cast even though VS thinks it's redundant.
-                        double v = (double)i / (double)100;
-                        profile.ServerGumpScale = v > 0 ? v : 1f;
-                    }
-                ), true, page
-            );
-
             SliderWithLabel s;
             content.AddToRight(
-                s = new SliderWithLabel(TazLang.Get("mog_tazuo_globalscale"), 0, ThemeSettings.SLIDER_WIDTH, 50, 175,
+                s = new SliderWithLabel(lang.GetTazUO.GlobalScale, 0, ThemeSettings.SLIDER_WIDTH, 50, 175,
                     (int)(Client.Game.RenderScale * 100), null), true, page);
 
             ModernButton b;
@@ -4868,14 +4555,14 @@ namespace ClassicUO.Game.UI.Gumps
             #region Hidden layers
 
             page = ((int)PAGE.TUOOptions + 1011);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_visiblelayers"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.VisibleLayers, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
             (
                 TextBox.GetOne
                 (
-                    TazLang.Get("mog_tazuo_vislayersinfo"), ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                    lang.GetTazUO.VisLayersInfo, ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
                     ThemeSettings.TEXT_FONT_COLOR,
                     TextBox.RTLOptions.DefaultCentered(content.RightWidth - 20)
                 ), true, page
@@ -4883,12 +4570,12 @@ namespace ClassicUO.Game.UI.Gumps
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_hiddenlayersenabled"), 0, profile.HiddenLayersEnabled,
+                new CheckboxWithLabel(lang.GetTazUO.HiddenLayersEnabled, 0, profile.HiddenLayersEnabled,
                     (b) => { profile.HiddenLayersEnabled = b; }), true, page);
 
             content.BlankLine();
             content.AddToRight(
-                new CheckboxWithLabel(TazLang.Get("mog_tazuo_onlyforyourself"), 0, profile.HideLayersForSelf,
+                new CheckboxWithLabel(lang.GetTazUO.OnlyForYourself, 0, profile.HideLayersForSelf,
                     (b) => { profile.HideLayersForSelf = b; }), true, page);
 
             content.BlankLine();
@@ -4956,7 +4643,7 @@ namespace ClassicUO.Game.UI.Gumps
             #region Hotkeys
 
             page = ((int)PAGE.TUOOptions + 1016);
-            content.AddToLeft(SubCategoryButton(TazLang.Get("mog_tazuo_hotkeys"), page, content.LeftWidth));
+            content.AddToLeft(SubCategoryButton(lang.GetTazUO.Hotkeys, page, content.LeftWidth));
             content.ResetRightSide();
 
             content.AddToRight
@@ -5049,6 +4736,35 @@ namespace ClassicUO.Game.UI.Gumps
             _options.Add(new SettingsOption("", content, MainContent.RightWidth, (int)PAGE.TUOOptions));
         }
 
+        /// <summary>
+        ///     Retrieves an ordered collection of font names along with the maximum length of all font names.
+        ///     The font names are sorted to prioritize embedded fonts, followed by alphabetical order.
+        /// </summary>
+        /// <returns>
+        ///     A tuple containing:
+        ///     <ul>
+        ///         <li> An array of ordered font names.</li>
+        ///         <li>The maximum length of any font name in the collection.</li>
+        ///     </ul>
+        /// </returns>
+        private static (string[] Names, int MaxNameLength) GetOrderedFontNames()
+        {
+            int maxLength = 0;
+
+            string[] availableFonts = TrueTypeLoader.Instance.Fonts
+                .Select(font =>
+                {
+                    // Keep track of the max name length
+                    maxLength = Math.Max(maxLength, font.Length);
+                    return font;
+                })
+                .OrderBy(font => EmbeddedFontNames.Names.Contains(font) ? 0 : 1) // Embedded fonts should be first in line, ordered by name
+                .ThenBy(font => font) // Then, dynamically loaded fonts, ordered by name as well
+                .ToArray();
+
+            return (availableFonts, maxLength);
+        }
+
         public override void Dispose()
         {
             base.Dispose();
@@ -5109,6 +4825,135 @@ namespace ClassicUO.Game.UI.Gumps
                 onSelect,
                 false
             );
+        }
+
+        public Control GenConditionControl(int key, int width, bool createIfNotExists)
+        {
+            var data = CoolDownBar.CoolDownConditionData.GetConditionData(key, createIfNotExists);
+
+            var main = new Area { Width = width };
+
+            var _background = new AlphaBlendControl();
+            main.Add(_background);
+
+            var _delete = new ModernButton(1, 1, 30, 40, ButtonAction.Activate, "X", ThemeSettings.BUTTON_FONT_COLOR);
+            _delete.SetTooltip("Delete this cooldown bar");
+
+            _delete.MouseUp += (sender, e) =>
+            {
+                if (e.Button == MouseButtonType.Left)
+                {
+                    CoolDownBar.CoolDownConditionData.RemoveCondition(key);
+
+                    Gump g = UIManager.GetGump<ModernOptionsGump>();
+
+                    if (g != null)
+                    {
+                        Point pos = g.Location;
+                        g.Dispose();
+
+                        g = new ModernOptionsGump(World) { Location = pos };
+
+                        g.ChangePage((int)PAGE.TUOCooldowns);
+                        UIManager.Add(g);
+                    }
+                }
+            };
+
+            main.Add(_delete);
+
+
+            var _hueLabel = TextBox.GetOne("Hue:", ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE,
+                ThemeSettings.BUTTON_FONT_COLOR, TextBox.RTLOptions.Default());
+            _hueLabel.X = _delete.X + _delete.Width + 5;
+            _hueLabel.Y = 10;
+            main.Add(_hueLabel);
+
+            var _hueSelector = new ModernColorPickerWithLabel(World, string.Empty, data.hue)
+            {
+                X = _hueLabel.X + _hueLabel.Width + 5, Y = 10
+            };
+
+            main.Add(_hueSelector);
+
+            var _name = new InputField(140, 40, text: data.label)
+            {
+                X = _hueSelector.X + _hueSelector.Width + 10, Y = 1
+            };
+
+            main.Add(_name);
+
+            var _cooldownLabel = TextBox.GetOne
+            ("Cooldown:", ThemeSettings.FONT, ThemeSettings.STANDARD_TEXT_SIZE, ThemeSettings.BUTTON_FONT_COLOR,
+                TextBox.RTLOptions.Default());
+
+            _cooldownLabel.X = _name.X + _name.Width + 10;
+            _cooldownLabel.Y = 10;
+            main.Add(_cooldownLabel);
+
+            var _cooldown = new InputField(45, 40, numbersOnly: true, text: data.cooldown.ToString()) { Y = 1 };
+
+            _cooldown.X = _cooldownLabel.X + _cooldownLabel.Width + 10;
+            main.Add(_cooldown);
+
+            var _message_type =
+                new ComboBoxWithLabel(World, string.Empty, 0, 85, new string[] { "All", "Self", "Other" },
+                    data.message_type) { X = _cooldown.X + _cooldown.Width + 10, Y = 10 };
+
+            main.Add(_message_type);
+
+            var _conditionText = new InputField(main.Width - 50, 40, text: data.trigger)
+            {
+                X = 1, Y = _delete.Height + 5
+            };
+
+            main.Add(_conditionText);
+
+            var _replaceIfExists = new CheckboxWithLabel(isChecked: data.replace_if_exists)
+            {
+                X = _conditionText.X + _conditionText.Width + 2, Y = _conditionText.Y + 5
+            };
+
+            _replaceIfExists.SetTooltip("Replace any active cooldown of this type with a new one if triggered again.");
+            main.Add(_replaceIfExists);
+
+            var _save = new ModernButton(0, 1, 40, 40, ButtonAction.Activate, "Save", ThemeSettings.BUTTON_FONT_COLOR);
+            _save.X = main.Width - _save.Width;
+            _save.IsSelectable = true;
+            _save.IsSelected = true;
+
+            _save.MouseUp += (s, e) =>
+            {
+                CoolDownBar.CoolDownConditionData.SaveCondition
+                (key, _hueSelector.Hue, _name.Text, _conditionText.Text, int.Parse(_cooldown.Text), false,
+                    _message_type.SelectedIndex, _replaceIfExists.IsChecked);
+            };
+
+            main.Add(_save);
+
+            var _preview = new ModernButton(0, 1, 65, 40, ButtonAction.Activate, "Preview",
+                ThemeSettings.BUTTON_FONT_COLOR);
+            _preview.X = _save.X - _preview.Width - 15;
+            _preview.IsSelectable = true;
+            _preview.IsSelected = true;
+
+            _preview.MouseUp += (s, e) =>
+            {
+                if (int.TryParse(_cooldown.Text, out int value))
+                {
+                    CoolDownBarManager.AddCoolDownBar(World, TimeSpan.FromSeconds(value), _name.Text, _hueSelector.Hue,
+                        _replaceIfExists.IsChecked);
+                }
+            };
+
+            main.Add(_preview);
+
+            main.ForceSizeUpdate();
+
+            _background.Width = width;
+            _background.Height = main.Height;
+
+            return main;
         }
 
         public Control GenHotKeyDisplay(string text, string hotkey, int width, bool enabled = true)
@@ -6077,9 +5922,9 @@ namespace ClassicUO.Game.UI.Gumps
                     checkboxName, 0, true, (b) =>
                     {
                         if (b)
-                            Option.NameOverheadOptionFlags |= optionFlag;
+                            Option.NameOverheadOptionFlags |= (int)optionFlag;
                         else
-                            Option.NameOverheadOptionFlags &= ~optionFlag;
+                            Option.NameOverheadOptionFlags &= ~(int)optionFlag;
 
                         if (NameOverHeadManager.LastActiveNameOverheadOption.Replace("\\u0026", "&") == Option.Name)
                             NameOverHeadManager.ActiveOverheadOptions =
@@ -6166,7 +6011,7 @@ namespace ClassicUO.Game.UI.Gumps
                 switch ((ButtonType)buttonID)
                 {
                     case ButtonType.CheckAll:
-                        Option.NameOverheadOptionFlags = ByteFlagHelper.AllBits<NameOverheadOptions>();
+                        Option.NameOverheadOptionFlags = int.MaxValue;
                         UpdateCheckboxesByCurrentOptionFlags();
 
                         break;

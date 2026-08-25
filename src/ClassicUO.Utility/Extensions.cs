@@ -160,13 +160,10 @@ namespace ClassicUO.Utility
         public static string ToHtmlHex(this Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Color FromHtmlHex(this string hex) => hex.FromHtmlHex(Color.White);
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Color FromHtmlHex(this string hex, Color fallback)
+        public static Color FromHtmlHex(this string hex)
         {
             if (hex.StartsWith("#")) hex = hex.Substring(1);
-            if (hex.Length != 6) return fallback;
+            if (hex.Length != 6) return Color.White;
 
             int value = Convert.ToInt32(hex, 16);
             return new Color((value >> 16) & 0xFF, (value >> 8) & 0xFF, value & 0xFF);
@@ -226,7 +223,6 @@ namespace ClassicUO.Utility
         }
 
         public static bool NotNullNotEmpty(this string text) => !string.IsNullOrEmpty(text);
-        public static bool IsNullOrEmpty(this string text) => string.IsNullOrEmpty(text);
 
         public static string Truncate(this string text, int maxLength, bool addEllipsis = true) => StringHelper.Truncate(text, maxLength, addEllipsis);
 
@@ -239,7 +235,5 @@ namespace ClassicUO.Utility
         }
 
         public static int ToInt<T>(this T enumValue) where T : struct, Enum => Unsafe.As<T, int>(ref enumValue);
-
-        public static bool ContainsIgnoreCase(this string source, string searchString) => source != null && searchString != null && source.Contains(searchString, StringComparison.OrdinalIgnoreCase);
     }
 }

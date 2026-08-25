@@ -1,6 +1,5 @@
 #nullable enable
 using System;
-using ClassicUO.Common;
 using Myra.Graphics2D;
 using Myra.Graphics2D.UI;
 
@@ -41,12 +40,10 @@ public class MyraCheckButton : CheckButton
     /// <param name="text"></param>
     /// <param name="tooltip"></param>
     /// <returns></returns>
-    public static MyraCheckButton CreateWithCallback(
-        bool isChecked,
+    public static MyraCheckButton CreateWithCallback(bool isChecked,
         Action<bool> onChange,
         string? text = null,
-        string? tooltip = null
-    )
+        string? tooltip = null)
     {
         MyraCheckButton cb = text != null ? new MyraCheckButton(text, isChecked) : new MyraCheckButton(isChecked);
 
@@ -54,21 +51,6 @@ public class MyraCheckButton : CheckButton
             cb.Tooltip = tooltip;
 
         cb.IsCheckedChanged += (_, _) => onChange(cb.IsChecked);
-        return cb;
-    }
-
-    public static MyraCheckButton CreatePropBoundCheckButton(Accessor<bool> backingProperty, string? text = null,string? tooltip = null)
-    {
-        bool isChecked = backingProperty.Get();
-
-        MyraCheckButton cb = text != null
-            ? new MyraCheckButton(text, isChecked)
-            : new MyraCheckButton(isChecked);
-
-        if (tooltip != null)
-            cb.Tooltip = tooltip;
-
-        cb.IsCheckedChanged += (_, _) => backingProperty.Set(cb.IsChecked);
         return cb;
     }
 }

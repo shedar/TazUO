@@ -80,6 +80,7 @@ namespace ClassicUO.Game.GameObjects
 
         public abstract bool CheckMouseSelection();
 
+        // FIXME: remove it
         public sbyte FoliageIndex = -1;
         public ushort OriginalGraphic => originalGraphic == 0 ? Graphic : originalGraphic;
         public void ResetOriginalGraphic() => originalGraphic = 0;

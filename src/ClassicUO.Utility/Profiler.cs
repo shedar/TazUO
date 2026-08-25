@@ -35,9 +35,8 @@ namespace ClassicUO.Utility
         public static double TrackedTime => m_TotalTimeData.TimeInContext;
 
         public static bool Enabled = false;
-        public static bool LogSpikes = true;
 
-        //[Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void BeginFrame()
         {
             if (!Enabled)
@@ -74,7 +73,7 @@ namespace ClassicUO.Utility
             m_BeginFrameTicks = _timer.ElapsedTicks;
         }
 
-        //[Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void EndFrame()
         {
             if (!Enabled)
@@ -86,7 +85,7 @@ namespace ClassicUO.Utility
             m_TotalTimeData.AddNewHitLength(LastFrameTimeMS);
         }
 
-        //[Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void EnterContext(string context_name)
         {
             if (!Enabled)
@@ -97,7 +96,7 @@ namespace ClassicUO.Utility
             m_Context.Add(new ContextAndTick(context_name, _timer.ElapsedTicks));
         }
 
-        //[Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         public static void ExitContext(string context_name, bool errorNotInContext = false)
         {
             if (!Enabled)
@@ -158,19 +157,11 @@ namespace ClassicUO.Utility
             return ProfileData.Empty;
         }
 
-        public static void Reset()
-        {
-            m_AllFrameData.Clear();
-            m_ThisFrameData.Clear();
-            m_Context.Clear();
-        }
-
         public class ProfileData
         {
             public static ProfileData Empty = new ProfileData(null, 0d);
             private uint m_LastIndex;
             private readonly double[] m_LastTimes = new double[ProfileTimeCount];
-            private double m_PeakTime;
 
             public ProfileData(string[] context, double time)
             {
@@ -180,7 +171,6 @@ namespace ClassicUO.Utility
             }
 
             public double LastTime => m_LastTimes[m_LastIndex % ProfileTimeCount];
-            public double PeakTime => m_PeakTime;
 
             public double TimeInContext
             {
@@ -220,7 +210,7 @@ namespace ClassicUO.Utility
 
             public void AddNewHitLength(double time)
             {
-                if (LogSpikes && m_LastIndex >= ProfileTimeCount && time >= MinimumTimeForSpikeDetection)
+                if (m_LastIndex >= ProfileTimeCount && time >= MinimumTimeForSpikeDetection)
                 {
                     double currentAverage = AverageTime;
                     if (time > currentAverage * SpikeThresholdMultiplier)
@@ -235,8 +225,6 @@ namespace ClassicUO.Utility
 
                 m_LastTimes[m_LastIndex % ProfileTimeCount] = time;
                 m_LastIndex++;
-                if (time > m_PeakTime)
-                    m_PeakTime = time;
             }
 
             public override string ToString()

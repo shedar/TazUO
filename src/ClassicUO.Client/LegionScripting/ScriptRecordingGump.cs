@@ -530,7 +530,7 @@ namespace ClassicUO.LegionScripting
                 string fileName = $"recorded_script_{DateTime.Now:yyyyMMdd_HHmmss}.py";
                 string filePath = System.IO.Path.Combine(LegionScripting.ScriptPath, fileName);
 
-                LegionWorkspaceFileSystem.WriteAllText(filePath, script);
+                System.IO.File.WriteAllText(filePath, script);
                 GameActions.Print($"Script saved as {fileName}");
 
                 MainThreadQueue.EnqueueAction(() => ScriptManagerWindow.Instance?.Refresh());

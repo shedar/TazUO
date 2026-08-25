@@ -1,26 +1,47 @@
-// SPDX-License-Identifier: BSD-2-Clause
+﻿// SPDX-License-Identifier: BSD-2-Clause
 
 using System;
+using System.Linq;
 using ClassicUO.Configuration;
+using ClassicUO.Game.Data;
+using ClassicUO.Game.Managers;
 using ClassicUO.Game.Scenes;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Assets;
-using Microsoft.Xna.Framework;
+using ClassicUO.Resources;
 using ClassicUO.Utility;
+using SDL3;
+using System.Collections.Generic;
+using ClassicUO.Network;
+using Microsoft.Xna.Framework;
 
 namespace ClassicUO.Game.UI.Gumps.Login
 {
-    public class CharacterSelectionGump : CharacterSelectionGumpBase
+    public class CharacterSelectionGump : Gump
     {
-        public CharacterSelectionGump(World world) : base(world)
+        private const ushort SELECTED_COLOR = 0x0021;
+        private const ushort NORMAL_COLOR = 0x034F;
+        private uint _selectedCharacter;
+        private CharacterEntryGump[] chars;
+
+        public CharacterSelectionGump(World world) : base(world, 0, 0)
         {
+            CanCloseWithRightClick = false;
+
             int posInList = 0;
             int yOffset = 150;
             int yBonus = 0;
             int listTitleY = 106;
 
             LoginScene loginScene = Client.Game.GetScene<LoginScene>();
+
+
+            string lastCharName = LastCharacterManager.GetLastCharacter(LoginScene.Account, World.ServerName);
+            string lastSelected = loginScene.Characters.FirstOrDefault(o => o == lastCharName);
+
+            LockedFeatureFlags f = World.ClientLockedFeatures.Flags;
+            CharacterListFlags ff = World.ClientFeatures.Flags;
 
             if (Client.Game.UO.Version >= ClientVersion.CV_6040 || Client.Game.UO.Version >= ClientVersion.CV_5020 && loginScene.Characters.Length > 5)
             {
@@ -29,7 +50,14 @@ namespace ClassicUO.Game.UI.Gumps.Login
                 yBonus = 45;
             }
 
-            ResolveInitialSelection(loginScene);
+            if (!string.IsNullOrEmpty(lastSelected))
+            {
+                _selectedCharacter = (uint)Array.IndexOf(loginScene.Characters, lastSelected);
+            }
+            else if (loginScene.Characters.Length > 0)
+            {
+                _selectedCharacter = 0;
+            }
 
             Add
             (
@@ -61,29 +89,61 @@ namespace ClassicUO.Game.UI.Gumps.Login
                 1
             );
 
-            foreach (CharSlot slot in EnumerateValidCharacters(loginScene))
+            var gumps = new List<CharacterEntryGump>();
+
+            for (int i = 0, valid = 0; i < loginScene.Characters.Length; i++)
             {
-                CharacterEntryGump g;
-                Add
-                (g =
-                    new CharacterEntryGump(slot.Index, slot.Name, SelectCharacter, LoginCharacter)
-                    {
-                        X = 224,
-                        Y = yOffset + posInList * 40,
-                        Hue = slot.Index == _selectedCharacter ? SELECTED_COLOR : NORMAL_COLOR
-                    },
-                    1
-                );
+                string character = loginScene.Characters[i];
 
-                CharOrder.Add(slot.Index);
-
-                if (slot.Lem.HasValue)
+                if (character.NotNullNotEmpty())
                 {
-                    g.SetTooltip(BuildPaperDoll(slot.Lem.Value, new Vector2(200, 300), true));
-                }
+                    LemCharData? LEMData = LastEquipmentManager.Load(LoginHandshake.Instance.LastServerName, character, LoginHandshake.Account);
 
-                posInList++;
+                    valid++;
+
+                    if (valid > World.ClientFeatures.MaxChars)
+                        break;
+
+                    if (World.ClientLockedFeatures.Flags != 0 && !World.ClientLockedFeatures.Flags.HasFlag(LockedFeatureFlags.SeventhCharacterSlot))
+                        if (valid == 6 && !World.ClientLockedFeatures.Flags.HasFlag(LockedFeatureFlags.SixthCharacterSlot))
+                            break;
+
+                    CharacterEntryGump g;
+                    Add
+                    (g =
+                        new CharacterEntryGump((uint)i, character, SelectCharacter, LoginCharacter)
+                        {
+                            X = 224,
+                            Y = yOffset + posInList * 40,
+                            Hue = i == _selectedCharacter ? SELECTED_COLOR : NORMAL_COLOR
+                        },
+                        1
+                    );
+                    gumps.Add(g);
+
+                    if (LEMData.HasValue)
+                    {
+                        var equipment = new Dictionary<Layer, StaticPaperDollView.EquipmentEntry>();
+                        foreach (KeyValuePair<Layer, LemEquipmentEntry> kvp in LEMData.Value.Equipment)
+                        {
+                            equipment[kvp.Key] = new StaticPaperDollView.EquipmentEntry(
+                                kvp.Value.AnimID, kvp.Value.Hue, kvp.Value.IsPartialHue);
+                        }
+
+                        var view = new StaticPaperDollView(
+                            LEMData.Value.PlayerGraphic,
+                            LEMData.Value.BodyHue,
+                            LEMData.Value.IsFemale,
+                            equipment,
+                            new Vector2(200, 300));
+
+                        g.SetTooltip(view);
+                    }
+
+                    posInList++;
+                }
             }
+            chars = gumps.ToArray();
 
             if (CanCreateChar(loginScene))
             {
@@ -132,29 +192,166 @@ namespace ClassicUO.Game.UI.Gumps.Login
                 1
             );
 
-            // Live switch to the campfire-style selection screen.
-            Add
-            (
-                new NiceButton(10, 445, 120, 25, ButtonAction.Activate, TazLang.Get("modernview"))
-                {
-                    ButtonParameter = (int)Buttons.ToggleStyle,
-                    IsSelectable = false,
-                    DisplayBorder = true
-                },
-                1
-            );
-
+            AcceptKeyboardInput = true;
             ChangePage(1);
         }
 
-        protected override void SelectCharacter(uint index)
+        private bool CanCreateChar(LoginScene scene)
         {
-            base.SelectCharacter(index);
+            if (scene.Characters != null)
+            {
+                int empty = scene.Characters.Count(string.IsNullOrEmpty);
+
+                if (empty >= 0 && scene.Characters.Length - empty < World.ClientFeatures.MaxChars)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        protected override void OnControllerButtonUp(SDL.SDL_GamepadButton button)
+        {
+            base.OnControllerButtonUp(button);
+
+            if (button == SDL.SDL_GamepadButton.SDL_GAMEPAD_BUTTON_SOUTH)
+            {
+                LoginCharacter(_selectedCharacter);
+            }
+        }
+
+        public override void OnKeyDown(SDL.SDL_Keycode key, SDL.SDL_Keymod mod)
+        {
+            if (key == SDL.SDL_Keycode.SDLK_RETURN || key == SDL.SDL_Keycode.SDLK_KP_ENTER)
+            {
+                LoginCharacter(_selectedCharacter);
+            }
+        }
+
+        public override void OnMouseWheel(MouseEventType delta)
+        {
+            base.OnMouseWheel(delta);
+
+            int i = 0;
+            foreach (CharacterEntryGump characterGump in chars)
+            {
+                if (characterGump.CharacterIndex == _selectedCharacter)
+                    break;
+                i++;
+            }
+
+            if (MouseEventType.WheelScrollUp == delta)
+            {
+                if (i == 0)
+                    _selectedCharacter = chars[chars.Length - 1].CharacterIndex;
+                else
+                    _selectedCharacter = chars[i - 1].CharacterIndex;
+            }
+            else
+            {
+                if (i == chars.Length - 1)
+                    _selectedCharacter = chars[0].CharacterIndex;
+                else
+                    _selectedCharacter = chars[i + 1].CharacterIndex;
+            }
+            SelectCharacter(_selectedCharacter);
+        }
+        public override void OnButtonClick(int buttonID)
+        {
+            LoginScene loginScene = Client.Game.GetScene<LoginScene>();
+
+            switch ((Buttons)buttonID)
+            {
+                case Buttons.Delete:
+                    DeleteCharacter(loginScene);
+
+                    break;
+
+                case Buttons.New when CanCreateChar(loginScene):
+                    loginScene.StartCharCreation();
+
+                    break;
+
+                case Buttons.Next:
+                    LoginCharacter(_selectedCharacter);
+
+                    break;
+
+                case Buttons.Prev:
+                    loginScene.StepBack();
+
+                    break;
+            }
+
+            base.OnButtonClick(buttonID);
+        }
+
+        private void DeleteCharacter(LoginScene loginScene)
+        {
+            string charName = loginScene.Characters[_selectedCharacter];
+
+            if (!string.IsNullOrEmpty(charName))
+            {
+                LoadingGump existing = Children.OfType<LoadingGump>().FirstOrDefault();
+
+                if (existing != null)
+                {
+                    Remove(existing);
+                }
+
+                Add
+                (
+                    new LoadingGump
+                    (
+                        World,
+                        string.Format(ResGumps.PermanentlyDelete0, charName),
+                        LoginButtons.OK | LoginButtons.Cancel,
+                        buttonID =>
+                        {
+                            if (buttonID == (int)LoginButtons.OK)
+                            {
+                                loginScene.DeleteCharacter(_selectedCharacter);
+                            }
+                            else
+                            {
+                                ChangePage(1);
+                            }
+                        }
+                    ),
+                    2
+                );
+
+                ChangePage(2);
+            }
+        }
+
+        private void SelectCharacter(uint index)
+        {
+            _selectedCharacter = index;
 
             foreach (CharacterEntryGump characterGump in FindControls<CharacterEntryGump>())
             {
                 characterGump.Hue = characterGump.CharacterIndex == index ? SELECTED_COLOR : NORMAL_COLOR;
             }
+        }
+
+        private void LoginCharacter(uint index)
+        {
+            LoginScene loginScene = Client.Game.GetScene<LoginScene>();
+
+            if (loginScene.Characters != null && loginScene.Characters.Length > index && !string.IsNullOrEmpty(loginScene.Characters[index]))
+            {
+                loginScene.SelectCharacter(index);
+            }
+        }
+
+        private enum Buttons
+        {
+            New,
+            Delete,
+            Next,
+            Prev
         }
 
         private class CharacterEntryGump : Control

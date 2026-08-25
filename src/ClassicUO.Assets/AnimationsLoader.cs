@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-2-Clause
+﻿// SPDX-License-Identifier: BSD-2-Clause
 
 using ClassicUO.IO;
 using ClassicUO.Utility;
@@ -174,7 +174,7 @@ namespace ClassicUO.Assets
 
                             //uint number = uint.Parse(parts[2], NumberStyles.HexNumber);
 
-                            if (!uint.TryParse(parts[2].Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint number))
+                            if (!uint.TryParse(parts[2], NumberStyles.HexNumber, CultureInfo.InvariantCulture, out uint number))
                             {
                                 Log.Error("Failed to parse expected number.");
                                 continue;
@@ -1249,28 +1249,20 @@ namespace ClassicUO.Assets
             var reader = new StackDataReader(buf);
 
             byte[] dbuf = null;
-            // dbufPooled tracks the array we actually rented from the pool. dbuf may be
-            // reassigned to a non-pooled array by BwtDecompress, so we must never return
-            // dbuf itself to the pool (that throws ArgumentException_BufferNotFromPool).
-            byte[] dbufPooled = null;
             if (index.CompressionType >= CompressionType.Zlib)
             {
-                dbufPooled = ArrayPool<byte>.Shared.Rent((int)index.UncompressedSize); //new byte[(int)index.UncompressedSize];
-                dbuf = dbufPooled;
-                ZLib.ZLibError result = ZLib.Decompress(buf, dbufPooled);
+                dbuf = ArrayPool<byte>.Shared.Rent((int)index.UncompressedSize); //new byte[(int)index.UncompressedSize];
+                ZLib.ZLibError result = ZLib.Decompress(buf, dbuf);
                 if (result != ZLib.ZLibError.Ok)
                 {
                     Log.Error($"error reading uop animation. AnimID: {animID} | Group: {animGroup} | Dir: {direction} | FileIndex: {fileIndex}");
-
-                    ArrayPool<byte>.Shared.Return(buf);
-                    ArrayPool<byte>.Shared.Return(dbufPooled);
 
                     return Span<FrameInfo>.Empty;
                 }
 
                 if (index.CompressionType == CompressionType.ZlibBwt)
                 {
-                    dbuf = BwtDecompress.Decompress(dbufPooled);
+                    dbuf = BwtDecompress.Decompress(dbuf);
                 }
 
                 reader = new StackDataReader(dbuf);
@@ -1398,8 +1390,8 @@ namespace ClassicUO.Assets
             {
                 ArrayPool<UOPFrameData>.Shared.Return(sharedBuffer);
                 ArrayPool<byte>.Shared.Return(buf);
-                if(dbufPooled != null)
-                    ArrayPool<byte>.Shared.Return(dbufPooled);
+                if(dbuf != null)
+                    ArrayPool<byte>.Shared.Return(dbuf);
             }
         }
 

@@ -60,7 +60,6 @@ public class ScriptManagerWindow : MyraControl
         {
             if (g is ScriptManagerWindow w)
             {
-                w.CenterInViewPort();
                 w.BringOnTop();
                 return;
             }
@@ -305,71 +304,44 @@ public class ScriptManagerWindow : MyraControl
     {
         bool globalAuto = LegionScripting.LegionScripting.AutoLoadEnabled(script, true);
         bool charAuto   = LegionScripting.LegionScripting.AutoLoadEnabled(script, false);
-        bool isZip      = script is ZipScriptFile;
 
-        var items = new List<(string, Action)>
-        {
-            ("Edit Constants", () => new ScriptConstantsEditorWindow(script)),
-            ("Edit",           () => new ScriptEditorWindow(script))
-        };
-
-        if (!isZip)
-        {
-            items.Add(("Rename",          () => ShowRenameScriptDialog(script)));
-            items.Add(("Edit Externally", () => FileSystemHelper.OpenFileWithDefaultApp(script.FullPath)));
-            items.Add((TazLang.Get("scripting_openlocation"), () =>
+        ShowContextMenu(
+            ("Edit Constants",       () => new ScriptConstantsEditorWindow(script)),
+            ("Rename",               () => ShowRenameScriptDialog(script)),
+            ("Edit",                 () => new ScriptEditorWindow(script)),
+            ("Edit Externally",      () => FileSystemHelper.OpenFileWithDefaultApp(script.FullPath)),
+            (Language.Instance.Scripting.OpenLocation, () =>
             {
                 if (!FileSystemHelper.OpenLocation(script.FullPath))
-                    GameActions.PrintUserWarn(World.Instance, TazLang.Get("scripting_openlocationfailed", new[] { script.FullPath }));
-            }));
-        }
-        else
-        {
-            items.Add((TazLang.Get("scripting_openlocation"), () =>
+                    GameActions.PrintUserWarn(World.Instance, string.Format(Language.Instance.Scripting.OpenLocationFailed, script.FullPath));
+            }),
+            (ContextMenuLabelToggle(globalAuto, "Autostart on all chars"), () =>
             {
-                var zipScript = (ZipScriptFile)script;
-                if (!FileSystemHelper.OpenLocation(zipScript.ZipPath))
-                    GameActions.PrintUserWarn(World.Instance, TazLang.Get("scripting_openlocationfailed", new[] { zipScript.ZipPath }));
-            }));
-        }
-
-        items.Add((ContextMenuLabelToggle(globalAuto, "Autostart on all chars"), () =>
-        {
-            LegionScripting.LegionScripting.SetAutoPlay(script, true, !globalAuto);
-            RebuildScriptList();
-        }));
-        items.Add((ContextMenuLabelToggle(charAuto, "Autostart for this char"), () =>
-        {
-            LegionScripting.LegionScripting.SetAutoPlay(script, false, !charAuto);
-            RebuildScriptList();
-        }));
-        var scriptHotkey = ScriptHotkeysManager.GetBinding(script);
-        string hotkeyLabel = scriptHotkey.IsEmpty ? "Set Hotkey" : $"Set Hotkey ({scriptHotkey.Describe()})";
-        items.Add((hotkeyLabel, () => new ScriptHotkeyWindow(script)));
-        items.Add(("Create Macro Button", () =>
-        {
-            var mm = MacroManager.TryGetMacroManager(World.Instance);
-            if (mm == null) return;
-            var mac = new Macro(script.FileName);
-            mac.Items = new MacroObjectString(MacroType.ClientCommand, MacroSubType.MSC_NONE, "togglelscript " + script.FileName);
-            mm.PushToBack(mac);
-            var bg = new MacroButtonGump(World.Instance, mac, 0, 0);
-            bg.CenterXInViewPort();
-            bg.CenterYInViewPort();
-            UIManager.Add(bg);
-        }));
-        items.Add(("Delete", () =>
-        {
-            if (script is ZipScriptFile zs)
-                ShowZipDeleteConfirm(zs);
-            else
-                ShowDeleteConfirm(
-                    "Delete Script",
-                    $"Are you sure you want to delete '{script.FileName}'?\nThis action cannot be undone.",
-                    () => PerformDeleteScript(script));
-        }));
-
-        ShowContextMenu(items.ToArray());
+                LegionScripting.LegionScripting.SetAutoPlay(script, true, !globalAuto);
+                RebuildScriptList();
+            }),
+            (ContextMenuLabelToggle(charAuto, "Autostart for this char"), () =>
+            {
+                LegionScripting.LegionScripting.SetAutoPlay(script, false, !charAuto);
+                RebuildScriptList();
+            }),
+            ("Create Macro Button", () =>
+            {
+                var mm = MacroManager.TryGetMacroManager(World.Instance);
+                if (mm == null) return;
+                var mac = new Macro(script.FileName);
+                mac.Items = new MacroObjectString(MacroType.ClientCommand, MacroSubType.MSC_NONE, "togglelscript " + script.FileName);
+                mm.PushToBack(mac);
+                var bg = new MacroButtonGump(World.Instance, mac, 0, 0);
+                bg.CenterXInViewPort();
+                bg.CenterYInViewPort();
+                UIManager.Add(bg);
+            }),
+            ("Delete", () => ShowDeleteConfirm(
+                "Delete Script",
+                $"Are you sure you want to delete '{script.FileName}'?\nThis action cannot be undone.",
+                () => PerformDeleteScript(script)))
+        );
     }
 
     private void ShowGroupContextMenu(string parentGroup, string groupName)
@@ -529,7 +501,7 @@ public class ScriptManagerWindow : MyraControl
 
             if (!File.Exists(targetFileFull))
             {
-                LegionWorkspaceFileSystem.WriteAllText(targetFileFull, SCRIPT_HEADER);
+                File.WriteAllText(targetFileFull, SCRIPT_HEADER);
                 _pendingReload = true;
                 GameActions.Print(World.Instance, $"Created script '{sanitizedName}'", 66);
             }
@@ -580,7 +552,7 @@ public class ScriptManagerWindow : MyraControl
             }
 
             if (!Directory.Exists(targetPath)) Directory.CreateDirectory(targetPath);
-            LegionWorkspaceFileSystem.WriteAllText(Path.Combine(targetPath, "Example.py"), "import API");
+            File.WriteAllText(Path.Combine(targetPath, "Example.py"), "import API");
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Created group '{sanitizedName}'", 66);
         }
@@ -610,7 +582,7 @@ public class ScriptManagerWindow : MyraControl
 
             if (!string.Equals(script.FullPath, newPath))
             {
-                LegionWorkspaceFileSystem.MoveFile(script.FullPath, newPath);
+                File.Move(script.FullPath, newPath);
                 script.FullPath  = newPath;
                 script.FileName  = newName;
                 _pendingReload   = true;
@@ -648,7 +620,7 @@ public class ScriptManagerWindow : MyraControl
             }
             if (!string.Equals(currentPath, newPath, StringComparison.OrdinalIgnoreCase))
             {
-                LegionWorkspaceFileSystem.MoveDirectory(currentPath, newPath);
+                Directory.Move(currentPath, newPath);
                 _pendingReload = true;
                 GameActions.Print(World.Instance, $"Renamed group '{groupName}' to '{newName}'", 66);
             }
@@ -659,43 +631,11 @@ public class ScriptManagerWindow : MyraControl
         catch (Exception ex) { GameActions.Print(World.Instance, $"Error renaming group: {ex.Message}", 32); Log.Error(ex.ToString()); }
     }
 
-    private void ShowZipDeleteConfirm(ZipScriptFile script) =>
-        new ZipDeleteDialog(
-            script.FileName,
-            Path.GetFileName(script.ZipPath),
-            onDeleteScript: () => PerformDeleteZipScript(script),
-            onDeleteZip:    () => PerformDeleteEntireZip(script));
-
-    private void PerformDeleteZipScript(ZipScriptFile script)
-    {
-        try
-        {
-            LegionWorkspaceFileSystem.DeleteZipEntry(script.ZipPath, script.EntryPath);
-            LegionScripting.LegionScripting.LoadedScripts.Remove(script);
-            _pendingReload = true;
-            GameActions.Print(World.Instance, $"Deleted '{script.FileName}' from zip.", 66);
-        }
-        catch (Exception ex) { GameActions.Print(World.Instance, $"Error deleting zip entry: {ex.Message}", 32); Log.Error(ex.ToString()); }
-    }
-
-    private void PerformDeleteEntireZip(ZipScriptFile script)
-    {
-        try
-        {
-            string zipPath = script.ZipPath;
-            LegionWorkspaceFileSystem.DeleteFile(zipPath);
-            LegionScripting.LegionScripting.LoadedScripts.RemoveAll(s => s is ZipScriptFile z && z.ZipPath == zipPath);
-            _pendingReload = true;
-            GameActions.Print(World.Instance, $"Deleted zip '{Path.GetFileName(zipPath)}'.", 66);
-        }
-        catch (Exception ex) { GameActions.Print(World.Instance, $"Error deleting zip: {ex.Message}", 32); Log.Error(ex.ToString()); }
-    }
-
     private void PerformDeleteScript(ScriptFile script)
     {
         try
         {
-            LegionWorkspaceFileSystem.DeleteFile(script.FullPath);
+            File.Delete(script.FullPath);
             LegionScripting.LegionScripting.LoadedScripts.Remove(script);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted script '{script.FileName}'", 66);
@@ -716,49 +656,12 @@ public class ScriptManagerWindow : MyraControl
                 return;
             }
 
-            LegionWorkspaceFileSystem.DeleteDirectory(gPath, recursive: true);
+            Directory.Delete(gPath, true);
             _pendingReload = true;
             GameActions.Print(World.Instance, $"Deleted group '{groupName}' and all its contents", 66);
         }
         catch (UnauthorizedAccessException) { GameActions.Print(World.Instance, "Access denied.", 32); }
         catch (IOException ioEx) { GameActions.Print(World.Instance, $"Delete operation failed: {ioEx.Message}", 32); }
         catch (Exception ex) { GameActions.Print(World.Instance, $"Error deleting group: {ex.Message}", 32); Log.Error(ex.ToString()); }
-    }
-
-    private sealed class ZipDeleteDialog : MyraControl
-    {
-        public ZipDeleteDialog(string scriptName, string zipName, Action onDeleteScript, Action onDeleteZip)
-            : base("Delete Zip Script")
-        {
-            var layout = new VerticalStackPanel { Spacing = 8, Padding = new Thickness(8) };
-
-            layout.Widgets.Add(new MyraLabel(
-                $"'{scriptName}' is inside zip '{zipName}'.\nWhat would you like to do?",
-                MyraLabel.TextStyle.P) { TextColor = Color.OrangeRed });
-
-            var btnRow = new HorizontalStackPanel
-            {
-                Spacing = 8,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-
-            btnRow.Widgets.Add(new MyraButton("Delete Script Only", () =>
-            {
-                _disposeRequested = true;
-                onDeleteScript();
-            }));
-            btnRow.Widgets.Add(new MyraButton("Delete Entire Zip", () =>
-            {
-                _disposeRequested = true;
-                onDeleteZip();
-            }));
-            btnRow.Widgets.Add(new MyraButton("Cancel", () => _disposeRequested = true));
-
-            layout.Widgets.Add(btnRow);
-            SetRootContent(layout);
-            CenterInViewPort();
-            UIManager.Add(this);
-            BringOnTop();
-        }
     }
 }

@@ -12,7 +12,18 @@ public class ApiUiControlDropDown(Combobox combobox, LegionAPI api) : ApiUiBaseC
     /// Get the selected index of the dropdown. The first entry is 0.
     /// </summary>
     /// <returns></returns>
-    public int GetSelectedIndex() => GetProp(() => combobox?.SelectedIndex ?? 0);
+    public int GetSelectedIndex()
+    {
+        if (!VerifyIntegrity()) return 0;
+
+        return MainThreadQueue.InvokeOnMainThread(() =>
+        {
+            if(combobox != null)
+                return combobox.SelectedIndex;
+
+            return 0;
+        });
+    }
 
     /// <summary>
     /// Add an onSelectionChanged callback to this dropdown control.

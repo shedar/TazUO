@@ -2,7 +2,6 @@
 
 using System;
 using System.Linq;
-using ClassicUO.Configuration;
 using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Input;
@@ -38,7 +37,7 @@ namespace ClassicUO.Game.UI.Controls
             Label _keyBinding;
             Add(_keyBinding = new Label
                 (
-                    TazLang.Get("macrocontrol_hotkey", "HotKey:"),
+                    "HotKey:",
                     true,
                     0xFFFF,
                     60,

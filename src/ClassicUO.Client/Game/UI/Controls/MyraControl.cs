@@ -31,7 +31,10 @@ public class MyraControl : IGui
     public MyraControl(string title)
     {
         _rootWindow = new ResizableWindow(
-            new ResizableWindowProps { Resize = { Placements = ResizeEdges.All } }
+            new ResizableWindowProps
+            {
+                Resize = { Placements = ResizeEdges.Bottom | ResizeEdges.Left | ResizeEdges.Right }
+            }
         ) { Title = title };
 
         _rootWindow.Closed += OnRootWindowOnClosed;
@@ -52,11 +55,11 @@ public class MyraControl : IGui
 
         _rootWindow.CloseKey = null;
 
-        //UIManager.TopMostChanged += UIManagerOnTopMostChanged;
+        UIManager.TopMostChanged += UIManagerOnTopMostChanged;
     }
 
     #region Event Handlers
-    //private void UIManagerOnTopMostChanged(object sender, EventArgs e) => _desktop.Opacity = UIManager.TopMostControl == this ? 1f : 0.8f;
+    private void UIManagerOnTopMostChanged(object sender, EventArgs e) => _desktop.Opacity = UIManager.TopMostControl == this ? 1f : 0.8f;
 
     private void OnRootWindowOnClosed(object s, EventArgs a)
     {
@@ -115,7 +118,6 @@ public class MyraControl : IGui
     #region Fields
     protected Rectangle _bounds = new();
     protected bool _disposeRequested = false;
-    protected readonly Queue<Action> _deferredActions = new();
     #endregion
 
     #region Properties
@@ -195,49 +197,11 @@ public class MyraControl : IGui
         return this;
     }
 
-    public MyraControl CenterInScreen()
-    {
-        // Width/Height are already in logical UI space, so only the window bounds need converting.
-        // (The previous form multiplied Width/Height by RenderScale, double-counting it and
-        // mis-centering whenever the game scale was not 1.0.)
-        X = (ScaleHelper.LogicalWindowWidth - Width) / 2;
-        Y = (ScaleHelper.LogicalWindowHeight - Height) / 2;
-
-        if (X < 0)
-            X = 0;
-
-        SetPosition(X, Y);
-
-        return this;
-    }
-
     public void SetPosition(int x, int y)
     {
         _rootWindow.Left = x;
         _rootWindow.Top = y;
         UpdateBoundsToContents();
-    }
-
-    /// <summary>
-    /// Ensure this window is at least partially within the game window bounds,
-    /// clamping its position so it can be retrieved when it ends up off-screen.
-    /// </summary>
-    public void SetInScreen()
-    {
-        // The window's client bounds are in physical pixels, but this window's
-        // coordinates and size live in logical UI space, which the global
-        // RenderScale maps onto the screen. Convert the bounds into that same
-        // logical space so clamping stays correct at any game scale.
-        int windowWidth = ScaleHelper.LogicalWindowWidth;
-        int windowHeight = ScaleHelper.LogicalWindowHeight;
-
-        int halfWidth = Width / 2;
-        int halfHeight = Height / 2;
-
-        int newX = (int)MathHelper.Clamp(X, -halfWidth, windowWidth - halfWidth);
-        int newY = (int)MathHelper.Clamp(Y, -halfHeight, windowHeight - halfHeight);
-
-        SetPosition(newX, newY);
     }
 
     public virtual void Update()
@@ -246,15 +210,7 @@ public class MyraControl : IGui
             return;
 
         if (_disposeRequested)
-        {
             ExecuteDispose();
-            return;
-        }
-
-        while (_deferredActions.Count > 0)
-        {
-            _deferredActions.Dequeue()?.Invoke();
-        }
     }
 
     public virtual void PreDraw()
@@ -273,15 +229,7 @@ public class MyraControl : IGui
 
         batcher.FlushBatch(); //Required to draw myra on top of already drawn gumps
 
-        // Myra processes its own mouse/keyboard input inside Desktop.Render(). If we only ran
-        // that for the top-most window, the very first click on a background window would be spent
-        // by the UIManager promoting it to top-most (see UIManager.OnMouseButtonDown) and Myra would
-        // never see the click as a widget press. By also running the input pass while this is the
-        // window under the cursor (MouseOverControl, set during UIManager.Update() before Draw()),
-        // the click is passed through to Myra on the same frame, and hover frames keep Myra's mouse
-        // baseline fresh so the down-edge is detected. Only one window is ever MouseOverControl
-        // (front-most hit), so this does not cause click-through to overlapped windows.
-        if (IsTopMost || ReferenceEquals(UIManager.MouseOverControl, this))
+        if (IsTopMost)
         {
             _desktop.Render();
         }
@@ -339,7 +287,7 @@ public class MyraControl : IGui
             return;
 
         _desktop.WidgetGotKeyboardFocus -= DesktopOnWidgetGotKeyboardFocus;
-        //UIManager.TopMostChanged -= UIManagerOnTopMostChanged;
+        UIManager.TopMostChanged -= UIManagerOnTopMostChanged;
 
         if (_rootWindow is not null)
         {
@@ -361,7 +309,6 @@ public class MyraControl : IGui
     {
         IsFocused = false;
         _desktop.FocusedKeyboardWidget = null;
-        _desktop.HideContextMenu();
     }
 
     #region Invokations
@@ -391,7 +338,8 @@ public class MyraControl : IGui
     /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
     public void InvokeMouseEnter(Point position) { }
 
-    public void InvokeMouseExit(Point position) => _rootWindow.OnMouseLeft();
+    /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
+    public void InvokeMouseExit(Point position) { }
 
     public bool InvokeMouseDoubleClick(Point position, MouseButtonType button) =>
         OnMouseDoubleClick(position.X, position.Y, button);
@@ -414,11 +362,7 @@ public class MyraControl : IGui
         if (!IsVisible || !IsEnabled || IsDisposed || !AcceptMouseInput)
             return;
 
-        if (
-            _rootWindow?.HitTest(position) != null ||
-            Bounds.Contains(position.X, position.Y) ||
-            Contains(position.X, position.Y)
-        )
+        if (Bounds.Contains(position.X, position.Y) || Contains(position.X, position.Y))
         {
             res = this;
             OnHitTestSuccess(position.X, position.Y, ref res);
@@ -508,7 +452,7 @@ public class MyraControl : IGui
     /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
     public void Remove(IGui c) => Children.Remove(c);
 
-    public void SetTooltip(string text)
+    public void SetTooltip(string text, int maxWidth = 0) //TODO: Remove maxWidth param
     {
         ClearTooltip();
 
@@ -558,7 +502,7 @@ public class MyraControl : IGui
     public void ShowContextMenu(params (string Label, Action Action)[] items)
     {
         var menu = new VerticalMenu();
-        foreach ((string label, Action action) in items)
+        foreach (var (label, action) in items)
         {
             var item = new MenuItem { Text = label };
             if (action != null)
@@ -577,11 +521,4 @@ public class MyraControl : IGui
     /// <returns>A colored status tag followed by the label text.</returns>
     public string ContextMenuLabelToggle(bool status, string label) =>
         $"{(status ? "[/c[green]Enabled/cd]" : "[/c[red]Disabled/cd]")} {label}";
-
-    /// <summary>
-    /// Schedules an action to run on the next Update() call, after the current
-    /// UI event (e.g. a ComboBox SelectedIndexChanged) has fully finished —
-    /// safe for rebuilding widget trees without corrupting open popups.
-    /// </summary>
-    public void Defer(Action action) => _deferredActions.Enqueue(action);
 }

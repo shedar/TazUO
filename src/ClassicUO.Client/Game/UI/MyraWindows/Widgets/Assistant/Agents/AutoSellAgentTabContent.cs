@@ -14,28 +14,28 @@ public static class AutoSellAgentTabContent
     {
         Profile? profile = ProfileManager.CurrentProfile;
         if (profile == null)
-            return new MyraLabel(TazLang.Get("autosell_profilenotloaded"), MyraLabel.TextStyle.P);
+            return new MyraLabel("Profile not loaded", MyraLabel.TextStyle.P);
 
         var root = new VerticalStackPanel { Spacing = 6 };
 
         root.Widgets.Add(MyraCheckButton.CreateWithCallback(
-            profile.SellAgentEnabled, b => profile.SellAgentEnabled = b, TazLang.Get("autosell_enable")));
+            profile.SellAgentEnabled, b => profile.SellAgentEnabled = b, "Enable Auto Sell"));
 
-        root.Widgets.Add(new MyraLabel(TazLang.Get("autosell_options"), MyraLabel.TextStyle.H3));
-        root.Widgets.Add(LabeledHorizontalSlider.SliderWithLabel(
-            TazLang.Get("autosell_maxitems"),
+        root.Widgets.Add(new MyraLabel("Options:", MyraLabel.TextStyle.H3));
+        root.Widgets.Add(MyraHSlider.SliderWithLabel(
+            "Max total items",
             out _,
             v => profile.SellAgentMaxItems = (int)v,
             0, 1000,
             profile.SellAgentMaxItems));
-        root.Widgets.Add(LabeledHorizontalSlider.SliderWithLabel(
-            TazLang.Get("autosell_maxuniques"),
+        root.Widgets.Add(MyraHSlider.SliderWithLabel(
+            "Max unique items",
             out _,
             v => profile.SellAgentMaxUniques = (int)v,
             0, 100,
             profile.SellAgentMaxUniques));
 
-        root.Widgets.Add(new MyraLabel(TazLang.Get("autosell_entries"), MyraLabel.TextStyle.H3));
+        root.Widgets.Add(new MyraLabel("Entries:", MyraLabel.TextStyle.H3));
 
         var entriesPanel = new VerticalStackPanel { Spacing = 4 };
 
@@ -46,19 +46,19 @@ public static class AutoSellAgentTabContent
 
             if (entries.Count == 0)
             {
-                entriesPanel.Widgets.Add(new MyraLabel(TazLang.Get("autosell_noentries"), MyraLabel.TextStyle.H3));
+                entriesPanel.Widgets.Add(new MyraLabel("No entries configured.", MyraLabel.TextStyle.H3));
                 return;
             }
 
             var grid = new MyraGrid();
             grid.SetupWithHeaders(
-                GridColumnInfo.Auto(TazLang.Get("agent_col_art")),
-                GridColumnInfo.Fill(TazLang.Get("agent_col_graphic")),
-                GridColumnInfo.Fill(TazLang.Get("agent_col_hue")),
-                GridColumnInfo.Fill(TazLang.Get("agent_col_maxamount")),
-                GridColumnInfo.Fill(TazLang.Get("autosell_col_minonhand")),
-                GridColumnInfo.Auto(TazLang.Get("agent_col_enabled")),
-                GridColumnInfo.Auto(TazLang.Get("agent_col_actions"))
+                GridColumnInfo.Auto("Art"),
+                GridColumnInfo.Fill("Graphic"),
+                GridColumnInfo.Fill("Hue"),
+                GridColumnInfo.Fill("Max Amount"),
+                GridColumnInfo.Fill("Min on Hand"),
+                GridColumnInfo.Auto("Enabled"),
+                GridColumnInfo.Auto("Actions")
             );
 
             int dataRow = 1;
@@ -89,7 +89,7 @@ public static class AutoSellAgentTabContent
                 var maxAmountBox = new MyraInputBox
                 {
                     Text = entry.MaxAmount == ushort.MaxValue ? "0" : entry.MaxAmount.ToString(),
-                    Tooltip = TazLang.Get("agent_maxamount_tooltip"),
+                    Tooltip = "Set to 0 for unlimited.",
                 };
                 maxAmountBox.TextChangedByUser += (_, _) =>
                 {
@@ -101,7 +101,7 @@ public static class AutoSellAgentTabContent
                 var restockBox = new MyraInputBox
                 {
                     Text = entry.RestockUpTo.ToString(),
-                    Tooltip = TazLang.Get("autosell_minonhand_tooltip"),
+                    Tooltip = "Minimum amount to keep on hand (0 = disabled).",
                 };
                 restockBox.TextChangedByUser += (_, _) =>
                 {
@@ -113,7 +113,7 @@ public static class AutoSellAgentTabContent
                 cb.HorizontalAlignment = HorizontalAlignment.Center;
                 grid.AddWidget(cb, dataRow, 5);
 
-                grid.AddWidget(MyraStyle.ApplyButtonDangerStyle(new MyraButton(TazLang.Get("agent_delete"), () =>
+                grid.AddWidget(MyraStyle.ApplyButtonDangerStyle(new MyraButton("Delete", () =>
                 {
                     BuySellAgent.Instance?.DeleteConfig(entry);
                     BuildEntriesList();
@@ -135,15 +135,15 @@ public static class AutoSellAgentTabContent
         var newRestockBox = new MyraInputBox { HintText = "Min on Hand (0=disabled)", Width = 130 };
 
         var addFieldsRow1 = new HorizontalStackPanel { Spacing = 4 };
-        addFieldsRow1.Widgets.Add(new MyraLabel(TazLang.Get("agent_graphic_label"), MyraLabel.TextStyle.P));
+        addFieldsRow1.Widgets.Add(new MyraLabel("Graphic:", MyraLabel.TextStyle.P));
         addFieldsRow1.Widgets.Add(newGraphicBox);
-        addFieldsRow1.Widgets.Add(new MyraLabel(TazLang.Get("agent_hue_label"), MyraLabel.TextStyle.P));
+        addFieldsRow1.Widgets.Add(new MyraLabel("Hue:", MyraLabel.TextStyle.P));
         addFieldsRow1.Widgets.Add(newHueBox);
 
         var addFieldsRow2 = new HorizontalStackPanel { Spacing = 4 };
-        addFieldsRow2.Widgets.Add(new MyraLabel(TazLang.Get("agent_maxamount_label"), MyraLabel.TextStyle.P));
+        addFieldsRow2.Widgets.Add(new MyraLabel("Max Amount:", MyraLabel.TextStyle.P));
         addFieldsRow2.Widgets.Add(newMaxAmountBox);
-        addFieldsRow2.Widgets.Add(new MyraLabel(TazLang.Get("autosell_minonhand_label"), MyraLabel.TextStyle.P));
+        addFieldsRow2.Widgets.Add(new MyraLabel("Min on Hand:", MyraLabel.TextStyle.P));
         addFieldsRow2.Widgets.Add(newRestockBox);
 
         void ClearAddFields()
@@ -155,7 +155,7 @@ public static class AutoSellAgentTabContent
         }
 
         var addConfirmRow = new HorizontalStackPanel { Spacing = 4 };
-        addConfirmRow.Widgets.Add(new MyraButton(TazLang.Get("agent_add"), () =>
+        addConfirmRow.Widgets.Add(new MyraButton("Add", () =>
         {
             if (StringHelper.TryParseInt(newGraphicBox.Text, out int graphic))
             {
@@ -178,23 +178,23 @@ public static class AutoSellAgentTabContent
                 BuildEntriesList();
             }
         }));
-        addConfirmRow.Widgets.Add(new MyraButton(TazLang.Get("agent_cancel"), () =>
+        addConfirmRow.Widgets.Add(new MyraButton("Cancel", () =>
         {
             addEntryPanel.Visible = false;
             ClearAddFields();
         }));
 
-        addEntryPanel.Widgets.Add(new MyraLabel(TazLang.Get("agent_addnewentry"), MyraLabel.TextStyle.H3));
+        addEntryPanel.Widgets.Add(new MyraLabel("Add New Entry:", MyraLabel.TextStyle.H3));
         addEntryPanel.Widgets.Add(addFieldsRow1);
         addEntryPanel.Widgets.Add(addFieldsRow2);
         addEntryPanel.Widgets.Add(addConfirmRow);
 
         // Action buttons
         var actionRow = new HorizontalStackPanel { Spacing = 6 };
-        actionRow.Widgets.Add(new MyraButton(TazLang.Get("agent_addmanualentry"), () => addEntryPanel.Visible = !addEntryPanel.Visible));
-        actionRow.Widgets.Add(new MyraButton(TazLang.Get("agent_addfromtarget"), () =>
+        actionRow.Widgets.Add(new MyraButton("Add Manual Entry", () => addEntryPanel.Visible = !addEntryPanel.Visible));
+        actionRow.Widgets.Add(new MyraButton("Add from Target", () =>
         {
-            GameActions.Print(Client.Game.UO.World, TazLang.Get("autosell_targetprompt"));
+            GameActions.Print(Client.Game.UO.World, "Target item to add");
             World.Instance.TargetManager.SetTargeting(targeted =>
             {
                 if (targeted is Entity entity && SerialHelper.IsItem(entity))
@@ -207,10 +207,10 @@ public static class AutoSellAgentTabContent
                     BuildEntriesList();
                 }
             });
-        }) { Tooltip = TazLang.Get("autosell_addfromtarget_tooltip") });
-        actionRow.Widgets.Add(new MyraButton(TazLang.Get("autosell_addfromcontainer"), () =>
+        }) { Tooltip = "Target an item to add it to the sell list." });
+        actionRow.Widgets.Add(new MyraButton("Add from Container", () =>
         {
-            GameActions.Print(Client.Game.UO.World, TazLang.Get("autosell_addfromcontainer_prompt"));
+            GameActions.Print(Client.Game.UO.World, "Target a container to add all its items");
             World.Instance.TargetManager.SetTargeting(targeted =>
             {
                 if (targeted is Item container)
@@ -228,32 +228,32 @@ public static class AutoSellAgentTabContent
                             added++;
                         }
                     }
-                    GameActions.Print(Client.Game.UO.World, TazLang.Get("autosell_addedfromcontainer", new string[] { added.ToString() }));
+                    GameActions.Print(Client.Game.UO.World, $"Added {added} item(s) from container.");
                     BuildEntriesList();
                 }
             });
-        }) { Tooltip = TazLang.Get("autosell_addfromcontainer_tooltip") });
-        actionRow.Widgets.Add(MyraStyle.ApplyButtonDangerStyle(new MyraButton(TazLang.Get("autosell_clearall"), () =>
+        }) { Tooltip = "Target a container to add all its items to the sell list." });
+        actionRow.Widgets.Add(MyraStyle.ApplyButtonDangerStyle(new MyraButton("Clear All", () =>
         {
             BuySellAgent.Instance.SellConfigs?.Clear();
             BuildEntriesList();
-        }) { Tooltip = TazLang.Get("autosell_clearall_tooltip") }));
-        actionRow.Widgets.Add(new MyraButton(TazLang.Get("agent_import"), () =>
+        }) { Tooltip = "Remove all entries from the sell list." }));
+        actionRow.Widgets.Add(new MyraButton("Import", () =>
         {
             string? json = Clipboard.GetClipboardText();
             if (json.NotNullNotEmpty() && BuySellAgent.ImportFromJson(json, AgentType.Sell))
             {
-                GameActions.Print(TazLang.Get("autosell_imported"), Constants.HUE_SUCCESS);
+                GameActions.Print("Imported sell list!", Constants.HUE_SUCCESS);
                 BuildEntriesList();
                 return;
             }
-            GameActions.Print(TazLang.Get("agent_invalidimport"), Constants.HUE_ERROR);
-        }) { Tooltip = TazLang.Get("agent_import_tooltip") });
-        actionRow.Widgets.Add(new MyraButton(TazLang.Get("agent_export"), () =>
+            GameActions.Print("Your clipboard does not have a valid export copied.", Constants.HUE_ERROR);
+        }) { Tooltip = "Import from clipboard (must have a valid export copied)." });
+        actionRow.Widgets.Add(new MyraButton("Export", () =>
         {
             BuySellAgent.GetJsonExport(AgentType.Sell)?.CopyToClipboard();
-            GameActions.Print(TazLang.Get("autosell_exported"), Constants.HUE_SUCCESS);
-        }) { Tooltip = TazLang.Get("agent_export_tooltip") });
+            GameActions.Print("Exported sell list to your clipboard!", Constants.HUE_SUCCESS);
+        }) { Tooltip = "Export your list to clipboard." });
 
         root.Widgets.Add(actionRow);
         root.Widgets.Add(addEntryPanel);

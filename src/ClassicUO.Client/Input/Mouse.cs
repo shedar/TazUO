@@ -22,19 +22,6 @@ namespace ClassicUO.Input
         /// </summary>
         public static event EventHandler<MouseLeftButtonClickStateChangedEventArgs> LeftButtonClickStateChanged;
 
-        /// <summary>
-        /// Invoked whenever any mouse button is pressed. Used by hotkey capture in the UI.
-        /// </summary>
-        public static event Action<MouseButtonType> ButtonDownEvent;
-
-        /// <summary>
-        /// Invoked on mouse wheel scroll; the argument is true when scrolled up. Used by hotkey capture.
-        /// </summary>
-        public static event Action<bool> WheelEvent;
-
-        /// <summary>Raise <see cref="WheelEvent"/>. Called from the SDL wheel dispatch.</summary>
-        public static void RaiseWheelEvent(bool up) => WheelEvent?.Invoke(up);
-
         public static MouseInfo GetMyraMouseInfo()
         {
             var info = new MouseInfo();
@@ -77,19 +64,11 @@ namespace ClassicUO.Input
                     break;
 
                 case MouseButtonType.XButton1:
-                    XButton1Pressed = true;
-                    XButtonPressed = true;
-
-                    break;
-
                 case MouseButtonType.XButton2:
-                    XButton2Pressed = true;
                     XButtonPressed = true;
 
                     break;
             }
-
-            ButtonDownEvent?.Invoke(type);
 
             SDL.SDL_CaptureMouse(true);
         }
@@ -115,14 +94,8 @@ namespace ClassicUO.Input
                     break;
 
                 case MouseButtonType.XButton1:
-                    XButton1Pressed = false;
-                    XButtonPressed = XButton2Pressed;
-
-                    break;
-
                 case MouseButtonType.XButton2:
-                    XButton2Pressed = false;
-                    XButtonPressed = XButton1Pressed;
+                    XButtonPressed = false;
 
                     break;
             }
@@ -170,10 +143,6 @@ namespace ClassicUO.Input
 
         public static bool XButtonPressed { get; set; }
 
-        public static bool XButton1Pressed { get; set; }
-
-        public static bool XButton2Pressed { get; set; }
-
         public static bool IsDragging { get; set; }
 
         public static Point LDragOffset => LButtonPressed ? Position - LClickPosition : Point.Zero;
@@ -187,14 +156,6 @@ namespace ClassicUO.Input
         public static int ControllerSensitivity { get; set; } = 10;
 
         private static bool _isWarpingMouse = false;
-        private static Point _injectedPosition;
-
-        public static bool UseInjectedPosition { get; set; }
-
-        public static void SetInjectedPosition(Point position)
-        {
-            _injectedPosition = position;
-        }
 
         public static void Update()
         {
@@ -203,11 +164,7 @@ namespace ClassicUO.Input
 
             Point previous = Position;
 
-            if (UseInjectedPosition)
-            {
-                Position = _injectedPosition;
-            }
-            else if (!MouseInWindow)
+            if (!MouseInWindow)
             {
                 SDL.SDL_GetGlobalMouseState(out float x, out float y);
                 SDL.SDL_GetWindowPosition(Client.Game.Window.Handle, out int winX, out int winY);
@@ -232,12 +189,9 @@ namespace ClassicUO.Input
                 }
             }
 
-            if (!UseInjectedPosition)
-            {
-                Position.X = (int)(((double)Position.X * Client.Game.GraphicManager.PreferredBackBufferWidth / Client.Game.Window.ClientBounds.Width) / Client.Game.RenderScale);
+            Position.X = (int)(((double)Position.X * Client.Game.GraphicManager.PreferredBackBufferWidth / Client.Game.Window.ClientBounds.Width) / Client.Game.RenderScale);
 
-                Position.Y = (int)(((double)Position.Y * Client.Game.GraphicManager.PreferredBackBufferHeight / Client.Game.Window.ClientBounds.Height) / Client.Game.RenderScale);
-            }
+            Position.Y = (int)(((double)Position.Y * Client.Game.GraphicManager.PreferredBackBufferHeight / Client.Game.Window.ClientBounds.Height) / Client.Game.RenderScale);
 
             IsDragging = LButtonPressed || RButtonPressed || MButtonPressed;
 

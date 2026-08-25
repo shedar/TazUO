@@ -533,7 +533,7 @@ namespace ClassicUO.Game.Managers
                         CancelTarget();
                         return;
                     case CursorTarget.MoveItemContainer:
-                        if (SerialHelper.IsItem(serial) || SerialHelper.IsMobile(serial))
+                        if (SerialHelper.IsItem(serial))
                         {
                             MultiItemMoveGump.OnContainerTarget(_world, serial);
                         }

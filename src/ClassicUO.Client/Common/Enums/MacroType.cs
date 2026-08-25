@@ -110,12 +110,5 @@ public enum MacroType
     ToggleAutoLoot,
     ToggleVoiceRecognition,
     SetLastTarget,
-    ToggleAutoWalk,
-    ToggleBandageAgent,
-    SetOrganizerSource,
-    LoopContainer,
-    ToggleBuyAgent,
-    ToggleSellAgent,
-    SetZoomLevel,
-    LootHoveredItem
+    ToggleAutoWalk
 }

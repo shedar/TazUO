@@ -149,7 +149,7 @@ namespace ClassicUO.Game.UI.Gumps.CharCreation
                 Height = 34
             };
 
-            background.SetTooltip(localization.GetString(info.Description));
+            background.SetTooltip(localization.GetString(info.Description), 250);
 
             Add(background);
 

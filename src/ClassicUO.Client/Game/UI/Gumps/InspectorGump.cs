@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using ClassicUO.Assets;
-using ClassicUO.Configuration;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
@@ -98,7 +97,7 @@ namespace ClassicUO.Game.UI.Gumps
                     100,
                     25,
                     ButtonAction.Activate,
-                    TazLang.Get("inspector_clipboard", "To clipboard")
+                    "To clipboard"
                 )
                 {
                     ButtonParameter = 0

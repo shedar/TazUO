@@ -7,14 +7,8 @@ namespace ClassicUO.Game.Managers;
 public static class MainThreadQueue
 {
     private static int _threadId;
-
-    /// <summary>
-    ///     Indicates whether the current thread is the main thread.
-    ///     Note that this value will only be valid after the first call to <see cref="MainThreadQueue.Load" />.
-    /// </summary>
-    public static bool IsMainThread => Environment.CurrentManagedThreadId == _threadId;
-
-    private static ConcurrentQueue<(Action Action, CancellationToken? Token)> QueuedActions { get; } = new();
+    private static bool _isMainThread => Thread.CurrentThread.ManagedThreadId == _threadId;
+    private static ConcurrentQueue<(Action Action, CancellationToken? Token)> _queuedActions { get; } = new();
 
     /// <summary>
     ///     Must be called from main thread
@@ -26,7 +20,7 @@ public static class MainThreadQueue
     ///     If a cancellation token is provided, the action will be skipped at execution time if cancelled.
     /// </summary>
     public static void EnqueueAction(Action action, CancellationToken? cancellationToken = null)
-        => QueuedActions.Enqueue((action, cancellationToken));
+        => _queuedActions.Enqueue((action, cancellationToken));
 
     /// <summary>
     ///     Wraps the given function with a try/catch, returning any caught exception
@@ -55,7 +49,7 @@ public static class MainThreadQueue
         T mtResult = default;
         Exception ex = null;
 
-        QueuedActions.Enqueue((MtAction, cancellationToken));
+        _queuedActions.Enqueue((MtAction, cancellationToken));
 
         // Wait for the main thread to complete the operation
         resultEvent.Wait(cancellationToken ?? CancellationToken.None);
@@ -93,7 +87,7 @@ public static class MainThreadQueue
     public static T BubblingInvokeOnMainThread<T>(Func<T> func, CancellationToken? cancellationToken = null)
     {
         if (cancellationToken?.IsCancellationRequested == true) return default;
-        return IsMainThread ? func() : BubblingDispatchToMainThread(func, cancellationToken);
+        return _isMainThread ? func() : BubblingDispatchToMainThread(func, cancellationToken);
     }
 
     /// <summary>
@@ -118,7 +112,7 @@ public static class MainThreadQueue
         if (cancellationToken?.IsCancellationRequested == true)
             return;
 
-        if (IsMainThread)
+        if (_isMainThread)
         {
             action();
             return;
@@ -140,13 +134,13 @@ public static class MainThreadQueue
     public static T InvokeOnMainThread<T>(Func<T> func, CancellationToken? cancellationToken = null)
     {
         if (cancellationToken?.IsCancellationRequested == true) return default;
-        if (IsMainThread) return func();
+        if (_isMainThread) return func();
 
         // The MT is so slow there's no real point in spinning; Just wastes CPU.
         var resultEvent = new ManualResetEventSlim(false, 0);
         T result = default;
 
-        QueuedActions.Enqueue((Action, cancellationToken));
+        _queuedActions.Enqueue((Action, cancellationToken));
 
         try
         {
@@ -180,13 +174,13 @@ public static class MainThreadQueue
     public static void InvokeOnMainThread(Action action, CancellationToken? cancellationToken = null)
     {
         if (cancellationToken?.IsCancellationRequested == true) return;
-        if (IsMainThread)
+        if (_isMainThread)
         {
             action();
             return;
         }
 
-        QueuedActions.Enqueue((action, cancellationToken));
+        _queuedActions.Enqueue((action, cancellationToken));
     }
 
     /// <summary>
@@ -194,13 +188,13 @@ public static class MainThreadQueue
     /// </summary>
     public static void ProcessQueue()
     {
-        while (QueuedActions.TryDequeue(out (Action Action, CancellationToken? Token) item))
+        while (_queuedActions.TryDequeue(out (Action Action, CancellationToken? Token) item))
             if (item.Token?.IsCancellationRequested != true)
                 item.Action();
     }
 
     public static void Reset()
     {
-        while (QueuedActions.TryDequeue(out _)) { }
+        while (_queuedActions.TryDequeue(out _)) { }
     }
 }

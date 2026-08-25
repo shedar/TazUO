@@ -1,6 +1,4 @@
-using ClassicUO.Configuration;
 using ClassicUO.Game;
-using ClassicUO.Game.Data;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
 using ClassicUO.IO;
@@ -22,9 +20,7 @@ internal static class Damage
 
             if (damage > 0)
             {
-                if (!MessageTypeFilter.IsEnabled(ProfileManager.CurrentProfile.DisabledOverheadMessageTypes, MessageType.Damage))
-                    world.WorldTextManager.AddDamage(entity, damage);
-
+                world.WorldTextManager.AddDamage(entity, damage);
                 EventSink.InvokeOnEntityDamage(entity, damage);
             }
         }

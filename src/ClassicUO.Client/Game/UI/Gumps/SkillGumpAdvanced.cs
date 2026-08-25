@@ -19,12 +19,9 @@ using System.Xml;
 
 namespace ClassicUO.Game.UI.Gumps
 {
-    public class SkillGumpAdvanced : ScalableGump
+    public class SkillGumpAdvanced : Gump
     {
         private const int WIDTH = 400;
-
-        // Design-space (unscaled) height of the gump. The visible Height field is this value scaled by GumpScale.
-        private int _designHeight = 310;
 
         private static readonly Dictionary<Buttons, string> _buttonsToSkillsValues = new()
         {
@@ -60,17 +57,10 @@ namespace ClassicUO.Game.UI.Gumps
             AcceptMouseInput = true;
             WantUpdateSize = false;
 
-            GumpScale = ProfileManager.CurrentProfile?.SkillsGumpScale ?? 1.0;
-            // The gump is built in design space and scaled explicitly (statics at the end of Build,
-            // dynamic content in BuildGump), so keep the base Add() from also scaling children.
-            AutoScaleChildren = false;
-
-            _designHeight = 310;
+            Width = WIDTH;
+            Height = 310;
             if (ProfileManager.CurrentProfile != null)
-                _designHeight = ProfileManager.CurrentProfile.AdvancedSkillsGumpHeight;
-
-            Width = ScaleHelper.Scaled(WIDTH, GumpScale);
-            Height = ScaleHelper.Scaled(_designHeight, GumpScale);
+                Height = ProfileManager.CurrentProfile.AdvancedSkillsGumpHeight;
 
             Build();
         }
@@ -85,7 +75,7 @@ namespace ClassicUO.Game.UI.Gumps
                     X = 1,
                     Y = 1,
                     Width = WIDTH - 1,
-                    Height = _designHeight - 1
+                    Height = Height - 1
                 }
             );
 
@@ -94,7 +84,7 @@ namespace ClassicUO.Game.UI.Gumps
                 5,
                 40,
                 WIDTH - 10,
-                _designHeight - 60,
+                Height - 60,
                 true
             )
             {
@@ -213,7 +203,7 @@ namespace ClassicUO.Game.UI.Gumps
                 AcceptMouseInput = true,
                 WantUpdateSize = false,
                 CanMove = true,
-                Width = WIDTH,
+                Width = Width,
                 Height = 20
             };
             Checkbox showGrp;
@@ -243,17 +233,13 @@ namespace ClassicUO.Game.UI.Gumps
             Add(resizeDrag = new Button(0, 0x837, 0x838, 0x838));
             resizeDrag.MouseDown += ResizeDrag_MouseDown;
             resizeDrag.MouseUp += ResizeDrag_MouseUp;
-            resizeDrag.X = WIDTH - 10;
-            resizeDrag.Y = _designHeight - 10;
+            resizeDrag.X = Width - 10;
+            resizeDrag.Y = Height - 10;
 
             if(X == 0)
                 X = last_x;
             if(Y == 0)
                 Y = last_y;
-
-            // Everything above was laid out in design space; bake GumpScale into the whole static tree.
-            foreach (Control c in Children)
-                ApplyScaleRecursive(c, scaleRootPosition: true);
 
             SetSortIndicatorPosition();
             ForceUpdate();
@@ -269,8 +255,8 @@ namespace ClassicUO.Game.UI.Gumps
                 ushort g = (ushort)(_sortAsc ? 0x985 : 0x983);
 
                 _sortOrderIndicator.Graphic = g;
-                _sortOrderIndicator.X = btn.X + btn.Width - ScaleHelper.Scaled(15, GumpScale);
-                _sortOrderIndicator.Y = btn.Y + ScaleHelper.Scaled(5, GumpScale);
+                _sortOrderIndicator.X = btn.X + btn.Width - 15;
+                _sortOrderIndicator.Y = btn.Y + 5;
                 btn.IsSelected = true;
             }
         }
@@ -355,7 +341,7 @@ namespace ClassicUO.Game.UI.Gumps
                     a.WantUpdateSize = false;
                     a.CanMove = true;
                     a.Height = 26;
-                    a.Width = WIDTH - 26;
+                    a.Width = Width - 26;
                     a.Tag = g.IsMaximized;
                     a.MouseUp += (sender, e) =>
                     {
@@ -486,22 +472,11 @@ namespace ClassicUO.Game.UI.Gumps
             }
 
 
-            // Entries/group headers were built in design space; scale each subtree before the databox
-            // stacks them so ReArrangeChildren works entirely in scaled space.
-            foreach (Control c in _databox.Children)
-                ApplyScaleRecursive(c, scaleRootPosition: true);
-
             _databox.WantUpdateSize = true;
             _databox.ReArrangeChildren();
 
-            int realX = ScaleHelper.Scaled(205, GumpScale);
-            int valueX = ScaleHelper.Scaled(255, GumpScale);
-            int bottomY = Height - ScaleHelper.Scaled(20, GumpScale);
-
-            Add(real = new Label(_totalReal.ToString("F1"), true, 1153) { X = realX, Y = bottomY, AcceptMouseInput = false});
-            Add(value = new Label(_totalValue.ToString("F1"), true, 1153) { X = valueX, Y = bottomY, AcceptMouseInput = false});
-            real.SetInternalScale(GumpScale);
-            value.SetInternalScale(GumpScale);
+            Add(real = new Label(_totalReal.ToString("F1"), true, 1153) { X = 205, Y = Height - 20, AcceptMouseInput = false});
+            Add(value = new Label(_totalValue.ToString("F1"), true, 1153) { X = 255, Y = Height - 20, AcceptMouseInput = false});
 
             SetSortIndicatorPosition();
         }
@@ -556,19 +531,16 @@ namespace ClassicUO.Game.UI.Gumps
             if (Dragging && steps != 0)
             {
                 Height = dragStartH + steps;
-                int minHeight = ScaleHelper.Scaled(170, GumpScale);
-                if (Height < minHeight)
-                    Height = minHeight;
-                // Persist the design-space height so the stored value is independent of the current scale.
-                _designHeight = ScaleHelper.Unscaled(Height, GumpScale);
-                ProfileManager.CurrentProfile.AdvancedSkillsGumpHeight = _designHeight;
+                if (Height < 170)
+                    Height = 170;
+                ProfileManager.CurrentProfile.AdvancedSkillsGumpHeight = Height;
 
-                area.Height = Height - ScaleHelper.Scaled(60, GumpScale);
-                background.Height = Height - ScaleHelper.Scaled(1, GumpScale);
+                area.Height = Height - 60;
+                background.Height = Height - 1;
                 _databox.WantUpdateSize = true;
-                resizeDrag.Y = Height - ScaleHelper.Scaled(11, GumpScale);
-                real.Y = Height - ScaleHelper.Scaled(20, GumpScale);
-                value.Y = Height - ScaleHelper.Scaled(20, GumpScale);
+                resizeDrag.Y = Height - 11;
+                real.Y = Height - 20;
+                value.Y = Height - 20;
                 BottomArea.Y = area.Height + area.Y - 1;
             }
         }

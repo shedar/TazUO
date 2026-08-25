@@ -15,7 +15,7 @@ namespace ClassicUO.Game.UI.Gumps
 
         public TextRenderer TextRenderer { get; }
 
-        public virtual void AddText(TextObject msg)
+        public void AddText(TextObject msg)
         {
             if (msg == null)
             {

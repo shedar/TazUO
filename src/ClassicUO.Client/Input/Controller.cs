@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SDL3;
 
@@ -28,14 +27,7 @@ namespace ClassicUO.Input
 
         public static Dictionary<SDL.SDL_GamepadButton, bool> ButtonStates = new();
 
-        /// <summary>Fired when any controller button goes down. Used by hotkey capture in the UI.</summary>
-        public static event Action<SDL.SDL_GamepadButton> ButtonDownEvent;
-
-        public static void OnButtonDown(SDL.SDL_GamepadButtonEvent e)
-        {
-            SetButtonState((SDL.SDL_GamepadButton)e.button, true);
-            ButtonDownEvent?.Invoke((SDL.SDL_GamepadButton)e.button);
-        }
+        public static void OnButtonDown(SDL.SDL_GamepadButtonEvent e) => SetButtonState((SDL.SDL_GamepadButton)e.button, true);
 
         public static void OnButtonUp(SDL.SDL_GamepadButtonEvent e) => SetButtonState((SDL.SDL_GamepadButton)e.button, false);
 

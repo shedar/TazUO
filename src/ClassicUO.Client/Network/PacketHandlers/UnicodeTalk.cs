@@ -100,9 +100,6 @@ internal static class UnicodeTalk
                 entity.Name = string.IsNullOrEmpty(name) ? text : name;
         }
 
-        if (BeyondRecallQA.BrQaSession.IsActive && !string.IsNullOrEmpty(text))
-            BeyondRecallQA.BrQaSession.Instance.ObserveJournal(text);
-
         world.MessageManager.HandleMessage(
             entity,
             text,

@@ -5,7 +5,7 @@ using Myra.Graphics2D.UI.Styles;
 
 namespace ClassicUO.Game.UI.MyraWindows.Widgets;
 
-public class MyraLabel : Label
+public sealed class MyraLabel : Label
 {
     public MyraLabel(string text, int fontSize)
     {
@@ -22,40 +22,28 @@ public class MyraLabel : Label
         VerticalAlignment = VerticalAlignment.Center;
 
         var styleSheet = Stylesheet.Current.LabelStyle.Clone() as LabelStyle;
-        if (styleSheet == null) return;
+        if(styleSheet == null) return;
 
         switch (style)
         {
             case TextStyle.H1:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 22);
+                styleSheet.Font = TrueTypeLoader.Instance.GetFont(TrueTypeLoader.EMBEDDED_FONT, 22);
                 break;
             case TextStyle.H2:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 20);
+                styleSheet.Font = TrueTypeLoader.Instance.GetFont(TrueTypeLoader.EMBEDDED_FONT, 20);
                 break;
             case TextStyle.H3:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 18);
+                styleSheet.Font = TrueTypeLoader.Instance.GetFont(TrueTypeLoader.EMBEDDED_FONT, 18);
                 styleSheet.Padding = new Thickness(4, 2);
                 break;
-            case TextStyle.H4:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 16);
-                styleSheet.Padding = new Thickness(3, 1);
-                break;
-            case TextStyle.H5:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 14);
-                styleSheet.Padding = new Thickness(3, 1);
-                break;
-            case TextStyle.H6:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 12);
-                styleSheet.Padding = new Thickness(2, 0);
-                break;
             case TextStyle.TableHeader:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO_BOLD, 16);
+                styleSheet.Font = TrueTypeLoader.Instance.GetFont("Roboto-Bold", 16);
                 styleSheet.Padding = new Thickness(4, 0);
                 styleSheet.Margin = new Thickness(2, 0);
                 break;
             case TextStyle.P:
             default:
-                styleSheet.Font = TrueTypeLoader.Instance.GetFont(EmbeddedFontNames.ROBOTO, 16);
+                styleSheet.Font = TrueTypeLoader.Instance.GetFont(TrueTypeLoader.EMBEDDED_FONT, 16);
                 styleSheet.Padding = new Thickness(4, 2);
                 break;
         }
@@ -65,7 +53,7 @@ public class MyraLabel : Label
         {
             AlignMode.Center => HorizontalAlignment.Center,
             AlignMode.Right => HorizontalAlignment.Right,
-            _ => HorizontalAlignment.Left
+            _ => HorizontalAlignment.Left,
         };
     }
 
@@ -74,17 +62,14 @@ public class MyraLabel : Label
         H1,
         H2,
         H3,
-        H4,
-        H5,
-        H6,
         P,
-        TableHeader
+        TableHeader,
     }
 
     public enum AlignMode
     {
         Left,
         Center,
-        Right
+        Right,
     }
 }

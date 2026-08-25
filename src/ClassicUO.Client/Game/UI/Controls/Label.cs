@@ -40,21 +40,6 @@ namespace ClassicUO.Game.UI.Controls
             Height = _gText.Height;
         }
 
-        public override IGui ApplyScale(double scale, bool scalePosition = true, bool scaleSize = true, bool force = false)
-        {
-            // Width/Height are derived from the text, so let the base set InternalScale and scale the
-            // position, then recompute the size from the (now known) scale instead of compounding it.
-            base.ApplyScale(scale, scalePosition, false, force);
-
-            if (scaleSize)
-            {
-                Width = (int)(_gText.Width * InternalScale);
-                Height = (int)(_gText.Height * InternalScale);
-            }
-
-            return this;
-        }
-
         public Label(List<string> parts, string[] lines) : this
         (
             int.TryParse(parts[4], out int lineIndex) && lineIndex >= 0 && lineIndex < lines.Length ? lines[lineIndex] : string.Empty,
@@ -75,8 +60,8 @@ namespace ClassicUO.Game.UI.Controls
             set
             {
                 _gText.Text = value;
-                Width = (int)(_gText.Width * InternalScale);
-                Height = (int)(_gText.Height * InternalScale);
+                Width = _gText.Width;
+                Height = _gText.Height;
             }
         }
 
@@ -106,7 +91,7 @@ namespace ClassicUO.Game.UI.Controls
                 return false;
             }
 
-            _gText.Draw(batcher, x, y, InternalScale, Alpha);
+            _gText.Draw(batcher, x, y, Alpha);
 
             return base.Draw(batcher, x, y);
         }

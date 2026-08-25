@@ -32,39 +32,6 @@ namespace ClassicUO.Renderer.Arts
         public ref readonly SpriteInfo GetArt(uint idx)
             => ref Get(idx + 0x4000);
 
-        public ArtInfo GetArtPixels(uint idx)
-        {
-            uint artIdx = idx + 0x4000;
-            uint loadedIdx = artIdx;
-            ArtInfo artInfo = LoadSourceArtInfo(artIdx, out bool loadedFromPNG);
-
-            if (artInfo.Pixels.IsEmpty && artIdx > 0)
-            {
-                loadedIdx = 0;
-                artInfo = LoadSourceArtInfo(0, out loadedFromPNG);
-            }
-
-            if (loadedFromPNG)
-            {
-                PNGLoader.Instance.ClearArtPixelCache(loadedIdx);
-            }
-
-            return artInfo;
-        }
-
-        private ArtInfo LoadSourceArtInfo(uint idx, out bool loadedFromPNG)
-        {
-            ArtInfo artInfo = PNGLoader.Instance.LoadArtTexture(idx);
-            loadedFromPNG = artInfo.Pixels != null && !artInfo.Pixels.IsEmpty;
-
-            if (artInfo.Pixels.IsEmpty)
-            {
-                artInfo = _artLoader.GetArt(idx);
-            }
-
-            return artInfo;
-        }
-
         private ref readonly SpriteInfo Get(uint idx)
         {
             if (idx >= _spriteInfos.Length)
@@ -74,7 +41,13 @@ namespace ClassicUO.Renderer.Arts
 
             if (spriteInfo.Texture == null)
             {
-                ArtInfo artInfo = LoadSourceArtInfo(idx, out bool loadedFromPNG);
+                ArtInfo artInfo = PNGLoader.Instance.LoadArtTexture(idx);
+                bool loadedFromPNG = artInfo.Pixels != null && !artInfo.Pixels.IsEmpty;
+
+                if (artInfo.Pixels.IsEmpty)
+                {
+                    artInfo = _artLoader.GetArt(idx);
+                }
 
                 if (artInfo.Pixels.IsEmpty && idx > 0)
                 {
@@ -237,6 +210,6 @@ namespace ClassicUO.Renderer.Arts
                 ? Rectangle.Empty
                 : _realArtBounds[idx];
 
-        public bool PixelCheck(uint idx, int x, int y, double scale = 1f) => _picker.Get(idx, x, y, scale: scale);
+        public bool PixelCheck(uint idx, int x, int y) => _picker.Get(idx, x, y);
     }
 }

@@ -4,6 +4,10 @@ description: ApiUiNineSliceGump class documentation
 ---
 
 ## Properties
+### `NineSliceGump`
+
+**Type:** `NineSliceGump`
+
 ### `Gump`
 
 **Type:** `Gump`
@@ -81,22 +85,6 @@ description: ApiUiNineSliceGump class documentation
 | Name | Type | Optional | Description |
 | --- | --- | --- | --- |
 | `borderSize` | `int` | ❌ No | The border size in pixels |
-
-**Return Type:** `void` *(Does not return anything)*
-
----
-
-### SetLegionTexture
-`(texture, borderSize)`
- Set the modern gump texture and border size
-
-
-**Parameters:**
-
-| Name | Type | Optional | Description |
-| --- | --- | --- | --- |
-| `texture` | `string` | ❌ No |  |
-| `borderSize` | `int` | ❌ No |  |
 
 **Return Type:** `void` *(Does not return anything)*
 

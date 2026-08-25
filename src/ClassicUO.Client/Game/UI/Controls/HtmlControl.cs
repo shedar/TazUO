@@ -39,9 +39,6 @@ namespace ClassicUO.Game.UI.Controls
             _gameText.MaxWidth = Width - (HasScrollbar ? 16 : 0) - (HasBackground ? 8 : 0);
             IsFromServer = true;
 
-            if(parts.Count > 8 && parts[8] == "1")
-                _gameText.FontStyle = FontStyle.BlackBorder;
-
             if (textIndex >= 0 && textIndex < lines.Length)
             {
                 InternalBuild(lines[textIndex], 0);
@@ -187,7 +184,7 @@ namespace ClassicUO.Game.UI.Controls
             _scrollBar.MinValue = 0;
 
             _scrollBar.MaxValue = /* _gameText.Height*/ /* Children.Sum(s => s.Height) - Height +*/
-                (int)(_gameText.Height * InternalScale) - Height + (HasBackground ? 8 : 0);
+                _gameText.Height - Height + (HasBackground ? 8 : 0);
 
             ScrollY = _scrollBar.Value;
 
@@ -195,33 +192,6 @@ namespace ClassicUO.Game.UI.Controls
 
             //if (Width != _gameText.Width)
             //    Width = _gameText.Width;
-        }
-
-        public override IGui ApplyScale(double scale, bool scalePosition = true, bool scaleSize = true, bool force = false)
-        {
-            base.ApplyScale(scale, scalePosition, scaleSize, force);
-
-            // The text texture is rendered at its native size and scaled at draw time, but the
-            // background and scrollbar are real children that need to follow the scaled box.
-            foreach (IGui child in Children)
-            {
-                if (child is ResizePic background)
-                {
-                    background.Width = Width - (HasScrollbar ? 16 : 0);
-                    background.Height = Height;
-                }
-            }
-
-            if (_scrollBar != null)
-            {
-                _scrollBar.X = Width - 14;
-                _scrollBar.Height = Height;
-            }
-
-            // Force the scroll range to be recalculated using the scaled content height.
-            WantUpdateSize = true;
-
-            return this;
         }
 
         public override void OnMouseWheel(MouseEventType delta)
@@ -250,7 +220,7 @@ namespace ClassicUO.Game.UI.Controls
                     _scrollBar.MinValue = 0;
 
                     _scrollBar.MaxValue = /* _gameText.Height*/ /*Children.Sum(s => s.Height) - Height */
-                        (int)(_gameText.Height * InternalScale) - Height + (HasBackground ? 8 : 0);
+                        _gameText.Height - Height + (HasBackground ? 8 : 0);
                 }
 
                 //_scrollBar.IsVisible = _scrollBar.MaxValue > _scrollBar.MinValue;
@@ -278,25 +248,16 @@ namespace ClassicUO.Game.UI.Controls
 
                 int offset = HasBackground ? 4 : 0;
 
-                if (InternalScale == 1.0)
-                {
-                    _gameText?.Draw
-                    (
-                        batcher,
-                        x + offset,
-                        y + offset,
-                        ScrollX,
-                        ScrollY,
-                        Width + ScrollX,
-                        Height + ScrollY
-                    );
-                }
-                else
-                {
-                    // ScrollX/ScrollY are already in scaled display space; the clip region above
-                    // keeps the scaled text inside the control bounds.
-                    _gameText?.Draw(batcher, x + offset - ScrollX, y + offset - ScrollY, InternalScale, Alpha);
-                }
+                _gameText?.Draw
+                (
+                    batcher,
+                    x + offset,
+                    y + offset,
+                    ScrollX,
+                    ScrollY,
+                    Width + ScrollX,
+                    Height + ScrollY
+                );
 
                 batcher.ClipEnd();
             }
@@ -315,10 +276,7 @@ namespace ClassicUO.Game.UI.Controls
                     {
                         WebLinkRect link = _gameText.Links[i];
 
-                        double linkScale = InternalScale;
-                        bool inbounds = link.Bounds.Contains(
-                            (int)(x / linkScale),
-                            (int)(((_scrollBar == null ? 0 : _scrollBar.Value) + y) / linkScale));
+                        bool inbounds = link.Bounds.Contains(x, (_scrollBar == null ? 0 : _scrollBar.Value) + y);
 
                         if (inbounds && Client.Game.UO.FileManager.Fonts.GetWebLink(link.LinkID, out WebLink result))
                         {

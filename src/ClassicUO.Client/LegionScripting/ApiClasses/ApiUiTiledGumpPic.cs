@@ -8,13 +8,33 @@ public class ApiUiTiledGumpPic(GumpPicTiled gumpPicTiled) : ApiUiBaseControl(gum
 {
     public ushort Graphic
     {
-        get => GetProp(() => gumpPicTiled.Graphic);
-        set => SetProp(() => gumpPicTiled.Graphic = value);
+        get
+        {
+            if (!VerifyIntegrity()) return 0;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPicTiled.Graphic);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPicTiled.Graphic = value);
+        }
     }
 
     public ushort Hue
     {
-        get => GetProp(() => gumpPicTiled.Hue);
-        set => SetProp(() => gumpPicTiled.Hue = value);
+        get
+        {
+            if (!VerifyIntegrity()) return 0;
+
+            return MainThreadQueue.InvokeOnMainThread(() => gumpPicTiled.Hue);
+        }
+        set
+        {
+            if (!VerifyIntegrity()) return;
+
+            MainThreadQueue.InvokeOnMainThread(() => gumpPicTiled.Hue = value);
+        }
     }
 }
