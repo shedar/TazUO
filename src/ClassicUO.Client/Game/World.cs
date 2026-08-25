@@ -93,6 +93,16 @@ namespace ClassicUO.Game
 
         public uint LastObject, ObjectToRemove;
 
+        internal void CancelPendingItemRemoval(uint serial)
+        {
+            // Server placement updates are processed before the deferred client-side pickup removal.
+            // Once the server places this serial, the pending removal is stale.
+            if (ObjectToRemove == serial)
+            {
+                ObjectToRemove = 0;
+            }
+        }
+
         public ObjectPropertiesListManager OPL { get; }
         public DurabilityManager DurabilityManager { get; }
 

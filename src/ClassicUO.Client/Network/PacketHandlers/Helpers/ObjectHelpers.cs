@@ -26,6 +26,8 @@ public static class ObjectHelpers
         ushort UNK_2
     )
     {
+        world.CancelPendingItemRemoval(serial);
+
         Mobile mobile = null;
         Item item = null;
         Entity obj = world.Get(serial);
