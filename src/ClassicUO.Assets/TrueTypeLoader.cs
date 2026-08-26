@@ -44,6 +44,8 @@ using ClassicUO.IO.Persistency;
 using ClassicUO.Utility.Logging;
 using FontStashSharp;
 using FontStashSharp.RichText;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace ClassicUO.Assets;
 
@@ -86,6 +88,20 @@ public class TrueTypeLoader
 
     private const uint MAX_NUMBER_OF_SYS_FONT_FAMILIES = 1000;
 
+    private const float MIN_FONT_SIZE = 1f;
+
+    // Oversized sizes produce glyphs too big for FontStashSharp's fixed 1024x1024 atlas, which crashes the client; real UI text never approaches this.
+    private const float MAX_FONT_SIZE = 200f;
+
+    // Clamps a requested font size to a range the atlas can rasterize, normalizing NaN.
+    private static float ClampFontSize(float size)
+    {
+        if (float.IsNaN(size))
+            return MIN_FONT_SIZE;
+
+        return Math.Clamp(size, MIN_FONT_SIZE, MAX_FONT_SIZE);
+    }
+
     private readonly Dictionary<string, FontSystem> _fonts = new();
 
     private (string[], int)? _orderedFontNames;
@@ -109,6 +125,49 @@ public class TrueTypeLoader
         // encountered (e.g. a user-typed InfoBar label). Resolving here reuses the normal font
         // lookup, which safely falls back to an embedded font when the requested one is unavailable.
         RichTextDefaults.FontResolver ??= ResolveRichTextFont;
+    }
+
+    private ArtLoader _artLoader;
+    private GraphicsDevice _graphicsDevice;
+    public void SetImageResolver(ArtLoader artLoader, GraphicsDevice graphicsDevice)
+    {
+        _artLoader = artLoader;
+        _graphicsDevice = graphicsDevice;
+        RichTextDefaults.ImageResolver ??= ImageResolver;
+
+    }
+
+    private Dictionary<int, Texture2D> _imageCache;
+    private IRenderable ImageResolver(string arg)
+    {
+        if (!Utility.StringHelper.TryParseInt(arg, out int g) || _artLoader == null || _graphicsDevice == null)
+            return FSSRenderableTexture.Empty;
+        
+        _imageCache ??= new();
+
+        if(_imageCache.TryGetValue(g, out Texture2D tex))
+            return new TextureFragment(tex);
+
+        ArtInfo info = _artLoader.GetArt((uint)g + 0x4000);
+
+        if (info.Pixels.IsEmpty)
+            return FSSRenderableTexture.Empty;
+        
+        tex = new Texture2D(_graphicsDevice, info.Width, info.Height);
+        tex.SetData(info.Pixels.ToArray());
+
+        _imageCache[g] = tex;
+
+        Log.Debug($"Texture set: {info.Width}x{info.Height}");
+
+        return new TextureFragment(tex);
+    }
+
+    private class FSSRenderableTexture : IRenderable
+    {
+        public static readonly FSSRenderableTexture Empty = new FSSRenderableTexture();
+        public Point Size => Point.Zero;
+        public void Draw(FSRenderContext context, Vector2 position, Color color){}
     }
 
     /// <summary>
@@ -422,21 +481,29 @@ public class TrueTypeLoader
     /// </returns>
     public SpriteFontBase GetFont(string name, float size)
     {
-        // Try standard fonts first
-        if (_fonts.TryGetValue(name, out FontSystem font))
-            return font.GetFont(size);
+        // Single choke point for all font requests (incl. rich-text '/f[font, size]'); clamp so an oversized value can't crash the atlas.
+        size = ClampFontSize(size);
 
-        // If the font isn't present in the loaded ones but is available on the system, try to load it
-        if (_availableSystemFontFamilyNames.Contains(name))
+        // A null or empty name can't be looked up (Dictionary.TryGetValue throws on a null key),
+        // so skip straight to the fallback font below.
+        if (!string.IsNullOrEmpty(name))
         {
-            if (TryGetSystemFont(name, size, out SpriteFontBase sysFont))
-                return sysFont;
+            // Try standard fonts first
+            if (_fonts.TryGetValue(name, out FontSystem font))
+                return font.GetFont(size);
 
-            // This is to prevent repeated disk hits if a font is botched or otherwise unusable.
-            // We can also note in cache that this font family is problematic, but if we've gotten here,
-            // it means the initial cache population run concluded that this font is valid.
-            Log.Warn($"Could not load system font '{name}'. Family will be ignored");
-            _availableSystemFontFamilyNames.Remove(name);
+            // If the font isn't present in the loaded ones but is available on the system, try to load it
+            if (_availableSystemFontFamilyNames.Contains(name))
+            {
+                if (TryGetSystemFont(name, size, out SpriteFontBase sysFont))
+                    return sysFont;
+
+                // This is to prevent repeated disk hits if a font is botched or otherwise unusable.
+                // We can also note in cache that this font family is problematic, but if we've gotten here,
+                // it means the initial cache population run concluded that this font is valid.
+                Log.Warn($"Could not load system font '{name}'. Family will be ignored");
+                _availableSystemFontFamilyNames.Remove(name);
+            }
         }
 
         // Use the default embedded font as a fallback

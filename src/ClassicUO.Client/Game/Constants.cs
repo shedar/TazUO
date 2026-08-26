@@ -9,6 +9,12 @@ namespace ClassicUO.Game
         public const int MIN_FPS = 12;
         public const int MAX_FPS = 1000;
 
+        /// <summary>
+        /// Name of the sub-folder (relative to a scoped save location) that holds rotating
+        /// backups of JSON save files. Shared by the various JSON save systems.
+        /// </summary>
+        public const string BACKUP_FOLDER = "backups";
+
         public const int CHARACTER_ANIMATION_DELAY = 80;
         public const int ITEM_EFFECT_ANIMATION_DELAY = 50;
 
@@ -105,13 +111,13 @@ namespace ClassicUO.Game
         public const ushort HUE_WARN = 53;
         public const ushort HUE_SUCCESS = 62;
 
+        /// <summary>Warning accent color (e.g. the counter bar hotkey-press flash).</summary>
+        public static readonly Color Warn = Color.Orange;
+
         public static class SqlSettings
         {
             public const string MANAGED_ZLIB = "USE_MANAGED_ZLIB";
-            public const string IMGUI_ALPHA = "imgui_window_alpha";
-            public const string IMGUI_THEME = "imgui_theme";
-            public const string IMGUI_CUSTOM_THEME_JSON = "imgui_custom_theme_json";
-public const string SCALE_PETS_ENABLED = "scale_pets_enabled";
+            public const string SCALE_PETS_ENABLED = "scale_pets_enabled";
             public const string WEB_MAP_PORT = "web_map_port";
             public const string WEB_MAP_AUTO_START = "web_map_auto_start";
             public const string MIN_GUMP_MOVE_DIST = "min_gump_move_dist";
@@ -121,7 +127,6 @@ public const string SCALE_PETS_ENABLED = "scale_pets_enabled";
             public const string MUSIC_FILTER_IDS = "music_filter_ids";
             public const string DISABLE_WEATHER = "disable_weather";
             public const string SEASON_FILTER = "season_filter";
-            public const string ENABLE_ENHANCED_PACKETS = "enhanced_packets_enabled";
             public const string QUICK_HEAL_SPELL = "quick_heal_spell";
             public const string QUICK_CURE_SPELL = "quick_cure_spell";
             public const string QUEUE_MANUAL_ITEM_MOVES = "queue_manual_item_moves";
@@ -131,6 +136,7 @@ public const string SCALE_PETS_ENABLED = "scale_pets_enabled";
             public const string IRC_AUTO_CONNECT = "irc_disable_auto_connect";
             public const string PATH_Z_LEVEL = "path_z_level";
             public const string PATHFINDING_MAX_NODES = "pathfinding_max_nodes";
+            public const string PATHFINDING_MULTI_BUFFER = "pathfinding_multi_buffer";
             public const string WORLDMAP_PATH_MAX_NODES = "worldmap_path_max_nodes";
             public const string WORLDMAP_PATH_MAX_RETRIES = "worldmap_path_max_retries";
             public const string WORLDMAP_PATH_TIMEOUT = "worldmap_path_timeout";
@@ -146,6 +152,8 @@ public const string SCALE_PETS_ENABLED = "scale_pets_enabled";
             public const string BANDAGE_JOURNAL_TRIGGER = "bandage_journal_trigger";
             public const string BANDAGE_JOURNAL_MESSAGES = "bandage_journal_messages";
             public const string VOTED_POLLS = "voted_polls";
+            public const string OVERHEADS_SCALE_WITH_ZOOM = "overheads_scale_with_zoom";
+            public const string TREE_TO_STUMPS_WITHIN_RADIUS = "tree_to_stumps_within_radius";
         }
     }
 }

@@ -17,7 +17,6 @@ using ClassicUO.Game.UI.MyraWindows.Widgets;
 using ClassicUO.Input;
 using ClassicUO.IO;
 using ClassicUO.Renderer;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework;
@@ -76,7 +75,6 @@ public class WorldMapGump : ResizableGump
     private bool _freeView;
     private List<string> _hiddenMarkerFiles;
     private bool _isScrolling;
-    private bool _isTopMost;
     private bool _mapMarkersLoaded;
     private List<string> _hiddenZoneFiles;
     private ZoneSets _zoneSets = new ZoneSets();
@@ -122,7 +120,6 @@ public class WorldMapGump : ResizableGump
     private WorldMapDoubleClickAction _doubleClickAction = WorldMapDoubleClickAction.ToggleLock;
     private bool _isFullscreen;
     private Rectangle _preFullscreenBounds;
-    private bool _preFullscreenTopMost;
 
     private GumpPic _northIcon;
 
@@ -171,7 +168,7 @@ public class WorldMapGump : ResizableGump
         if (ProfileManager.CurrentProfile != null)
         {
             _last_position = ProfileManager.CurrentProfile.WorldMapPosition;
-            IsLocked = ProfileManager.CurrentProfile.WorldMapLocked;
+            SetLockStatus(ProfileManager.CurrentProfile.WorldMapLocked);
         }
 
         X = _last_position.X;
@@ -180,7 +177,7 @@ public class WorldMapGump : ResizableGump
         _map = World.Map;
         LoadSettings();
 
-        GameActions.Print(World, ResGumps.WorldMapLoading, 0x35);
+        GameActions.Print(World, TazLang.Get("world_map_loading"), 0x35);
         ChangeMap(World.MapIndex);
         OnResize();
 
@@ -192,29 +189,6 @@ public class WorldMapGump : ResizableGump
 
     public override GumpType GumpType => GumpType.WorldMap;
     public float Zoom => _zooms[_zoomIndex];
-
-    public bool TopMost
-    {
-        get => _isTopMost;
-        set => SetTopMost(value, true);
-    }
-
-    private void SetTopMost(bool value, bool save)
-    {
-        if (_isTopMost != value)
-        {
-            _isTopMost = value;
-
-            if (save)
-            {
-                SaveSettings();
-            }
-        }
-
-        ShowBorder = _isTopMost;
-
-        LayerOrder = _isTopMost ? UILayer.Over : UILayer.Under;
-    }
 
     public bool FreeView
     {
@@ -296,7 +270,6 @@ public class WorldMapGump : ResizableGump
         _showGridIfZoomed = ProfileManager.CurrentProfile.WorldMapShowGridIfZoomed;
         _allowPositionalTarget = ProfileManager.CurrentProfile.WorldMapAllowPositionalTarget;
         _doubleClickAction = ProfileManager.CurrentProfile.WorldMapDoubleClickAction;
-        TopMost = ProfileManager.CurrentProfile.WorldMapTopMost;
         FreeView = ProfileManager.CurrentProfile.WorldMapFreeView;
     }
 
@@ -314,7 +287,6 @@ public class WorldMapGump : ResizableGump
         ProfileManager.CurrentProfile.WorldMapHeight = _isFullscreen ? _preFullscreenBounds.Height : Height;
 
         ProfileManager.CurrentProfile.WorldMapFlipMap = _flipMap;
-        ProfileManager.CurrentProfile.WorldMapTopMost = TopMost;
         ProfileManager.CurrentProfile.WorldMapFreeView = FreeView;
         ProfileManager.CurrentProfile.WorldMapShowParty = _showPartyMembers;
 
@@ -373,10 +345,10 @@ public class WorldMapGump : ResizableGump
     {
         _options.Clear();
 
-        _options["show_all_markers"] = new ContextMenuItemEntry(ResGumps.ShowAllMarkers, () => { _showMarkers = !_showMarkers; SaveSettings(); }, true, _showMarkers);
-        _options["show_marker_names"] = new ContextMenuItemEntry(ResGumps.ShowMarkerNames, () => { _showMarkerNames = !_showMarkerNames; SaveSettings(); }, true, _showMarkerNames);
-        _options["show_marker_icons"] = new ContextMenuItemEntry(ResGumps.ShowMarkerIcons, () => { _showMarkerIcons = !_showMarkerIcons; SaveSettings(); }, true, _showMarkerIcons);
-        _options["flip_map"] = new ContextMenuItemEntry(ResGumps.FlipMap, () =>
+        _options["show_all_markers"] = new ContextMenuItemEntry(TazLang.Get("show_all_markers"), () => { _showMarkers = !_showMarkers; SaveSettings(); }, true, _showMarkers);
+        _options["show_marker_names"] = new ContextMenuItemEntry(TazLang.Get("show_marker_names"), () => { _showMarkerNames = !_showMarkerNames; SaveSettings(); }, true, _showMarkerNames);
+        _options["show_marker_icons"] = new ContextMenuItemEntry(TazLang.Get("show_marker_icons"), () => { _showMarkerIcons = !_showMarkerIcons; SaveSettings(); }, true, _showMarkerIcons);
+        _options["flip_map"] = new ContextMenuItemEntry(TazLang.Get("flip_map"), () =>
         {
             _flipMap = !_flipMap; SaveSettings();
             if (_northIcon != null)
@@ -409,9 +381,7 @@ public class WorldMapGump : ResizableGump
                 )
         );
 
-        _options["top_most"] = new ContextMenuItemEntry(ResGumps.TopMost, () => { TopMost = !TopMost; }, true, _isTopMost);
-
-        _options["free_view"] = new ContextMenuItemEntry(ResGumps.FreeView, () => { FreeView = !FreeView; }, true, FreeView);
+        _options["free_view"] = new ContextMenuItemEntry(TazLang.Get("free_view"), () => { FreeView = !FreeView; }, true, FreeView);
 
         for (int i = 0; i < MapLoader.MAPS_COUNT; i++)
         {
@@ -419,7 +389,7 @@ public class WorldMapGump : ResizableGump
 
             _options[$"free_view_map_{idx}"] = new ContextMenuItemEntry
             (
-                string.Format(ResGumps.WorldMapChangeMap0, idx), () =>
+                string.Format(TazLang.Get("world_map_change_map0"), idx), () =>
                 {
                     FreeView = true;
                     ChangeMap(idx);
@@ -429,7 +399,7 @@ public class WorldMapGump : ResizableGump
 
         _options["show_party_members"] = new ContextMenuItemEntry
         (
-            ResGumps.ShowPartyMembers,
+            TazLang.Get("show_party_members"),
             () =>
             {
                 _showPartyMembers = !_showPartyMembers;
@@ -442,35 +412,35 @@ public class WorldMapGump : ResizableGump
         );
         _options["show_corpse"] = new ContextMenuItemEntry("Show my Corpse", () => { _showCorpse = !_showCorpse; SaveSettings(); }, true, _showCorpse);
 
-        _options["show_mobiles"] = new ContextMenuItemEntry(ResGumps.ShowMobiles, () => { _showMobiles = !_showMobiles; SaveSettings(); }, true, _showMobiles);
+        _options["show_mobiles"] = new ContextMenuItemEntry(TazLang.Get("show_mobiles"), () => { _showMobiles = !_showMobiles; SaveSettings(); }, true, _showMobiles);
 
-        _options["show_multis"] = new ContextMenuItemEntry(ResGumps.ShowHousesBoats, () => { _showMultis = !_showMultis; SaveSettings(); }, true, _showMultis);
+        _options["show_multis"] = new ContextMenuItemEntry(TazLang.Get("show_houses_boats"), () => { _showMultis = !_showMultis; SaveSettings(); }, true, _showMultis);
 
-        _options["show_your_name"] = new ContextMenuItemEntry(ResGumps.ShowYourName, () => { _showPlayerName = !_showPlayerName; SaveSettings(); }, true, _showPlayerName);
+        _options["show_your_name"] = new ContextMenuItemEntry(TazLang.Get("show_your_name"), () => { _showPlayerName = !_showPlayerName; SaveSettings(); }, true, _showPlayerName);
 
-        _options["show_your_healthbar"] = new ContextMenuItemEntry(ResGumps.ShowYourHealthbar, () => { _showPlayerBar = !_showPlayerBar; SaveSettings(); }, true, _showPlayerBar);
+        _options["show_your_healthbar"] = new ContextMenuItemEntry(TazLang.Get("show_your_healthbar"), () => { _showPlayerBar = !_showPlayerBar; SaveSettings(); }, true, _showPlayerBar);
 
-        _options["show_party_name"] = new ContextMenuItemEntry(ResGumps.ShowGroupName, () => { _showGroupName = !_showGroupName; SaveSettings(); }, true, _showGroupName);
+        _options["show_party_name"] = new ContextMenuItemEntry(TazLang.Get("show_group_name"), () => { _showGroupName = !_showGroupName; SaveSettings(); }, true, _showGroupName);
 
-        _options["show_party_healthbar"] = new ContextMenuItemEntry(ResGumps.ShowGroupHealthbar, () => { _showGroupBar = !_showGroupBar; SaveSettings(); }, true, _showGroupBar);
+        _options["show_party_healthbar"] = new ContextMenuItemEntry(TazLang.Get("show_group_healthbar"), () => { _showGroupBar = !_showGroupBar; SaveSettings(); }, true, _showGroupBar);
 
-        _options["show_coordinates"] = new ContextMenuItemEntry(ResGumps.ShowYourCoordinates, () => { _showCoordinates = !_showCoordinates; SaveSettings(); }, true, _showCoordinates);
+        _options["show_coordinates"] = new ContextMenuItemEntry(TazLang.Get("show_your_coordinates"), () => { _showCoordinates = !_showCoordinates; SaveSettings(); }, true, _showCoordinates);
 
-        _options["show_sextant_coordinates"] = new ContextMenuItemEntry(ResGumps.ShowSextantCoordinates, () => { _showSextantCoordinates = !_showSextantCoordinates; }, true, _showSextantCoordinates);
+        _options["show_sextant_coordinates"] = new ContextMenuItemEntry(TazLang.Get("show_sextant_coordinates"), () => { _showSextantCoordinates = !_showSextantCoordinates; }, true, _showSextantCoordinates);
 
         _options["sextant_base_coordinates"] = new ContextMenuItemEntry(TazLang.Get("map_sextant_base_location", "Set sextant base coordinates"), OpenSextantBaseOptions);
 
-        _options["show_mouse_coordinates"] = new ContextMenuItemEntry(ResGumps.ShowMouseCoordinates, () => { _showMouseCoordinates = !_showMouseCoordinates; }, true, _showMouseCoordinates);
+        _options["show_mouse_coordinates"] = new ContextMenuItemEntry(TazLang.Get("show_mouse_coordinates"), () => { _showMouseCoordinates = !_showMouseCoordinates; }, true, _showMouseCoordinates);
 
         _options["allow_positional_target"] = new ContextMenuItemEntry(
-            ResGumps.AllowPositionalTargeting, () => { _allowPositionalTarget = !_allowPositionalTarget; SaveSettings(); }, true, _allowPositionalTarget
+            TazLang.Get("allow_positional_targeting"), () => { _allowPositionalTarget = !_allowPositionalTarget; SaveSettings(); }, true, _allowPositionalTarget
         );
 
-        _options["markers_manager"] = new ContextMenuItemEntry(ResGumps.MarkersManager,
+        _options["markers_manager"] = new ContextMenuItemEntry(TazLang.Get("markers_manager"),
             () => MarkersManagerWindow.Show(World)
         );
 
-        _options["add_marker_on_player"] = new ContextMenuItemEntry(ResGumps.AddMarkerOnPlayer, () => AddMarkerOnPlayer());
+        _options["add_marker_on_player"] = new ContextMenuItemEntry(TazLang.Get("add_marker_on_player"), () => AddMarkerOnPlayer());
 
         _options["open_web_map"] = new ContextMenuItemEntry("Open Web Map (Browser)", GameActions.OpenWorldMapWebWindow);
 
@@ -482,11 +452,11 @@ public class WorldMapGump : ResizableGump
 
         }, true, ProfileManager.CurrentProfile.WebMapAutoStart);
 
-        _options["saveclose"] = new ContextMenuItemEntry(ResGumps.SaveClose, Dispose);
+        _options["saveclose"] = new ContextMenuItemEntry(TazLang.Get("save_close"), Dispose);
 
-        _options["show_grid_if_zoomed"] = new ContextMenuItemEntry(ResGumps.GridIfZoomed, () => { _showGridIfZoomed = !_showGridIfZoomed; SaveSettings(); }, true, _showGridIfZoomed);
+        _options["show_grid_if_zoomed"] = new ContextMenuItemEntry(TazLang.Get("grid_if_zoomed"), () => { _showGridIfZoomed = !_showGridIfZoomed; SaveSettings(); }, true, _showGridIfZoomed);
 
-        _options["reset_map_cache"] = new ContextMenuItemEntry(ResGumps.ResetMapsCache, () =>
+        _options["reset_map_cache"] = new ContextMenuItemEntry(TazLang.Get("reset_maps_cache"), () =>
         {
             if(Directory.Exists(_mapsCachePath))
                 Directory.GetFiles(_mapsCachePath, "*.png").ForEach(s => File.Delete(s));
@@ -556,15 +526,15 @@ public class WorldMapGump : ResizableGump
 
     private void BuildContextMenuForZones(ContextMenuControl parent)
     {
-        var zoneOptions = new ContextMenuItemEntry(ResGumps.MapZoneOptions);
+        var zoneOptions = new ContextMenuItemEntry(TazLang.Get("map_zone_options"));
 
         zoneOptions.Add(_options["show_grid_if_zoomed"]);
-        zoneOptions.Add(new ContextMenuItemEntry(ResGumps.MapZoneReload, () => { LoadZones(); BuildContextMenu(); }));
+        zoneOptions.Add(new ContextMenuItemEntry(TazLang.Get("map_zone_reload"), () => { LoadZones(); BuildContextMenu(); }));
         zoneOptions.Add(new ContextMenuItemEntry(""));
 
         if (_zoneSets.ZoneSetDict.Count < 1)
         {
-            zoneOptions.Add(new ContextMenuItemEntry(ResGumps.MapZoneNone));
+            zoneOptions.Add(new ContextMenuItemEntry(TazLang.Get("map_zone_none")));
         }
         else
         {
@@ -577,7 +547,7 @@ public class WorldMapGump : ResizableGump
                 (
                     new ContextMenuItemEntry
                     (
-                        String.Format(ResGumps.MapZoneFileName, zoneSet.NiceFileName),
+                        String.Format(TazLang.Get("map_zone_file_name"), zoneSet.NiceFileName),
                         () =>
                         {
                             zoneSet.Hidden = !zoneSet.Hidden;
@@ -646,19 +616,19 @@ public class WorldMapGump : ResizableGump
         // Font style choice applies to both marker names and mobile/entity names, so it
         // lives on the main context menu (not the marker submenu). Selecting a sprite-font
         // style also turns off any active TTF font.
-        var markerFontEntry = new ContextMenuItemEntry(ResGumps.FontStyle);
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 1), () => { SetFont(1); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 1));
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 2), () => { SetFont(2); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 2));
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 3), () => { SetFont(3); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 3));
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 4), () => { SetFont(4); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 4));
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 5), () => { SetFont(5); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 5));
-        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(ResGumps.Style0, 6), () => { SetFont(6); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 6));
+        var markerFontEntry = new ContextMenuItemEntry(TazLang.Get("font_style"));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 1), () => { SetFont(1); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 1));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 2), () => { SetFont(2); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 2));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 3), () => { SetFont(3); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 3));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 4), () => { SetFont(4); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 4));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 5), () => { SetFont(5); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 5));
+        markerFontEntry.Add(new ContextMenuItemEntry(string.Format(TazLang.Get("style0"), 6), () => { SetFont(6); SaveSettings(); }, true, !UseTtfFont && _markerFontIndex == 6));
         ContextMenu.Add(markerFontEntry);
 
         ContextMenu.Add(BuildTtfFontMenu());
 
-        var markersEntry = new ContextMenuItemEntry(ResGumps.MapMarkerOptions);
-        markersEntry.Add(new ContextMenuItemEntry(ResGumps.ReloadMarkers, LoadMarkers));
+        var markersEntry = new ContextMenuItemEntry(TazLang.Get("map_marker_options"));
+        markersEntry.Add(new ContextMenuItemEntry(TazLang.Get("reload_markers"), LoadMarkers));
         markersEntry.Add(new ContextMenuItemEntry(TazLang.Get("map_import_map_file", "Import Map File"), ImportMapFile));
 
         markersEntry.Add(_options["show_all_markers"]);
@@ -673,7 +643,7 @@ public class WorldMapGump : ResizableGump
             {
                 var entry = new ContextMenuItemEntry
                 (
-                    string.Format(ResGumps.ShowHide0, markerFile.Name),
+                    string.Format(TazLang.Get("show_hide0"), markerFile.Name),
                     () =>
                     {
                         markerFile.Hidden = !markerFile.Hidden;
@@ -702,7 +672,7 @@ public class WorldMapGump : ResizableGump
         }
         else
         {
-            markersEntry.Add(new ContextMenuItemEntry(ResGumps.NoMapFiles));
+            markersEntry.Add(new ContextMenuItemEntry(TazLang.Get("no_map_files")));
         }
 
 
@@ -710,7 +680,7 @@ public class WorldMapGump : ResizableGump
 
         BuildContextMenuForZones(ContextMenu);
 
-        var namesHpBarEntry = new ContextMenuItemEntry(ResGumps.NamesHealthbars);
+        var namesHpBarEntry = new ContextMenuItemEntry(TazLang.Get("names_healthbars"));
         namesHpBarEntry.Add(_options["show_your_name"]);
         namesHpBarEntry.Add(_options["show_your_healthbar"]);
         namesHpBarEntry.Add(_options["show_party_name"]);
@@ -722,7 +692,6 @@ public class WorldMapGump : ResizableGump
         ContextMenu.Add(_options["goto_location"]);
         ContextMenu.Add(_options["pathfind_location"]);
         ContextMenu.Add(_options["flip_map"]);
-        ContextMenu.Add(_options["top_most"]);
 
         var doubleClickEntry = new ContextMenuItemEntry(TazLang.Get("map_doubleclick_action", "Double click action"));
         doubleClickEntry.Add(new ContextMenuItemEntry(TazLang.Get("map_doubleclick_toggle_lock", "Toggle lock state"),
@@ -733,7 +702,7 @@ public class WorldMapGump : ResizableGump
             _doubleClickAction == WorldMapDoubleClickAction.ToggleFullscreen));
         ContextMenu.Add(doubleClickEntry);
 
-        var freeView = new ContextMenuItemEntry(ResGumps.FreeView);
+        var freeView = new ContextMenuItemEntry(TazLang.Get("free_view"));
         freeView.Add(_options["free_view"]);
 
         for (int i = 0; i < MapLoader.MAPS_COUNT; i++)
@@ -784,8 +753,8 @@ public class WorldMapGump : ResizableGump
         if (_isFullscreen)
         {
             // Keep the map filling the client window if it gets resized while fullscreen.
-            int targetW = Client.Game.Window.ClientBounds.Width;
-            int targetH = Client.Game.Window.ClientBounds.Height;
+            int targetW = ScaleHelper.LogicalWindowWidth;
+            int targetH = ScaleHelper.LogicalWindowHeight;
 
             if (Width != targetW || Height != targetH || X != 0 || Y != 0)
             {
@@ -1531,7 +1500,7 @@ public class WorldMapGump : ResizableGump
                     _mapTexture?.Dispose();
                     using FileStream stream = File.OpenRead(fileMapPath);
                     _mapTexture = Texture2D.FromStream(Client.Game.GraphicsDevice, stream);
-                    GameActions.Print(ResGumps.WorldMapLoaded, 0x48);
+                    GameActions.Print(TazLang.Get("world_map_loaded"), 0x48);
                 });
             }
             else
@@ -1727,7 +1696,7 @@ public class WorldMapGump : ResizableGump
             {
                 ZonesFile zf = System.Text.Json.JsonSerializer.Deserialize(File.ReadAllText(filename), ZonesJsonContext.Default.ZonesFile);
                 ZoneSetDict[filename] = new ZoneSet(zf, filename, hidden);
-                GameActions.Print(world, string.Format(ResGumps.MapZoneFileLoaded, ZoneSetDict[filename].NiceFileName), 0x3A /* yellow green */);
+                GameActions.Print(world, string.Format(TazLang.Get("map_zone_file_loaded"), ZoneSetDict[filename].NiceFileName), 0x3A /* yellow green */);
             }
             catch (Exception ee)
             {
@@ -1833,7 +1802,7 @@ public class WorldMapGump : ResizableGump
             {
                 _mapMarkersLoaded = false;
 
-                GameActions.Print(World, ResGumps.LoadingWorldMapMarkers, 0x2A);
+                GameActions.Print(World, TazLang.Get("loading_world_map_markers"), 0x2A);
 
                 foreach (Texture2D t in _markerIcons.Values)
                 {
@@ -1968,6 +1937,8 @@ public class WorldMapGump : ResizableGump
                             markerFile.Hidden = true;
                         }
 
+                        int skippedMarkers = 0;
+
                         if (mapFile != null && Path.GetExtension(mapFile).ToLower().Equals(".xml")) // Ultima Mapper
                         {
                             using (var reader = new XmlTextReader(File.Open(mapFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)))
@@ -2027,15 +1998,26 @@ public class WorldMapGump : ResizableGump
                                             continue;
                                         }
 
-                                        var marker = new WMapMarker
+                                        WMapMarker marker;
+
+                                        try
                                         {
-                                            X = int.Parse(splits[0]),
-                                            Y = int.Parse(splits[1]),
-                                            MapId = int.Parse(splits[2]),
-                                            Name = string.Join(" ", splits, 3, splits.Length - 3),
-                                            Color = Color.White,
-                                            ZoomIndex = 3
-                                        };
+                                            marker = new WMapMarker
+                                            {
+                                                X = int.Parse(splits[0]),
+                                                Y = int.Parse(splits[1]),
+                                                MapId = int.Parse(splits[2]),
+                                                Name = string.Join(" ", splits, 3, splits.Length - 3),
+                                                Color = Color.White,
+                                                ZoomIndex = 3
+                                            };
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            skippedMarkers++;
+                                            Utility.Logging.Log.Warn($"Skipping malformed marker line in {Path.GetFileName(mapFile)}: \"{line}\" ({ex.Message})");
+                                            continue;
+                                        }
 
                                         string[] iconSplits = icon.Split(' ');
 
@@ -2053,7 +2035,7 @@ public class WorldMapGump : ResizableGump
                         }
                         else if (mapFile != null && Path.GetExtension(mapFile).ToLower().Equals(".usr"))
                         {
-                            markerFile.Markers = LoadUserMarkers();
+                            markerFile.Markers = LoadUserMarkers(out skippedMarkers);
                             markerFile.IsEditable = true;
                         }
                         else if (mapFile != null) //CSV x,y,mapindex,name of marker,iconname,color,zoom
@@ -2080,16 +2062,27 @@ public class WorldMapGump : ResizableGump
                                         continue;
                                     }
 
-                                    var marker = new WMapMarker
+                                    WMapMarker marker;
+
+                                    try
                                     {
-                                        X = int.Parse(splits[0]),
-                                        Y = int.Parse(splits[1]),
-                                        MapId = int.Parse(splits[2]),
-                                        Name = splits[3],
-                                        MarkerIconName = splits[4].ToLower(),
-                                        Color = GetColor(splits[5]),
-                                        ZoomIndex = splits.Length == 7 ? int.Parse(splits[6]) : 3
-                                    };
+                                        marker = new WMapMarker
+                                        {
+                                            X = int.Parse(splits[0]),
+                                            Y = int.Parse(splits[1]),
+                                            MapId = int.Parse(splits[2]),
+                                            Name = splits[3],
+                                            MarkerIconName = splits[4].ToLower(),
+                                            Color = GetColor(splits[5]),
+                                            ZoomIndex = splits.Length == 7 ? int.Parse(splits[6]) : 3
+                                        };
+                                    }
+                                    catch (Exception ex)
+                                    {
+                                        skippedMarkers++;
+                                        Utility.Logging.Log.Warn($"Skipping malformed marker line in {Path.GetFileName(mapFile)}: \"{line}\" ({ex.Message})");
+                                        continue;
+                                    }
 
                                     if (_markerIcons.TryGetValue(splits[4].ToLower(), out Texture2D value))
                                     {
@@ -2105,6 +2098,12 @@ public class WorldMapGump : ResizableGump
                         {
                             GameActions.Print(World, $"..{Path.GetFileName(mapFile)} ({markerFile.Markers.Count})", 0x2B);
                         }
+
+                        if (skippedMarkers > 0)
+                        {
+                            GameActions.Print(World, $"..{Path.GetFileName(mapFile)}: skipped {skippedMarkers} malformed marker line(s), see log for details", Constants.HUE_WARN);
+                        }
+
                         _markerFiles.Add(markerFile);
                     }
                 }
@@ -2120,7 +2119,7 @@ public class WorldMapGump : ResizableGump
 
                 _mapMarkersLoaded = true;
 
-                GameActions.Print(World, string.Format(ResGumps.WorldMapMarkersLoaded0, count), 0x2A);
+                GameActions.Print(World, string.Format(TazLang.Get("world_map_markers_loaded0"), count), 0x2A);
             }
         }
 
@@ -2134,7 +2133,7 @@ public class WorldMapGump : ResizableGump
             return;
         }
 
-        var entryDialog = new EntryDialog(World, 250, 150, ResGumps.EnterMarkerName, SaveMakerOnPlayer)
+        var entryDialog = new EntryDialog(World, 250, 150, TazLang.Get("enter_marker_name"), SaveMakerOnPlayer)
         {
             CanCloseWithRightClick = true
         };
@@ -2151,7 +2150,7 @@ public class WorldMapGump : ResizableGump
 
         if (string.IsNullOrWhiteSpace(markerName))
         {
-            GameActions.Print(World, ResGumps.InvalidMarkerName, 0x2A);
+            GameActions.Print(World, TazLang.Get("invalid_marker_name"), 0x2A);
         }
 
         string markerColor = "blue";
@@ -2198,7 +2197,7 @@ public class WorldMapGump : ResizableGump
 
         if (string.IsNullOrWhiteSpace(markerName))
         {
-            GameActions.Print(_world, ResGumps.InvalidMarkerName, 0x2A);
+            GameActions.Print(_world, TazLang.Get("invalid_marker_name"), 0x2A);
             return;
         }
 
@@ -2301,7 +2300,18 @@ public class WorldMapGump : ResizableGump
     /// <returns>List of loaded Markers</returns>
     internal static List<WMapMarker> LoadUserMarkers()
     {
+        return LoadUserMarkers(out _);
+    }
+
+    /// <summary>
+    /// Load User Markers to List of Markers, reporting how many malformed lines were skipped.
+    /// </summary>
+    /// <param name="skippedLines">Number of malformed lines that were skipped.</param>
+    /// <returns>List of loaded Markers</returns>
+    internal static List<WMapMarker> LoadUserMarkers(out int skippedLines)
+    {
         var tempList = new List<WMapMarker>();
+        skippedLines = 0;
 
         using (var reader = new StreamReader(UserMarkersFilePath))
         {
@@ -2320,7 +2330,16 @@ public class WorldMapGump : ResizableGump
                 {
                     continue;
                 }
-                tempList.Add(ParseMarker(splits));
+
+                try
+                {
+                    tempList.Add(ParseMarker(splits));
+                }
+                catch (Exception ex)
+                {
+                    skippedLines++;
+                    Utility.Logging.Log.Warn($"Skipping malformed marker line in {Path.GetFileName(UserMarkersFilePath)}: \"{line}\" ({ex.Message})");
+                }
             }
         }
 
@@ -3543,7 +3562,7 @@ public class WorldMapGump : ResizableGump
 
         if (_showGroupName)
         {
-            string name = entity.Name ?? ResGumps.OutOfRange;
+            string name = entity.Name ?? TazLang.Get("out_of_range");
             TextBox ttfBox = UseTtfFont ? GetTtfTextBox(name) : null;
             Vector2 size = ttfBox != null ? new Vector2(ttfBox.MeasuredSize.X, ttfBox.MeasuredSize.Y) : Fonts.Regular.MeasureString(name);
 
@@ -4062,7 +4081,6 @@ public class WorldMapGump : ResizableGump
             case WorldMapDoubleClickAction.ToggleLock:
             default:
                 SetLockStatus(!IsLocked);
-                TopMost = !IsLocked;
                 break;
         }
 
@@ -4085,22 +4103,17 @@ public class WorldMapGump : ResizableGump
     {
         if (!_isFullscreen)
         {
-            // Remember the current windowed bounds and top-most state so we can restore them later.
+            // Remember the current windowed bounds so we can restore them later.
             _preFullscreenBounds = new Rectangle(X, Y, Width, Height);
-            _preFullscreenTopMost = _isTopMost;
             _isFullscreen = true;
-
-            SetTopMost(true, false);
 
             X = 0;
             Y = 0;
-            ApplySize(Client.Game.Window.ClientBounds.Width, Client.Game.Window.ClientBounds.Height);
+            ApplySize(ScaleHelper.LogicalWindowWidth, ScaleHelper.LogicalWindowHeight);
         }
         else
         {
             _isFullscreen = false;
-
-            SetTopMost(_preFullscreenTopMost, false);
 
             X = _preFullscreenBounds.X;
             Y = _preFullscreenBounds.Y;

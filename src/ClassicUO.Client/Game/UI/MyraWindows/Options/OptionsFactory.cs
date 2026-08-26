@@ -4,11 +4,11 @@
 using System;
 using System.Collections.Generic;
 using ClassicUO.Common;
-using ClassicUO.Common.Enums;
 using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Game.UI.MyraWindows.Options.Tabs;
 using ClassicUO.Game.UI.MyraWindows.Widgets;
+using ClassicUO.Game.UI.MyraWindows.Widgets.ArtTexture;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D.UI.WrapPanel;
 
@@ -89,8 +89,16 @@ public static class OptionsFactory
     /// <param name="max">The maximum slider value</param>
     /// <param name="labelOnLeft">When <see langword="true"/>, the label is placed to the left of the slider</param>
     /// <returns>An <see cref="OptionItem"/> wrapping the slider</returns>
-    internal static OptionItem PropBoundSliderOption(string label, Accessor<float> backingProperty, float min, float max, bool labelOnLeft = false) =>
-        CreateSliderOption(label, min, max, backingProperty.Get(), backingProperty.Set, labelOnLeft);
+    /// <param name="decimalPlaces">Precision to round to; zero keeps the slider on whole numbers.</param>
+    internal static OptionItem PropBoundSliderOption(
+        string label,
+        Accessor<float> backingProperty,
+        float min,
+        float max,
+        bool labelOnLeft = false,
+        int decimalPlaces = 0
+    ) =>
+        CreateSliderOption(label, min, max, backingProperty.Get(), backingProperty.Set, labelOnLeft, decimalPlaces);
 
     /// <summary>
     /// Creates an <see cref="OptionItem"/> containing a labeled horizontal slider bound to an
@@ -135,9 +143,10 @@ public static class OptionsFactory
         float max,
         float value,
         Action<float> onChange,
-        bool labelOnLeft = false
+        bool labelOnLeft = false,
+        int decimalPlaces = 0
     ) =>
-        new(label, () => LabeledHorizontalSlider.SliderWithLabel(label, out _, onChange, min, max, value, labelOnLeft));
+        new(label, () => LabeledHorizontalSlider.SliderWithLabel(label, out _, onChange, min, max, value, labelOnLeft, decimalPlaces));
 
     /// <summary>
     /// Creates an <see cref="OptionItem"/> containing a labeled combo box with string option labels

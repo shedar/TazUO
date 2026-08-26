@@ -10,7 +10,6 @@ using ClassicUO.Game.Managers.Hotkeys;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Input;
 using ClassicUO.Network;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using Microsoft.Xna.Framework;
 using SDL3;
@@ -438,6 +437,10 @@ namespace ClassicUO.Game.Scenes
                 return false;
             }
 
+            // Drop focus from other inputs the instant the world is pressed, not just on release,
+            // so a press-and-hold (e.g. hold-to-walk) also releases the previously focused field.
+            UIManager.RestoreSystemChatFocus();
+
             if (_world.CustomHouseManager != null)
             {
                 HandleHouseManagerMouseDown();
@@ -540,11 +543,7 @@ namespace ClassicUO.Game.Scenes
                 return false;
             }
 
-            if (UIManager.SystemChat != null && !UIManager.SystemChat.IsFocused)
-            {
-                UIManager.KeyboardFocusControl = null;
-                UIManager.SystemChat.SetFocus();
-            }
+            UIManager.RestoreSystemChatFocus();
 
             if (!ProfileManager.CurrentProfile.DisableAutoMove && _rightMousePressed)
             {
@@ -1044,7 +1043,7 @@ namespace ClassicUO.Game.Scenes
                             _world.Player.AddMessage
                             (
                                 MessageType.Label,
-                                ResGeneral.Pathfinding,
+                                TazLang.Get("pathfinding"),
                                 3,
                                 0,
                                 false,
@@ -1059,7 +1058,7 @@ namespace ClassicUO.Game.Scenes
                         _world.Player.AddMessage
                         (
                             MessageType.Label,
-                            ResGeneral.Pathfinding,
+                            TazLang.Get("pathfinding"),
                             3,
                             0,
                             false,
@@ -1100,7 +1099,7 @@ namespace ClassicUO.Game.Scenes
                         {
                             _world.Player.AddMessage(
                                 MessageType.Label,
-                                ResGeneral.Pathfinding,
+                                TazLang.Get("pathfinding"),
                                 3,
                                 0,
                                 false,
@@ -1114,7 +1113,7 @@ namespace ClassicUO.Game.Scenes
                     {
                         _world.Player.AddMessage(
                             MessageType.Label,
-                            ResGeneral.Pathfinding,
+                            TazLang.Get("pathfinding"),
                             3,
                             0,
                             false,
@@ -1224,7 +1223,7 @@ namespace ClassicUO.Game.Scenes
                 {
                     if (macro.Items is MacroObject mac)
                     {
-                        if (ProfileManager.CurrentProfile.DisableHotkeys && mac.Code != MacroType.ToggleHotkeys)
+                        if (HotKeys.GloballyDisabled && mac.Code != MacroType.ToggleHotkeys)
                         {
                             return false;
                         }
@@ -1497,7 +1496,7 @@ namespace ClassicUO.Game.Scenes
                 {
                     if (macro.Items is MacroObject mac)
                     {
-                        if (ProfileManager.CurrentProfile.DisableHotkeys && mac.Code != MacroType.ToggleHotkeys)
+                        if (HotKeys.GloballyDisabled && mac.Code != MacroType.ToggleHotkeys)
                         { //Disable hotkeys for all macros unless it's the toggle hotkey macro
                         }
                         else if (mac.Code == MacroType.LookAtMouse)
@@ -1568,22 +1567,32 @@ namespace ClassicUO.Game.Scenes
                 }
                 else
                 {
-                    if (string.IsNullOrEmpty(UIManager.SystemChat.TextBoxControl.Text))
+                    if (string.IsNullOrEmpty(UIManager.SystemChat.TextBoxControl.Text) && ProfileManager.CurrentProfile != null && ProfileManager.GlobalSettings != null)
                     {
-                        bool wasd = ProfileManager.CurrentProfile.UseWASDInsteadArrowKeys && !UIManager.SystemChat.IsActive;
+                        bool wasd = ProfileManager.GlobalSettings.UseWASDInsteadArrowKeys && !UIManager.SystemChat.IsActive;
 
                         SDL.SDL_Keycode[] wasdKeys = { SDL.SDL_Keycode.SDLK_W, SDL.SDL_Keycode.SDLK_A, SDL.SDL_Keycode.SDLK_S, SDL.SDL_Keycode.SDLK_D };
                         SDL.SDL_Keycode[] arrowKeys = { SDL.SDL_Keycode.SDLK_UP, SDL.SDL_Keycode.SDLK_LEFT, SDL.SDL_Keycode.SDLK_DOWN, SDL.SDL_Keycode.SDLK_RIGHT };
 
                         SDL.SDL_Keycode[] keys = wasd ? wasdKeys : arrowKeys;
 
-                        for (int i = 0; i < keys.Length; i++)
+                        bool disableArrowKeys = ProfileManager.CurrentProfile.DisableArrowBtn && !wasd;
+
+                        if (!disableArrowKeys)
                         {
-                            if (key == keys[i])
+                            for (int i = 0; i < keys.Length; i++)
                             {
-                                _flags[i] = true;
-                                break;
+                                if (key == keys[i])
+                                {
+                                    _flags[i] = true;
+                                    break;
+                                }
                             }
+                        }
+
+                        if (!ProfileManager.CurrentProfile.DisableArrowBtn)
+                        {
+                            SetNumpadMovementFlags(key, true);
                         }
                     }
                 }
@@ -1703,21 +1712,27 @@ namespace ClassicUO.Game.Scenes
                 }
             }
 
-            bool wasd = ProfileManager.CurrentProfile.UseWASDInsteadArrowKeys && !UIManager.SystemChat.IsActive;
+            bool wasd = ProfileManager.GlobalSettings.UseWASDInsteadArrowKeys && !UIManager.SystemChat.IsActive;
 
             SDL.SDL_Keycode[] wasdKeys = { SDL.SDL_Keycode.SDLK_W, SDL.SDL_Keycode.SDLK_A, SDL.SDL_Keycode.SDLK_S, SDL.SDL_Keycode.SDLK_D };
             SDL.SDL_Keycode[] arrowKeys = { SDL.SDL_Keycode.SDLK_UP, SDL.SDL_Keycode.SDLK_LEFT, SDL.SDL_Keycode.SDLK_DOWN, SDL.SDL_Keycode.SDLK_RIGHT };
 
             SDL.SDL_Keycode[] keys = wasd ? wasdKeys : arrowKeys;
 
-            for (int i = 0; i < keys.Length; i++)
-            {
-                if (key == keys[i])
+            bool disableArrowKeys = ProfileManager.CurrentProfile.DisableArrowBtn && !wasd;
+
+            if (!disableArrowKeys)
+                for (int i = 0; i < keys.Length; i++)
                 {
-                    _flags[i] = false;
-                    break;
+                    if (key == keys[i])
+                    {
+                        _flags[i] = false;
+                        break;
+                    }
                 }
-            }
+
+            if (!ProfileManager.CurrentProfile.DisableArrowBtn)
+                SetNumpadMovementFlags(key, false);
 
             if (
                 key == SDL.SDL_Keycode.SDLK_TAB
@@ -1756,7 +1771,7 @@ namespace ClassicUO.Game.Scenes
                 Macro macro = _world.Macros.FindMacro((SDL.SDL_GamepadButton)e.button);
                 if (macro != null && macro.Items is MacroObject mac)
                 {
-                    if (ProfileManager.CurrentProfile.DisableHotkeys && mac.Code != MacroType.ToggleHotkeys)
+                    if (HotKeys.GloballyDisabled && mac.Code != MacroType.ToggleHotkeys)
                     {
                     }
                     else
@@ -1764,6 +1779,41 @@ namespace ClassicUO.Game.Scenes
                         ExecuteMacro(mac);
                     }
                 }
+            }
+        }
+
+        private void SetNumpadMovementFlags(SDL.SDL_Keycode key, bool pressed)
+        {
+            switch (key)
+            {
+                case SDL.SDL_Keycode.SDLK_KP_8:
+                    _flags[0] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_2:
+                    _flags[2] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_4:
+                    _flags[1] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_6:
+                    _flags[3] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_7:
+                    _flags[0] = pressed;
+                    _flags[1] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_9:
+                    _flags[0] = pressed;
+                    _flags[3] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_1:
+                    _flags[2] = pressed;
+                    _flags[1] = pressed;
+                    break;
+                case SDL.SDL_Keycode.SDLK_KP_3:
+                    _flags[2] = pressed;
+                    _flags[3] = pressed;
+                    break;
             }
         }
 

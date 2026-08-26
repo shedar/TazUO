@@ -4,6 +4,7 @@ using System.Linq;
 using ClassicUO.Assets;
 using ClassicUO.Common;
 using ClassicUO.Game.UI.MyraWindows.Widgets;
+using ClassicUO.Game.UI.MyraWindows.Widgets.Search;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
 using FontStashSharp;
@@ -12,6 +13,8 @@ using Microsoft.Xna.Framework;
 using Myra.Graphics2D;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D.UI.WrapPanel;
+
+using ClassicUO.Game.UI.MyraWindows.Theme;
 
 namespace ClassicUO.Game.UI.MyraWindows.Options.Tabs;
 
@@ -84,7 +87,7 @@ public static class OptionTabCommons
     /// <param name="backingProp">Accessor for the underlying font name value</param>
     /// <param name="onAfterUpdate">Optional action invoked after the new font name is persisted</param>
     /// <returns>An <see cref="OptionItem"/> wrapping the font-selector widget</returns>
-    internal static OptionItem StyledFontSelector(
+    internal static Widget StyledFontSelector(
         string label,
         Accessor<string> backingProp,
         Action<string> onAfterUpdate = null
@@ -100,18 +103,23 @@ public static class OptionTabCommons
         else
             callback = backingProp.Set;
 
-        return OptionsFactory.CreateComboBox(label, backingProp.Get(), TrueTypeLoader.Instance.GetSortedFontNames().Names, callback);
+        var combo = new ContainsLevenshteinComboBox(backingProp.Get(), TrueTypeLoader.Instance.GetSortedFontNames().Names, callback);
+
+        if (string.IsNullOrWhiteSpace(label))
+            return combo;
+
+        return new MyraLabel(label, MyraLabel.TextStyle.P).PlaceBefore(combo);
     }
 
     /// <summary>Creates a thin horizontal separator widget styled for use between option sections</summary>
     /// <returns>A styled <see cref="HorizontalSeparator"/></returns>
     internal static Widget StyledHorizontalSeparator() =>
-        new HorizontalSeparator { Thickness = 2, Color = new Color(0, 0, 0, 75), BorderThickness = StyleConstantsDefaults.BorderThickness };
+        new HorizontalSeparator { Thickness = 2, Color = MyraTheme.Current.PanelBorder, BorderThickness = StyleConstantsDefaults.BorderThickness };
 
     /// <summary>Creates a thin vertical separator widget styled for use between side-by-side option groups</summary>
     /// <returns>A styled <see cref="VerticalSeparator"/></returns>
     internal static Widget StyledVerticalSeparator() =>
-        new VerticalSeparator() { Thickness = 2, Color = new Color(0, 0, 0, 75), BorderThickness = StyleConstantsDefaults.BorderThickness };
+        new VerticalSeparator() { Thickness = 2, Color = MyraTheme.Current.PanelBorder, BorderThickness = StyleConstantsDefaults.BorderThickness };
 
     /// <summary>
     /// Creates a labeled combo box widget for any equatable value type, mapping items by value
@@ -214,59 +222,4 @@ public static class OptionTabCommons
     /// <returns>A configured <see cref="MyraButton"/></returns>
     internal static MyraButton StyledButton(string label, Action onClick) => new(label, onClick);
 
-    /// <summary>
-    /// Creates a square <see cref="BasicButton"/> whose label is a Unicode symbol rendered with
-    /// a specific font. Pixel offsets allow fine-tuning symbol alignment within the button bounds,
-    /// which is necessary because different Unicode glyphs have inconsistent baseline positions.
-    /// </summary>
-    /// <param name="text">The Unicode symbol to display</param>
-    /// <param name="font">The font used to render <paramref name="text"/></param>
-    /// <param name="onClick">Action invoked when the button is clicked</param>
-    /// <param name="tooltip">Optional tooltip text</param>
-    /// <param name="width">Button width in pixels</param>
-    /// <param name="height">Button height in pixels</param>
-    /// <param name="topOffset">Optional vertical pixel nudge for the label within the button</param>
-    /// <param name="leftOffset">Optional horizontal pixel nudge for the label within the button</param>
-    /// <returns>A configured <see cref="BasicButton"/></returns>
-    internal static BasicButton StyledTextIconButton(
-        string text,
-        SpriteFontBase font,
-        Action onClick,
-        string tooltip = null,
-        int width = StyleConstantsDefaults.TOOLBAR_BUTTON_SIZE,
-        int height = StyleConstantsDefaults.TOOLBAR_BUTTON_SIZE,
-        int? topOffset = null,
-        int? leftOffset = null
-    )
-    {
-        var label = new Label
-        {
-            Text = text,
-            Font = font,
-            Wrap = false,
-            SingleLine = true,
-            TextAlign = TextHorizontalAlignment.Center,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment = VerticalAlignment.Center,
-            Width = width,
-            Height = height,
-            Padding = new Thickness(0),
-            Margin = new Thickness(0),
-            Top = topOffset ?? 0,
-            Left = leftOffset ?? 0
-        };
-
-        var button = new BasicButton(onClick)
-        {
-            Width = width,
-            Height = height,
-            Tooltip = tooltip,
-            Content = label,
-            VerticalAlignment = VerticalAlignment.Center,
-            Padding = new Thickness(0),
-            Margin = new Thickness(0)
-        };
-
-        return button;
-    }
 }

@@ -35,7 +35,7 @@ public static class SpellsTab
             ),
             Option.Checkbox(
                 TazLang.Get("mog_combattab_spells_singleclickforspellicons"),
-                new Accessor<bool>(() => profile.CastSpellsByOneClick),
+                new Accessor<bool>(() => ProfileManager.GlobalSettings.SingleClickIconUse),
                 search: new SearchMetadata(TazLang.Get("mog_combattab_spells_singleclickforspellicons"), Keywords: [TazLang.Get("mog_kw_click"), TazLang.Get("mog_kw_cast")])
             ),
             Option.Checkbox(
@@ -84,7 +84,7 @@ public static class SpellsTab
                 TazLang.Get("uicommons_cancel"),
                 null,
                 "https://github.com/PlayTazUO/TazUO/raw/refs/heads/dev/src/ClassicUO.Client/Game/Managers/DefaultSpellIndicatorConfig.json"
-            ) { X = (Client.Game.Window.ClientBounds.Width >> 1) - 50, Y = (Client.Game.Window.ClientBounds.Height >> 1) - 50 }
+            ) { X = (ScaleHelper.LogicalWindowWidth >> 1) - 50, Y = (ScaleHelper.LogicalWindowHeight >> 1) - 50 }
         );
     }
 

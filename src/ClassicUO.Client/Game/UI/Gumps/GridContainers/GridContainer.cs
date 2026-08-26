@@ -83,6 +83,7 @@ public partial class GridContainer : ResizableGump
         private bool _quickLootThisContainer;
         public bool? UseOldContainerStyle;
         private bool _autoSortContainer;
+        private bool _bandsDisabledForContainer;
         private GridSortMode _sortMode = GridSortMode.GraphicAndHue;
 
         private readonly bool _skipSave;
@@ -110,7 +111,12 @@ public partial class GridContainer : ResizableGump
             get
             {
                 string status = GetEnabledDisabledText(_autoSortContainer);
-                string sortModeText = _sortMode == GridSortMode.Name ? TazLang.Get("gridcontainer_sortmode_name", "Name") : TazLang.Get("gridcontainer_sortmode_graphichue", "Graphic + Hue");
+                string sortModeText = _sortMode switch
+                {
+                    GridSortMode.Name => TazLang.Get("gridcontainer_sortmode_name", "Name"),
+                    GridSortMode.Layer => TazLang.Get("gridcontainer_sortmode_layer", "Layer"),
+                    _ => TazLang.Get("gridcontainer_sortmode_graphichue", "Graphic + Hue")
+                };
                 return TazLang.Get("gridcontainer_sort_tooltip", new string[] { sortModeText, status });
             }
         }
@@ -123,6 +129,10 @@ public partial class GridContainer : ResizableGump
         public readonly bool IsPlayerBackpack;
         public bool StackNonStackableItems;
         public bool AutoSortContainer => _autoSortContainer;
+
+        /// <summary>Per-container override that disables band layout for this container even when bands are enabled globally.</summary>
+        public bool BandsDisabledForContainer => _bandsDisabledForContainer;
+
         public GridSortMode SortMode => _sortMode;
         public readonly GridSlotManager SlotManager;
         public bool IsCorpse => _isCorpse;
@@ -245,13 +255,14 @@ public partial class GridContainer : ResizableGump
             _gridContainerEntry = GridContainerSaveData.Instance.GetContainer(local);
 
             _autoSortContainer = _gridContainerEntry.AutoSort;
+            _bandsDisabledForContainer = _gridContainerEntry.BandsDisabled;
             StackNonStackableItems = _gridContainerEntry.VisuallyStackNonStackables;
             _sortMode = (GridSortMode)_gridContainerEntry.SortMode;
 
             // Load minimized state from save data
             bool loadMinimized = _gridContainerEntry.IsMinimized;
 
-            Point lastPos = IsPlayerBackpack ? ProfileManager.CurrentProfile.BackpackGridPosition : _gridContainerEntry.GetPositionForState(loadMinimized);
+            Point lastPos = IsPlayerBackpack ? ProfileManager.CurrentProfile.BackpackGridPosition : _isCorpse ? ProfileManager.CurrentProfile.CoprseContainerPosition : _gridContainerEntry.GetPositionForState(loadMinimized);
             if (lastPos == Point.Zero || (lastPos.X == 100 && lastPos.Y == 100)) //Default positions, use last static position
             {
                 lastPos.X = _lastX;
@@ -270,19 +281,20 @@ public partial class GridContainer : ResizableGump
             _lastWidth = Width = savedSize.X;
             _lastHeight = Height = savedSize.Y;
 
-            X = _isCorpse ? _lastCorpseX : _lastX = lastPos.X;
-            Y = _isCorpse ? _lastCorpseY : _lastY = lastPos.Y;
+            if (_isCorpse)
+            {
+                X = _lastCorpseX = lastPos.X;
+                Y = _lastCorpseY = lastPos.Y;
+            }
+            else
+            {
+                X = _lastX = lastPos.X;
+                Y = _lastY = lastPos.Y;
+            }
 
             if (_isCorpse)
             {
                 World.Player.ManualOpenedCorpses.Remove(LocalSerial);
-
-                if (World.Player.AutoOpenedCorpses.Contains(LocalSerial) && ProfileManager.CurrentProfile != null && ProfileManager.CurrentProfile.SkipEmptyCorpse && Container.IsEmpty)
-                {
-                    IsVisible = false;
-                    Dispose();
-            return;
-                }
             }
 
             AnchorType = ProfileManager.CurrentProfile.EnableGridContainerAnchor ? ANCHOR_TYPE.NONE : ANCHOR_TYPE.DISABLED;
@@ -490,7 +502,7 @@ public partial class GridContainer : ResizableGump
             _setLootBag.SetTooltip(TazLang.Get("gridcontainer_setlootbag_tooltip", "For double click looting only"));
             _setLootBag.MouseUp += (s, e) =>
             {
-                GameActions.Print(World, Resources.ResGumps.TargetContainerToGrabItemsInto);
+                GameActions.Print(World, TazLang.Get("target_container_to_grab_items_into"));
                 World.TargetManager.SetTargeting(CursorTarget.SetGrabBag, 0, TargetType.Neutral);
             };
         }
@@ -541,7 +553,7 @@ public partial class GridContainer : ResizableGump
                     {
                         case CorpseContainerStyle.Grid: return false;
                         case CorpseContainerStyle.Original: return true;
-                        // CorpseContainerStyle.Default falls through to the global default
+                        // CorpseContainerStyle.OldGridLoot falls through to the global default
                     }
                 }
 
@@ -658,6 +670,20 @@ public partial class GridContainer : ResizableGump
                 GridHighlightMenu.Open(World);
             }));
 
+            control.Add(new ContextMenuItemEntry(TazLang.Get("gridcontainer_editbands", "Edit Grid Bands"), () =>
+            {
+                GridContainerBandsMenu.Open(World);
+            }));
+
+            control.Add(new ContextMenuItemEntry(TazLang.Get("gridcontainer_disablebands", "Disable Bands for This Container"), () =>
+            {
+                _bandsDisabledForContainer = !_bandsDisabledForContainer;
+                _gridContainerEntry.BandsDisabled = _bandsDisabledForContainer;
+                _gridContainerEntry.UpdateSaveDataEntry(this);
+                _openRegularGump.ContextMenu = GenContextMenu();
+                RequestUpdateContents();
+            }, true, _bandsDisabledForContainer));
+
             if (Container != World.Player.Backpack)
             {
                 control.Add(new ContextMenuItemEntry(TazLang.Get("gridcontainer_autolootthis", "Autoloot this container"), () =>
@@ -706,6 +732,15 @@ public partial class GridContainer : ResizableGump
                 UpdateItems(true);
                 _gridContainerEntry.UpdateSaveDataEntry(this);
             }, true, _sortMode == GridSortMode.Name));
+
+            control.Add(new ContextMenuItemEntry(TazLang.Get("gridcontainer_sortbylayer", "Sort by Layer"), () =>
+            {
+                _sortMode = GridSortMode.Layer;
+                _sortContents.ContextMenu = GenSortContextMenu();
+                _sortContents.SetTooltip(SortButtonTooltip);
+                UpdateItems(true);
+                _gridContainerEntry.UpdateSaveDataEntry(this);
+            }, true, _sortMode == GridSortMode.Layer));
 
             return control;
         }
@@ -766,6 +801,10 @@ public partial class GridContainer : ResizableGump
             {
                 ProfileManager.CurrentProfile.BackpackGridPosition = Location;
                 ProfileManager.CurrentProfile.BackpackGridSize = new Point(Width, Height);
+            }
+            else if (_isCorpse && ProfileManager.CurrentProfile != null)
+            {
+                ProfileManager.CurrentProfile.CoprseContainerPosition = Location;
             }
 
             Item item = World.Items.Get(LocalSerial);
@@ -888,23 +927,30 @@ public partial class GridContainer : ResizableGump
         /// <param name="e">The mouse event's arguments</param>
         private void OnBackgroundMouseUp(object sender, MouseEventArgs e)
         {
-            // Check whether we're trying to drop an item on the background
-            if (e.Button != MouseButtonType.Left || !Client.Game.UO.GameCursor.ItemHold.Enabled)
+            if (e.Button != MouseButtonType.Left)
                 return;
 
             // Verify the sender is actually what we expect it to be
             if (sender is not Control { MouseIsOver: true })
                 return;
 
-            // Issue a direct drop item command and let the underlying `UpdateContainerItem`
-            // mechanisms take care of actual placement
-            GameActions.DropItem(
-                Client.Game.UO.GameCursor.ItemHold.Serial,
-                0xFFFF,
-                0xFFFF,
-                0,
-                LocalSerial
-            );
+            if (Client.Game.UO.GameCursor.ItemHold.Enabled)
+            {
+                // Issue a direct drop item command and let the underlying `UpdateContainerItem`
+                // mechanisms take care of actual placement
+                GameActions.DropItem(
+                    Client.Game.UO.GameCursor.ItemHold.Serial,
+                    0xFFFF,
+                    0xFFFF,
+                    0,
+                    LocalSerial
+                );
+            }
+            else if (World.TargetManager.IsTargeting && !ProfileManager.CurrentProfile.DisableTargetingGridContainers)
+            {
+                // Let a target cursor pick the bag itself, matching how an empty grid slot behaves
+                World.TargetManager.Target(LocalSerial);
+            }
         }
 
         protected override void OnMouseExit(int x, int y)
@@ -927,16 +973,14 @@ public partial class GridContainer : ResizableGump
         {
             base.OnMove(x, y);
 
-            if (_gridContainerEntry != null)
-            {
-                _gridContainerEntry.SetPositionForState(X, Y, IsMinimized);
-            }
+            _gridContainerEntry?.SetPositionForState(X, Y, IsMinimized);
 
             // Backpack special handling
             if (IsPlayerBackpack)
-            {
-                ProfileManager.CurrentProfile.BackpackGridPosition = new Point(X, Y);
-            }
+                ProfileManager.CurrentProfile?.BackpackGridPosition = new Point(X, Y);
+
+            if (_isCorpse)
+                ProfileManager.CurrentProfile?.CoprseContainerPosition = new Point(X, Y);
         }
 
         public override void Dispose()

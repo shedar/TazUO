@@ -12,7 +12,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Xml;
-using ClassicUO.Utility.Logging;
 using Color = Microsoft.Xna.Framework.Color;
 using Point = Microsoft.Xna.Framework.Point;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
@@ -459,7 +458,7 @@ namespace ClassicUO.Game.UI.Gumps
                 return;
             }
 
-            if (IsMouseOverJournal() || IsTopMostGump())
+            if (IsMouseOverJournal() || UIManager.TopMostControl == this)
             {
                 _inactiveSince = 0;
 
@@ -483,19 +482,6 @@ namespace ClassicUO.Game.UI.Gumps
         {
             //MouseIsOver only covers the gump itself, so also treat hovering any child (text area, tabs, scroll bar) as being over the journal.
             return MouseIsOver || UIManager.MouseOverControl?.RootParent == this;
-        }
-
-        private bool IsTopMostGump()
-        {
-            foreach (IGui gump in UIManager.Gumps)
-            {
-                if (gump.IsDisposed || !gump.IsVisible || gump.LayerOrder != UILayer.Default)
-                    continue;
-
-                return gump == this;
-            }
-
-            return false;
         }
 
         private void ApplyInactivity()
@@ -577,7 +563,7 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 base.Draw(batcher, x, y);
                 int my = y;
-                bool hideTimestamp = ProfileManager.CurrentProfile.HideJournalTimestamp;
+                bool hideTimestamp = ProfileManager.GlobalSettings.HideJournalTimestamp;
 
                 if (batcher.ClipBegin(x, y, Width, Height))
                 {
@@ -639,7 +625,7 @@ namespace ClassicUO.Game.UI.Gumps
                     {
                         if (_ is null)
                             continue;
-                        _.EntryText.Width = Width - BORDER_WIDTH - (ProfileManager.CurrentProfile.HideJournalTimestamp ? 0 : _.TimeStamp.Width);
+                        _.EntryText.Width = Width - BORDER_WIDTH - (ProfileManager.GlobalSettings.HideJournalTimestamp ? 0 : _.TimeStamp.Width);
                         _.EntryText.Update(); //Because this control isn't a child of any gump, it doesn't get updated
                     }
 
@@ -692,13 +678,19 @@ namespace ClassicUO.Game.UI.Gumps
                         ClearSelection();
                     }
 
+                    //Trimming from the top shifts content up, so drop the scroll value by the removed height to keep the view anchored on the same lines.
+                    if (!maxScroll && removed != null && CanBeDrawn(removed.TextType, removed.MessageType))
+                    {
+                        _scrollBar.Value = Math.Max(_scrollBar.MinValue, _scrollBar.Value - removed.EntryText.Height);
+                    }
+
                     removed?.Destroy();
                 }
 
                 string timestampText = $"{time:t}";
                 var timeS = TextBox.GetOne(timestampText, ProfileManager.CurrentProfile.SelectedTTFJournalFont, ProfileManager.CurrentProfile.SelectedJournalFontSize - 2, 1150, TextBox.RTLOptions.Default());
                 var je = TextBox.GetOne(text, ProfileManager.CurrentProfile.SelectedTTFJournalFont, ProfileManager.CurrentProfile.SelectedJournalFontSize, hue,
-                    new TextBox.RTLOptions() { Width = Width - (ProfileManager.CurrentProfile.HideJournalTimestamp ? 0 : timeS.Width), CalculateGlyphs = true });
+                    new TextBox.RTLOptions() { Width = Width - (ProfileManager.GlobalSettings.HideJournalTimestamp ? 0 : timeS.Width), CalculateGlyphs = true });
 
                 journalDatas.AddToBack(
                     new JournalData(
@@ -802,7 +794,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 int contentY = y + _scrollBar.Value;
                 int rowY = 0;
-                bool hideTimestamp = ProfileManager.CurrentProfile.HideJournalTimestamp;
+                bool hideTimestamp = ProfileManager.GlobalSettings.HideJournalTimestamp;
 
                 foreach (JournalData entry in journalDatas)
                 {
@@ -857,7 +849,7 @@ namespace ClassicUO.Game.UI.Gumps
                 int nearestIndex = 0;
                 int contentY = y + _scrollBar.Value;
                 int rowY = 0;
-                bool hideTimestamp = ProfileManager.CurrentProfile.HideJournalTimestamp;
+                bool hideTimestamp = ProfileManager.GlobalSettings.HideJournalTimestamp;
 
                 foreach (JournalData entry in journalDatas)
                 {
@@ -899,11 +891,16 @@ namespace ClassicUO.Game.UI.Gumps
                 {
                     return y < 0 ? 0 : entry.TextLength;
                 }
-
-                int lineIndex = line.GetGlyphIndexByX(x) ?? (x <= 0 ? 0 : line.Count);
-                int lineStart = entry.GetTextIndexFromRawOffset(line.TextStartIndex);
-
-                return Math.Clamp(lineStart + lineIndex, 0, entry.TextLength);
+                try {
+                    int lineIndex = line.GetGlyphIndexByX(x) ?? (x <= 0 ? 0 : line.Count);
+                    int lineStart = entry.GetTextIndexFromRawOffset(line.TextStartIndex);
+                    return Math.Clamp(lineStart + lineIndex, 0, entry.TextLength);
+                }
+                catch(Exception)
+                {
+                    int lineStart = entry.GetTextIndexFromRawOffset(line.TextStartIndex);
+                    return Math.Clamp(lineStart, 0, entry.TextLength);
+                }
             }
 
             private void DrawSelection(UltimaBatcher2D batcher, JournalData entry, int x, int y)
@@ -1014,7 +1011,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
 
                 StringBuilder sb = new StringBuilder();
-                bool hideTimestamp = ProfileManager.CurrentProfile.HideJournalTimestamp;
+                bool hideTimestamp = ProfileManager.GlobalSettings.HideJournalTimestamp;
 
                 foreach (JournalData entry in journalDatas)
                 {

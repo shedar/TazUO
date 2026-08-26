@@ -398,6 +398,7 @@ namespace ClassicUO.Game.Managers
             }
             catch (Exception ex)
             {
+                // Non-fatal: a failed save (e.g. read-only install dir) must not crash the client
                 Log.Error($"Failed to save nameoverhead.xml: {ex}");
 
                 // Clean up temp file if it exists
@@ -412,7 +413,6 @@ namespace ClassicUO.Game.Managers
                         // Ignore cleanup errors
                     }
                 }
-                throw;
             }
         }
 
@@ -555,6 +555,21 @@ namespace ClassicUO.Game.Managers
             get;
             set => SetField(ref field, value);
         }
+
+        /// <summary>
+        /// A duplicate under a new name, deletable regardless of what it was copied from - a copy is
+        /// the user's own, and the hotkey is deliberately not carried across since two options
+        /// answering to the same key would leave which one fires down to their order.
+        /// </summary>
+        /// <param name="name">Name for the copy.</param>
+        /// <returns>The copy, unattached to any manager.</returns>
+        public NameOverheadOption Clone(string name) =>
+            new(name, NameOverheadOptionFlags)
+            {
+                Search = Search,
+                NegativeSearch = NegativeSearch,
+                Deletable = true
+            };
 
         public bool Equals(NameOverheadOption other)
         {

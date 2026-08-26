@@ -112,15 +112,15 @@ namespace ClassicUO.Game.UI.Controls
                 return;
             }
 
-            int comboY = ScreenCoordinateY + Offset.Y;
+            int comboY = ScreenCoordinateY + Offset.Y + 25;
 
             if (comboY < 0)
             {
                 comboY = 0;
             }
-            else if (comboY + _maxHeight > Client.Game.Window.ClientBounds.Height)
+            else if (comboY + _maxHeight > ScaleHelper.LogicalWindowHeight)
             {
-                comboY = Client.Game.Window.ClientBounds.Height - _maxHeight;
+                comboY = Math.Max(0, ScaleHelper.LogicalWindowHeight - _maxHeight);
             }
 
             UIManager.Add

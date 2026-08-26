@@ -9,7 +9,6 @@ using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Renderer;
-using ClassicUO.Resources;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SDL3;
@@ -475,18 +474,18 @@ namespace ClassicUO.Game.UI.Gumps
 
         /// <summary>
         /// Whether the heal/cure buttons should be shown for this entity's (non-party) health bar.
-        /// Always true for pets. Additionally shown when the profile enables them for every health
-        /// bar (excluding invulnerable notoriety) or for mobiles in the friends list.
+        /// Shown for pets when the profile enables it, and for other mobiles when the profile
+        /// enables them for every health bar (excluding invulnerable notoriety) or the friends list.
         /// </summary>
         protected bool ShouldShowHealButtons(Entity entity)
         {
-            if (IsPet(entity))
-                return true;
-
             Profile profile = ProfileManager.CurrentProfile;
 
             if (profile == null || entity is not Mobile mobile || mobile == World.Player)
                 return false;
+
+            if (profile.ShowHealCureButtonsPets && IsPet(entity))
+                return true;
 
             if (profile.ShowHealCureButtonsFriends && FriendsListManager.Instance.IsFriend(LocalSerial))
                 return true;
@@ -1724,7 +1723,7 @@ namespace ClassicUO.Game.UI.Gumps
                         }
                     );
 
-                    _name = ResGumps.Self;
+                    _name = TazLang.Get("self");
                 }
                 else
                 {

@@ -34,7 +34,7 @@ namespace ClassicUO.Game.UI.Controls
             Layer.Skirt,
             Layer.Robe,
             Layer.Waist,
-            Layer.Necklace,
+            Layer.Neck,
             Layer.Hair,
             Layer.Beard,
             Layer.Earrings,
@@ -61,7 +61,7 @@ namespace ClassicUO.Game.UI.Controls
             Layer.Robe,
             Layer.Cloak,
             Layer.Waist,
-            Layer.Necklace,
+            Layer.Neck,
             Layer.Hair,
             Layer.Beard,
             Layer.Earrings,
@@ -87,7 +87,7 @@ namespace ClassicUO.Game.UI.Controls
             Layer.Gloves,
             Layer.Skirt,
             Layer.Waist,
-            Layer.Necklace,
+            Layer.Neck,
             Layer.Hair,
             Layer.Beard,
             Layer.Earrings,
@@ -466,8 +466,8 @@ namespace ClassicUO.Game.UI.Controls
 
                 if (pantsLayerIdx >= 0 && torsoLayerIdx >= 0 && pantsLayerIdx < torsoLayerIdx)
                 {
-                    Array.Copy(copy, pantsLayerIdx + 1, copy, pantsLayerIdx, torsoLayerIdx - pantsLayerIdx);
-                    copy[torsoLayerIdx] = Layer.Pants;
+                    Array.Copy(copy, pantsLayerIdx, copy, pantsLayerIdx + 1, torsoLayerIdx - pantsLayerIdx);
+                    copy[pantsLayerIdx] = Layer.Torso;
                 }
             }
 

@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Xml.Linq;
 using ClassicUO.Configuration;
 using ClassicUO.Game.UI.Gumps;
+using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework;
 
@@ -73,7 +74,7 @@ public class GridContainerSaveData
                 GridContainerSerializerContext.Default.GridContainerEntryArray);
 
             tempPath = Path.GetTempFileName();
-            File.WriteAllText(tempPath, output);
+            FileSystemHelper.WriteAllTextSafe(tempPath, output);
 
             // Rotate backups: backup2 -> backup3, backup1 -> backup2, main -> backup1
             string backup3Path = GetBackupSavePath(3);
@@ -316,6 +317,9 @@ public class GridContainerEntry
 
     [JsonPropertyName("as")] public bool AutoSort { get; set; }
 
+    /// <summary>Per-container override to disable band layout even when bands are enabled globally.</summary>
+    [JsonPropertyName("bd")] public bool BandsDisabled { get; set; }
+
     [JsonPropertyName("vs")] public bool VisuallyStackNonStackables { get; set; }
 
     [JsonPropertyName("sm")] public int SortMode { get; set; }
@@ -379,6 +383,7 @@ public class GridContainerEntry
         // Null is also fine here and indicates a 'default', ergo, go with the profile's `GridContainersDefaultToOldStyleView` settings
         UseOriginalContainer = container.UseOldContainerStyle ?? container.GridContainerEntry.UseOriginalContainer;
         AutoSort = container.AutoSortContainer;
+        BandsDisabled = container.BandsDisabledForContainer;
         VisuallyStackNonStackables = container.StackNonStackableItems;
         SortMode = (int)container.SortMode;
         IsMinimized = container.IsMinimized;

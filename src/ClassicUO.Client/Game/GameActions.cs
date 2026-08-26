@@ -14,8 +14,8 @@ using ClassicUO.Game.UI.MyraWindows;
 using ClassicUO.Input;
 using ClassicUO.LegionScripting;
 using ClassicUO.Network;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
+using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework;
 using static ClassicUO.Network.AsyncNetClient;
 
@@ -35,7 +35,7 @@ internal static class GameActions
     {
         if (!player.IsDead)
         {
-            if (war && ProfileManager.CurrentProfile != null && ProfileManager.CurrentProfile.EnableMusic)
+            if (war && ProfileManager.GlobalSettings != null && ProfileManager.GlobalSettings.EnableMusic)
             {
                 Client.Game.Audio.PlayMusic((RandomHelper.GetValue(0, 3) % 3) + 38, true);
             }
@@ -580,6 +580,7 @@ internal static class GameActions
         return true;
     }
 
+    private static uint _lastAttackQuery;
     internal static void Attack(World world, uint serial)
     {
         if (ProfileManager.CurrentProfile is { EnabledCriminalActionQuery:true })
@@ -588,10 +589,28 @@ internal static class GameActions
 
             if (m != null && (world.Player.NotorietyFlag == NotorietyFlag.Innocent || world.Player.NotorietyFlag == NotorietyFlag.Ally) && m.NotorietyFlag == NotorietyFlag.Innocent && m != world.Player)
             {
+                bool shouldAdd = true;
+
+                UIManager.ForEach<QuestionGump>(g =>
+                {
+                    if (g.Type == QuestionGump.QuestionType.Attack && _lastAttackQuery == serial){
+                        shouldAdd = false;
+                        return;
+                    }
+
+                    if (g.Type == QuestionGump.QuestionType.Attack && _lastAttackQuery != serial)
+                        g.Dispose();
+                });
+
+                if (!shouldAdd)
+                    return;
+
+                _lastAttackQuery = serial;
+
                 var messageBox = new QuestionGump
                 (
                     world,
-                    ResGeneral.ThisMayFlagYouCriminal,
+                    TazLang.Get("this_may_flag_you_criminal"),
                     s =>
                     {
                         if (s)
@@ -599,7 +618,7 @@ internal static class GameActions
                             Socket.Send_AttackRequest(serial);
                         }
                     }
-                );
+                ){ Type = QuestionGump.QuestionType.Attack };
 
                 UIManager.Add(messageBox);
                 return;
@@ -615,7 +634,7 @@ internal static class GameActions
         Socket.Send_AttackRequest(serial);
     }
 
-    internal static void QueueOpenCorpse(uint serial) =>
+    internal static void QueueOpenCorpse(uint serial, bool ownCorpse = false) =>
         ObjectActionQueue.Instance.Enqueue(
             new ObjectActionQueueItem(() =>
             {
@@ -630,7 +649,8 @@ internal static class GameActions
                    )
                     ObjectActionQueueItem.DoubleClick(serial).Action(); // Using the 'Action' here to remain DRY.
             }),
-            ActionPriority.OpenCorpse
+            ownCorpse ? ActionPriority.Immediate :
+                World.Instance.Player.ManualOpenedCorpses.Contains(serial) ? ActionPriority.ManualUseItem : ActionPriority.OpenCorpse
         );
 
     internal static void DoubleClickQueued(uint serial) => ObjectActionQueue.Instance.Enqueue(ObjectActionQueueItem.DoubleClick(serial), ActionPriority.UseItem);
@@ -779,6 +799,13 @@ internal static class GameActions
 
     internal static void Print(World world, string message, ushort hue = 946, MessageType type = MessageType.Regular, byte font = 3, bool unicode = true)
     {
+        // World may be null if called before the world is initialized
+        if (world == null)
+        {
+            Log.Warn($"GameActions.Print called with null world: {message}");
+            return;
+        }
+
         if (type == MessageType.ChatSystem)
         {
             world.MessageManager.HandleMessage
@@ -817,7 +844,16 @@ internal static class GameActions
         MessageType type = MessageType.Regular,
         byte font = 3,
         bool unicode = true
-    ) => world.MessageManager.HandleMessage
+    )
+    {
+        // World may be null if called before the world is initialized
+        if (world == null)
+        {
+            Log.Warn($"GameActions.Print called with null world: {message}");
+            return;
+        }
+
+        world.MessageManager.HandleMessage
         (
             entity,
             message,
@@ -829,6 +865,7 @@ internal static class GameActions
             unicode,
             Settings.GlobalSettings.Language
         );
+    }
 
     internal static void SayParty(string message, uint serial = 0)
     {
@@ -1342,43 +1379,39 @@ internal static class GameActions
         Item backpack = world.Player.Backpack;
 
         if (backpack == null)
-        {
             return;
-        }
 
         if (bag == 0)
-        {
             bag = ProfileManager.CurrentProfile.GrabBagSerial == 0 ? backpack.Serial : ProfileManager.CurrentProfile.GrabBagSerial;
-        }
 
         if (!world.Items.Contains(bag))
         {
-            Print(world, ResGeneral.GrabBagNotFound);
+            Print(world, TazLang.Get("grab_bag_not_found"));
             ProfileManager.CurrentProfile.GrabBagSerial = 0;
             bag = backpack.Serial;
         }
 
         PickUp(world, serial, 0, 0, amount);
 
-            if (stack)
-                DropItem
-                (
-                    serial,
-                    0xFFFF,
-                    0xFFFF,
-                    0,
-                    bag
-                );
-            else
-                DropItem
-                (
-                    serial,
-                    0,
-                    0,
-                    0,
-                    bag
-                );
-        }
+        if (stack)
+            DropItem
+            (
+                serial,
+                0xFFFF,
+                0xFFFF,
+                0,
+                bag
+            );
+        else
+            DropItem
+            (
+                serial,
+                0,
+                0,
+                0,
+                bag
+            );
+    }
 
     public static void RequestEquippedOPL(World world)
     {
@@ -1391,20 +1424,49 @@ internal static class GameActions
         }
     }
 
-    internal static bool Mount()
+    /// <summary>
+    ///     Double-clicks the player's saved mount to mount up.
+    /// </summary>
+    /// <param name="useQueue">
+    ///     If <see langword="true" />, routes through <see cref="DoubleClickQueued(uint, bool)" />.
+    ///     If <see langword="false" />, sends the double-click immediately, bypassing <see cref="ObjectActionQueue" />.
+    /// </param>
+    /// <returns>The outcome of the attempt.</returns>
+    internal static MountResult Mount(bool useQueue = true)
     {
-        if (World.Instance == null) return false;
+        if (World.Instance == null)
+            return MountResult.NoWorld;
 
-        if (ProfileManager.CurrentProfile.SavedMountSerial == 0) return false;
+        Profile profile = ProfileManager.CurrentProfile;
+        if (profile == null)
+            return MountResult.NoWorld; // Honestly, should never happen.
 
-        Entity mount = World.Instance.Get(ProfileManager.CurrentProfile.SavedMountSerial);
-        if (mount != null)
-        {
-            DoubleClickQueued(ProfileManager.CurrentProfile.SavedMountSerial, true);
-            ScriptRecorder.Instance.RecordMount(mount);
-            return true;
-        }
+        if (profile.SavedMountSerial == 0)
+            return MountResult.NoDesignatedMount;
 
-        return false;
+        Entity mount = World.Instance.Get(profile.SavedMountSerial);
+        if (mount == null)
+            return MountResult.MountNotFound;
+
+        if (mount.Distance > profile.MountDistance)
+            return MountResult.MountTooFar;
+
+        if (useQueue)
+            DoubleClickQueued(profile.SavedMountSerial, true);
+        else
+            DoubleClick(World.Instance, profile.SavedMountSerial, true, true);
+
+        ScriptRecorder.Instance.RecordMount(mount);
+        return MountResult.Success;
+    }
+
+    /// <summary>Outcome of a <see cref="Mount(bool)" /> attempt.</summary>
+    internal enum MountResult
+    {
+        NoWorld,
+        Success,
+        NoDesignatedMount,
+        MountNotFound,
+        MountTooFar
     }
 }

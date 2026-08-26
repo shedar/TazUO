@@ -7,7 +7,6 @@ using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Network;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework;
@@ -70,12 +69,12 @@ namespace ClassicUO.Game.UI.Gumps
 
             string[] texts =
             {
-                cliloc.GetString(3000133, ResGumps.Paperdoll),
-                cliloc.GetString(3000431, ResGumps.Inventory),
-                cliloc.GetString(3000129, ResGumps.Journal),
-                cliloc.GetString(3000131, ResGumps.Chat),
-                StringHelper.CapitalizeAllWords(cliloc.GetString(1015233, ResGumps.WorldMap)),
-                cliloc.GetString(1158008, ResGumps.UOStore),
+                cliloc.GetString(3000133, TazLang.Get("paperdoll")),
+                cliloc.GetString(3000431, TazLang.Get("inventory")),
+                cliloc.GetString(3000129, TazLang.Get("journal")),
+                cliloc.GetString(3000131, TazLang.Get("chat")),
+                StringHelper.CapitalizeAllWords(cliloc.GetString(1015233, TazLang.Get("world_map"))),
+                cliloc.GetString(1158008, TazLang.Get("uostore")),
             };
 
             bool hasUOStore = Client.Game.UO.Version >= ClientVersion.CV_706400;
@@ -96,6 +95,8 @@ namespace ClassicUO.Game.UI.Gumps
 
             int startX = 30;
 
+            RighClickableButton journalButton = null;
+
             for (int i = 0; i < textTable.Length; i++)
             {
                 if (!hasUOStore && i >= (int)Buttons.UOStore)
@@ -105,29 +106,49 @@ namespace ClassicUO.Game.UI.Gumps
 
                 ushort graphic = (ushort)(textTable[i][0] != 0 ? 0x098D : 0x098B);
 
-                Add(
-                    new RighClickableButton(
-                        textTable[i][1],
-                        graphic,
-                        graphic,
-                        graphic,
-                        texts[i],
-                        1,
-                        true,
-                        0,
-                        0x0036
-                    )
-                    {
-                        ButtonAction = ButtonAction.Activate,
-                        X = startX,
-                        Y = 1,
-                        FontCenter = true
-                    },
-                    1
-                );
+                RighClickableButton button = new RighClickableButton(
+                    textTable[i][1],
+                    graphic,
+                    graphic,
+                    graphic,
+                    texts[i],
+                    1,
+                    true,
+                    0,
+                    0x0036
+                )
+                {
+                    ButtonAction = ButtonAction.Activate,
+                    X = startX,
+                    Y = 1,
+                    FontCenter = true
+                };
+
+                Add(button, 1);
+
+                if (textTable[i][1] == (int)Buttons.Journal)
+                {
+                    journalButton = button;
+                }
 
                 startX += (textTable[i][0] != 0 ? largeWidth : smallWidth) + 1;
                 background.Width = startX;
+            }
+
+            if (journalButton != null)
+            {
+                journalButton.ContextMenu = new ContextMenuControl(this);
+                journalButton.ContextMenu.Add(
+                    TazLang.Get("topbargump_openoriginaljournal", "Open original journal"),
+                    () => UIManager.Add(new JournalGump(world))
+                );
+                journalButton.MouseUp += (s, e) =>
+                {
+                    if (e.Button == MouseButtonType.Right)
+                    {
+                        journalButton.ContextMenu?.Show();
+                    }
+                };
             }
 
             RighClickableButton assistant;
@@ -205,7 +226,7 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 UIManager.Add(new CommandsGump(world));
             }));
-            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(1079449, ResGumps.Info), () =>
+            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(1079449, TazLang.Get("info")), () =>
             {
                 if (World.TargetManager.IsTargeting)
                 {
@@ -214,7 +235,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 World.TargetManager.SetTargeting(CursorTarget.SetTargetClientSide, CursorType.Target, TargetType.Neutral);
             }));
-            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(1042237, ResGumps.Debug), () =>
+            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(1042237, TazLang.Get("debug")), () =>
             {
                 DebugGump debugGump = UIManager.GetGump<DebugGump>();
 
@@ -229,7 +250,7 @@ namespace ClassicUO.Game.UI.Gumps
                     debugGump.SetInScreen();
                 }
             }));
-            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(3000169, ResGumps.NetStats), () =>
+            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(3000169, TazLang.Get("net_stats")), () =>
             {
                 NetworkStatsGump netstatsgump = UIManager.GetGump<NetworkStatsGump>();
 
@@ -244,7 +265,7 @@ namespace ClassicUO.Game.UI.Gumps
                     netstatsgump.SetInScreen();
                 }
             }));
-            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(3000134, ResGumps.Help), () => { GameActions.RequestHelp(); }));
+            moreMenu.ContextMenu.Add(new ContextMenuItemEntry(cliloc.GetString(3000134, TazLang.Get("help")), () => { GameActions.RequestHelp(); }));
 
             moreMenu.ContextMenu.Add(new ContextMenuItemEntry(TazLang.Get("topbargump_togglenameplates", "Toggle nameplates"), () => { World.NameOverHeadManager.ToggleOverheads(); }));
 
@@ -257,6 +278,7 @@ namespace ClassicUO.Game.UI.Gumps
             submenu.Add(new ContextMenuItemEntry(TazLang.Get("topbargump_openboatcontrol", "Open boat control"), () => { UIManager.Add(new BoatControl(World) { X = 200, Y = 200 }); }));
             submenu.Add(new ContextMenuItemEntry(TazLang.Get("topbargump_nearbyloot", "Nearby loot"), () => { UIManager.Add(new NearbyLootGump(World)); }));
             submenu.Add(new ContextMenuItemEntry(TazLang.Get("healthbarcollector_title", "Healthbar Collector"), () => { UIManager.Add(new HealthbarCollectorGump(World) { X = 100, Y = 100 }); }));
+            submenu.Add(new ContextMenuItemEntry(TazLang.Get("topbargump_gumppositions", "Gump Positions"), MyraWindows.GumpPositionManagerWindow.Show));
             submenu.Add(new ContextMenuItemEntry(TazLang.Get("topbargump_retrievegumps", "Retrieve gumps"), () =>
             {
                 for (LinkedListNode<IGui> last = UIManager.Gumps.Last; last != null; last = last.Previous)
@@ -395,7 +417,7 @@ namespace ClassicUO.Game.UI.Gumps
             }
             else
             {
-                Log.Error(ResGumps.TopBarGumpAlreadyExists);
+                Log.Error(TazLang.Get("top_bar_gump_already_exists"));
             }
         }
 

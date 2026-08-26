@@ -7,7 +7,6 @@ using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Assets;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using Microsoft.Xna.Framework;
 
@@ -312,7 +311,7 @@ namespace ClassicUO.Game.UI.Gumps
             _labels[(int)MobileStats.Intelligence] = text;
             Add(text);
 
-            text = new Label(World.Player.IsFemale ? ResGumps.Female : ResGumps.Male, false, 0x0386, font: 1)
+            text = new Label(World.Player.IsFemale ? TazLang.Get("female") : TazLang.Get("male"), false, 0x0386, font: 1)
             {
                 X = 86,
                 Y = 98
@@ -384,7 +383,7 @@ namespace ClassicUO.Game.UI.Gumps
                     61,
                     34,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(3000077, ResGumps.Strength),
+                    Client.Game.UO.FileManager.Clilocs.GetString(3000077, TazLang.Get("strength")),
                     0
                 )
                 { CanMove = true }
@@ -398,7 +397,7 @@ namespace ClassicUO.Game.UI.Gumps
                     73,
                     34,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(3000078, ResGumps.Dex),
+                    Client.Game.UO.FileManager.Clilocs.GetString(3000078, TazLang.Get("dex")),
                     0
                 )
                 { CanMove = true }
@@ -412,7 +411,7 @@ namespace ClassicUO.Game.UI.Gumps
                     85,
                     34,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(3000079, ResGumps.Intelligence),
+                    Client.Game.UO.FileManager.Clilocs.GetString(3000079, TazLang.Get("intelligence")),
                     0
                 )
                 { CanMove = true }
@@ -426,7 +425,7 @@ namespace ClassicUO.Game.UI.Gumps
                     97,
                     34,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(3000076, ResGumps.Sex),
+                    Client.Game.UO.FileManager.Clilocs.GetString(3000076, TazLang.Get("sex")),
                     0
                 )
                 { CanMove = true }
@@ -440,7 +439,7 @@ namespace ClassicUO.Game.UI.Gumps
                     109,
                     34,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(1062760, ResGumps.Armor),
+                    Client.Game.UO.FileManager.Clilocs.GetString(1062760, TazLang.Get("armor")),
                     0
                 )
                 { CanMove = true }
@@ -454,7 +453,7 @@ namespace ClassicUO.Game.UI.Gumps
                     61,
                     66,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(3000080, ResGeneral.Hits),
+                    Client.Game.UO.FileManager.Clilocs.GetString(3000080, TazLang.Get("hits")),
                     0
                 )
                 { CanMove = true }
@@ -468,7 +467,7 @@ namespace ClassicUO.Game.UI.Gumps
                     73,
                     66,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(1061151, ResGeneral.Mana),
+                    Client.Game.UO.FileManager.Clilocs.GetString(1061151, TazLang.Get("mana")),
                     0
                 )
                 { CanMove = true }
@@ -482,7 +481,7 @@ namespace ClassicUO.Game.UI.Gumps
                     85,
                     66,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(1061150, ResGumps.Stamina),
+                    Client.Game.UO.FileManager.Clilocs.GetString(1061150, TazLang.Get("stamina")),
                     0
                 )
                 { CanMove = true }
@@ -496,7 +495,7 @@ namespace ClassicUO.Game.UI.Gumps
                     97,
                     66,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(1061156, ResGumps.Gold),
+                    Client.Game.UO.FileManager.Clilocs.GetString(1061156, TazLang.Get("gold")),
                     0
                 )
                 { CanMove = true }
@@ -510,7 +509,7 @@ namespace ClassicUO.Game.UI.Gumps
                     109,
                     66,
                     12,
-                    Client.Game.UO.FileManager.Clilocs.GetString(1061154, ResGeneral.Weight),
+                    Client.Game.UO.FileManager.Clilocs.GetString(1061154, TazLang.Get("weight")),
                     0
                 )
                 { CanMove = true }
@@ -538,7 +537,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.Intelligence].Text = World.Player.Intelligence.ToString();
 
-                _labels[(int)MobileStats.Sex].Text = World.Player.IsFemale ? ResGumps.Female : ResGumps.Male;
+                _labels[(int)MobileStats.Sex].Text = World.Player.IsFemale ? TazLang.Get("female") : TazLang.Get("male");
 
                 _labels[(int)MobileStats.AR].Text = World.Player.PhysicalResistance.ToString();
 
@@ -576,11 +575,14 @@ namespace ClassicUO.Game.UI.Gumps
 
     public class StatusGumpModern : StatusGumpBase
     {
+        private bool useExtendedStatus{ get; init; }
+
         public StatusGumpModern(World world) : base(world)
         {
             Point p = Point.Zero;
             int xOffset = 0;
             _labels = new Label[(int)MobileStats.NumStats];
+            useExtendedStatus = Client.Game.UO.Version >= ClientVersion.CV_70300;
 
             Add(new GumpPic(0, 0, Settings.Graphic_Background, Settings.Hue_Background));
 
@@ -594,7 +596,7 @@ namespace ClassicUO.Game.UI.Gumps
                 (
                     !string.IsNullOrEmpty(World.Player.Name) ? World.Player.Name : string.Empty,
                     MobileStats.Name,
-                    Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 90 : 58,
+                    useExtendedStatus ? 90 : 58,
                     50,
                     320,
                     Settings.Hue_CharacterName,
@@ -616,7 +618,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
 
                 Lock status = World.Player.StrLock;
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 28 : 40;
+                xOffset = useExtendedStatus ? 28 : 40;
                 ushort gumpID = GetStatLockGraphic(status);
 
                 Add(_lockers[0] = new GumpPic(xOffset, 76, gumpID, 0));
@@ -637,7 +639,7 @@ namespace ClassicUO.Game.UI.Gumps
                 //    ButtonAction = ButtonAction.Activate,
                 //});
                 status = World.Player.DexLock;
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 28 : 40;
+                xOffset = useExtendedStatus ? 28 : 40;
                 gumpID = GetStatLockGraphic(status);
 
                 Add(_lockers[1] = new GumpPic(xOffset, 102, gumpID, 0));
@@ -658,7 +660,7 @@ namespace ClassicUO.Game.UI.Gumps
                 //    ButtonAction = ButtonAction.Activate
                 //});
                 status = World.Player.IntLock;
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 28 : 40;
+                xOffset = useExtendedStatus ? 28 : 40;
                 gumpID = GetStatLockGraphic(status);
 
                 Add(_lockers[2] = new GumpPic(xOffset, 132, gumpID, 0));
@@ -678,7 +680,7 @@ namespace ClassicUO.Game.UI.Gumps
                 //    ButtonAction = ButtonAction.Activate
                 //});
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     xOffset = 80;
                     AddStatTextLabel(World.Player.HitChanceIncrease.ToString(), MobileStats.HitChanceInc, xOffset, 161);
@@ -691,7 +693,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             59,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075616, ResGumps.HitChanceIncrease),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075616, TazLang.Get("hit_chance_increase")),
                             0
                         )
                         { CanMove = true }
@@ -716,7 +718,7 @@ namespace ClassicUO.Game.UI.Gumps
                         70,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061146, ResGumps.Strength),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061146, TazLang.Get("strength")),
                         0
                     )
                     { CanMove = true }
@@ -730,7 +732,7 @@ namespace ClassicUO.Game.UI.Gumps
                         98,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061147, ResGumps.Dexterity),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061147, TazLang.Get("dexterity")),
                         0
                     )
                     { CanMove = true }
@@ -744,7 +746,7 @@ namespace ClassicUO.Game.UI.Gumps
                         126,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061148, ResGumps.Intelligence),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061148, TazLang.Get("intelligence")),
                         0
                     )
                     { CanMove = true }
@@ -752,7 +754,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 int textWidth = 40;
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     xOffset = 150;
 
@@ -766,7 +768,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             59,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075620, ResGumps.DefenseChanceIncrease),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075620, TazLang.Get("defense_chance_increase")),
                             0
                         )
                         { CanMove = true }
@@ -886,7 +888,7 @@ namespace ClassicUO.Game.UI.Gumps
                         70,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061149, ResGumps.HitPoints),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061149, TazLang.Get("hit_points")),
                         0
                     )
                     { CanMove = true }
@@ -900,7 +902,7 @@ namespace ClassicUO.Game.UI.Gumps
                         98,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061150, ResGumps.Stamina),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061150, TazLang.Get("stamina")),
                         0
                     )
                     { CanMove = true }
@@ -914,13 +916,13 @@ namespace ClassicUO.Game.UI.Gumps
                         126,
                         59,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061151, ResGeneral.Mana),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061151, TazLang.Get("mana")),
                         0
                     )
                     { CanMove = true }
                 );
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     xOffset = 240;
 
@@ -934,7 +936,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             65,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075621, ResGumps.LowerManaCost),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075621, TazLang.Get("lower_mana_cost")),
                             0
                         )
                         { CanMove = true }
@@ -960,7 +962,7 @@ namespace ClassicUO.Game.UI.Gumps
                     alignment: TEXT_ALIGN_TYPE.TS_CENTER
                 );
 
-                int lineX = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 236 : 216;
+                int lineX = useExtendedStatus ? 236 : 216;
 
                 Add
                 (
@@ -968,7 +970,7 @@ namespace ClassicUO.Game.UI.Gumps
                     (
                         lineX,
                         138,
-                        Math.Abs(lineX - (Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 270 : 250)),
+                        Math.Abs(lineX - (useExtendedStatus ? 270 : 250)),
                         1,
                         0xFF383838
                     )
@@ -984,7 +986,7 @@ namespace ClassicUO.Game.UI.Gumps
                     alignment: TEXT_ALIGN_TYPE.TS_CENTER
                 );
 
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 205 : 188;
+                xOffset = useExtendedStatus ? 205 : 188;
 
                 Add
                 (
@@ -994,7 +996,7 @@ namespace ClassicUO.Game.UI.Gumps
                         70,
                         65,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061152, ResGumps.MaximumStats),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061152, TazLang.Get("maximum_stats")),
                         0
                     )
                     { CanMove = true }
@@ -1008,7 +1010,7 @@ namespace ClassicUO.Game.UI.Gumps
                         98,
                         65,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061153, ResGumps.Luck),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061153, TazLang.Get("luck")),
                         0
                     )
                     { CanMove = true }
@@ -1022,13 +1024,13 @@ namespace ClassicUO.Game.UI.Gumps
                         126,
                         65,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061154, ResGeneral.Weight),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061154, TazLang.Get("weight")),
                         0
                     )
                     { CanMove = true }
                 );
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     xOffset = 320;
 
@@ -1044,7 +1046,7 @@ namespace ClassicUO.Game.UI.Gumps
                             98,
                             69,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075619, ResGumps.WeaponDamageIncrease),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075619, TazLang.Get("weapon_damage_increase")),
                             0
                         )
                         { CanMove = true }
@@ -1058,7 +1060,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             69,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075629, ResGumps.SwingSpeedIncrease),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075629, TazLang.Get("swing_speed_increase")),
                             0
                         )
                         { CanMove = true }
@@ -1078,7 +1080,7 @@ namespace ClassicUO.Game.UI.Gumps
                             98,
                             69,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1061156, ResGumps.Gold),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1061156, TazLang.Get("gold")),
                             0
                         )
                         { CanMove = true }
@@ -1089,7 +1091,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 AddStatTextLabel($"{World.Player.Followers}-{World.Player.FollowersMax}", MobileStats.Followers, xOffset, 133);
 
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 285 : 260;
+                xOffset = useExtendedStatus ? 285 : 260;
 
                 Add
                 (
@@ -1099,7 +1101,7 @@ namespace ClassicUO.Game.UI.Gumps
                         70,
                         69,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061155, ResGumps.Damage),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061155, TazLang.Get("damage")),
                         0
                     )
                     { CanMove = true }
@@ -1113,13 +1115,13 @@ namespace ClassicUO.Game.UI.Gumps
                         126,
                         69,
                         24,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061157, ResGumps.Followers),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061157, TazLang.Get("followers")),
                         0
                     )
                     { CanMove = true }
                 );
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     xOffset = 400;
 
@@ -1141,7 +1143,7 @@ namespace ClassicUO.Game.UI.Gumps
                             70,
                             55,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075625, ResGumps.LowerReagentCost),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075625, TazLang.Get("lower_reagent_cost")),
                             0
                         )
                         { CanMove = true }
@@ -1155,7 +1157,7 @@ namespace ClassicUO.Game.UI.Gumps
                             98,
                             55,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075628, ResGumps.SpellDamageIncrease),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075628, TazLang.Get("spell_damage_increase")),
                             0
                         )
                         { CanMove = true }
@@ -1169,7 +1171,7 @@ namespace ClassicUO.Game.UI.Gumps
                             126,
                             55,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075617, ResGumps.FasterCasting),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075617, TazLang.Get("faster_casting")),
                             0
                         )
                         { CanMove = true }
@@ -1183,7 +1185,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             55,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1075618, ResGumps.FasterCastRecovery),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1075618, TazLang.Get("faster_cast_recovery")),
                             0
                         )
                         { CanMove = true }
@@ -1201,7 +1203,7 @@ namespace ClassicUO.Game.UI.Gumps
                             154,
                             55,
                             24,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1061156, ResGumps.Gold),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1061156, TazLang.Get("gold")),
                             0
                         )
                         { CanMove = true }
@@ -1231,7 +1233,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
 
 
-                xOffset = Client.Game.UO.FileManager.Gumps.UseUOPGumps ? 445 : 334;
+                xOffset = useExtendedStatus ? 445 : 334;
 
                 Add
                 (
@@ -1241,7 +1243,7 @@ namespace ClassicUO.Game.UI.Gumps
                         76,
                         40,
                         14,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061158, ResGumps.PhysicalResistance),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061158, TazLang.Get("physical_resistance")),
                         0
                     )
                     { CanMove = true }
@@ -1255,7 +1257,7 @@ namespace ClassicUO.Game.UI.Gumps
                         92,
                         40,
                         14,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061159, ResGumps.FireResistance),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061159, TazLang.Get("fire_resistance")),
                         0
                     )
                     { CanMove = true }
@@ -1269,7 +1271,7 @@ namespace ClassicUO.Game.UI.Gumps
                         106,
                         40,
                         14,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061160, ResGumps.ColdResistance),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061160, TazLang.Get("cold_resistance")),
                         0
                     )
                     { CanMove = true }
@@ -1283,7 +1285,7 @@ namespace ClassicUO.Game.UI.Gumps
                         120,
                         40,
                         14,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061161, ResGumps.PoisonResistance),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061161, TazLang.Get("poison_resistance")),
                         0
                     )
                     { CanMove = true }
@@ -1297,7 +1299,7 @@ namespace ClassicUO.Game.UI.Gumps
                         134,
                         40,
                         14,
-                        Client.Game.UO.FileManager.Clilocs.GetString(1061162, ResGumps.EnergyResistance),
+                        Client.Game.UO.FileManager.Clilocs.GetString(1061162, TazLang.Get("energy_resistance")),
                         0
                     )
                     { CanMove = true }
@@ -1317,7 +1319,7 @@ namespace ClassicUO.Game.UI.Gumps
                             124,
                             34,
                             12,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1061152, ResGumps.MaxStats),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1061152, TazLang.Get("max_stats")),
                             0
                         )
                         { CanMove = true }
@@ -1337,7 +1339,7 @@ namespace ClassicUO.Game.UI.Gumps
                             131,
                             34,
                             12,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1061152, ResGumps.MaxStats),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1061152, TazLang.Get("max_stats")),
                             0
                         )
                         { CanMove = true }
@@ -1351,7 +1353,7 @@ namespace ClassicUO.Game.UI.Gumps
                             144,
                             34,
                             12,
-                            Client.Game.UO.FileManager.Clilocs.GetString(1061157, ResGumps.Followers),
+                            Client.Game.UO.FileManager.Clilocs.GetString(1061157, TazLang.Get("followers")),
                             0
                         )
                         { CanMove = true }
@@ -1359,7 +1361,7 @@ namespace ClassicUO.Game.UI.Gumps
                 }
             }
 
-            if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+            if (useExtendedStatus)
             {
                 p.X = 540;
                 p.Y = 180;
@@ -1375,7 +1377,7 @@ namespace ClassicUO.Game.UI.Gumps
                     16,
                     16,
                     ProfileManager.CurrentProfile.StatusGumpBarMutuallyExclusive
-                        ? ResGumps.Minimize : ResGumps.StatusGumpOpenBar,
+                        ? TazLang.Get("minimize") : TazLang.Get("status_gump_open_bar"),
                     0
                 )
                 { CanMove = true }
@@ -1445,7 +1447,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.Name].Text = !string.IsNullOrEmpty(World.Player.Name) ? World.Player.Name : string.Empty;
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     _labels[(int)MobileStats.HitChanceInc].Text = World.Player.HitChanceIncrease.ToString();
                 }
@@ -1456,7 +1458,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.Intelligence].Text = World.Player.Intelligence.ToString();
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     _labels[(int)MobileStats.DefenseChanceInc].Text = $"{World.Player.DefenseChanceIncrease}/{World.Player.MaxDefenseChanceIncrease}";
                 }
@@ -1473,7 +1475,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.ManaMax].Text = World.Player.ManaMax.ToString();
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     _labels[(int)MobileStats.LowerManaCost].Text = World.Player.LowerManaCost.ToString();
                 }
@@ -1486,7 +1488,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.WeightMax].Text = World.Player.WeightMax.ToString();
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     _labels[(int)MobileStats.DamageChanceInc].Text = World.Player.DamageIncrease.ToString();
 
@@ -1499,7 +1501,7 @@ namespace ClassicUO.Game.UI.Gumps
 
                 _labels[(int)MobileStats.Followers].Text = $"{World.Player.Followers}/{World.Player.FollowersMax}";
 
-                if (Client.Game.UO.FileManager.Gumps.UseUOPGumps)
+                if (useExtendedStatus)
                 {
                     _labels[(int)MobileStats.LowerReagentCost].Text = World.Player.LowerReagentCost.ToString();
 

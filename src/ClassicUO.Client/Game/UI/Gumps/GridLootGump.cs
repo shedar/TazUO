@@ -8,7 +8,6 @@ using ClassicUO.Game.UI.Controls;
 using ClassicUO.Input;
 using ClassicUO.Assets;
 using ClassicUO.Renderer;
-using ClassicUO.Resources;
 using Microsoft.Xna.Framework;
 using ClassicUO.Game.Scenes;
 using ClassicUO.Game.UI.Gumps.GridHighLight;
@@ -20,7 +19,7 @@ namespace ClassicUO.Game.UI.Gumps
         private const int MAX_WIDTH = 300;
         private const int MAX_HEIGHT = 420;
 
-        private static int _lastX = ProfileManager.CurrentProfile.GridLootType == 2 ? 200 : 100;
+        private static int _lastX = ProfileManager.CurrentProfile.CorpseContainerStyle == CorpseContainerStyle.OldGridLootAndContainer ? 200 : 100;
         private static int _lastY = 100;
         private readonly AlphaBlendControl _background;
         private readonly NiceButton _buttonPrev,
@@ -50,15 +49,6 @@ namespace ClassicUO.Game.UI.Gumps
             {
                 World.Player.ManualOpenedCorpses.Remove(LocalSerial);
             }
-            else if (
-                World.Player.AutoOpenedCorpses.Contains(LocalSerial)
-                && ProfileManager.CurrentProfile != null
-                && ProfileManager.CurrentProfile.SkipEmptyCorpse
-            )
-            {
-                IsVisible = false;
-                _hideIfEmpty = true;
-            }
 
             X = _lastX;
             Y = _lastY;
@@ -81,7 +71,7 @@ namespace ClassicUO.Game.UI.Gumps
                 100,
                 20,
                 ButtonAction.Activate,
-                ResGumps.SetLootBag
+                TazLang.Get("set_loot_bag")
             )
             {
                 ButtonParameter = 2,
@@ -96,7 +86,7 @@ namespace ClassicUO.Game.UI.Gumps
                 40,
                 20,
                 ButtonAction.Activate,
-                ResGumps.Prev
+                TazLang.Get("prev")
             )
             {
                 ButtonParameter = 0,
@@ -109,7 +99,7 @@ namespace ClassicUO.Game.UI.Gumps
                 40,
                 20,
                 ButtonAction.Activate,
-                ResGumps.Next
+                TazLang.Get("next")
             )
             {
                 ButtonParameter = 1,
@@ -183,7 +173,7 @@ namespace ClassicUO.Game.UI.Gumps
             }
             else if (buttonID == 2)
             {
-                GameActions.Print(World, ResGumps.TargetContainerToGrabItemsInto);
+                GameActions.Print(World, TazLang.Get("target_container_to_grab_items_into"));
                 World.TargetManager.SetTargeting(CursorTarget.SetGrabBag, 0, TargetType.Neutral);
             }
             else
@@ -283,7 +273,7 @@ namespace ClassicUO.Game.UI.Gumps
 
             if (count == 0)
             {
-                GameActions.Print(World, ResGumps.CorpseIsEmpty);
+                GameActions.Print(World, TazLang.Get("corpse_is_empty"));
                 Dispose();
             }
             else if (_hideIfEmpty && !IsVisible)

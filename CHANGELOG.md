@@ -2,7 +2,256 @@
 All notable changes to TazUO will be recorded here.
 
 ---
-## In Development
+## 5.31.2
+
+### Legion
+* Added a `sortby` parameter to `API.GetAllMobiles()`, supporting `Distance`, `Hits`, and `MaxHits` (case insensitive, defaults to `Distance`)
+
+### Features
+* Tooltip overrides now support global, account, server, and char specific entries
+* Added max option to autoloot (autoloot up to x amt in your destination bag)
+* Added a new overlay system event trigger - Buff/Debuff - [P.R 974](https://github.com/PlayTazUO/TazUO/pull/974) ([yuval-po](https://github.com/yuval-po))
+* Added search functionality to the Tinkerer's Art Browser - [P.R 974](https://github.com/PlayTazUO/TazUO/pull/974) ([yuval-po](https://github.com/yuval-po))
+* Added a translucent ground preview of the item being dragged, shown on the tile it would land on when dropped on the ground (drag distance and Z-banded), toggleable under Gameplay -> Misc, enabled by default ([bittiez](https://github.com/bittiez))
+
+### Misc
+* Added a Mount Distance option to the Option's combat tab - [P.R 995](https://github.com/PlayTazUO/TazUO/pull/995) ([yuval-po](https://github.com/yuval-po))
+* Added 2 new crash fix suggestions for Windows based systems - [P.R 994](https://github.com/PlayTazUO/TazUO/pull/994) ([yuval-po](https://github.com/yuval-po))
+* Added spacing before capitals on equipement layer tooltips in paperdolls
+* Changed Dress and Organizer agent tabs to have a more compact list instead of awkward buttons for configs
+* The classic journal gump (JournalGump) now respects the "Hide journal timestamps" setting, which was moved from per-profile to machine-wide (global) settings
+
+### Fixes
+* The right/bottom dead space that appeared when using a global scale below 100% is now usable: gumps, windows, containers, and the world viewport can be dragged into and interacted with there, and gumps/dropdowns/tooltips now center and clamp against the full visible window instead of the shrunken world view
+* Properly restore corpse container position after new game session
+* Attempt to catch plugin crashes before the kill the client
+* Fix a rare crash fix on periphial input before profiles have been loaded
+* Fixed incorrect rendering of partially-hued textures in Myra components - [P.R 989](https://github.com/PlayTazUO/TazUO/pull/989) ([yuval-po](https://github.com/yuval-po))
+* Improved erratic ToggleMount/Mount/Dismount macro behavior - [P.R 982](https://github.com/PlayTazUO/TazUO/pull/982) ([yuval-po](https://github.com/yuval-po))
+* Tooltip overrides should no long show a long number like -1.797673xxxxxxxxxxxx randomly
+* Fixed login music being silenced when the regular music toggle was off: login music now uses its own enable/volume settings independently of the main music setting
+* Fixed an issue where corrupt Info-Bars could prevent client from loading - [P.R 980](https://github.com/PlayTazUO/TazUO/pull/980) ([yuval-po](https://github.com/yuval-po))
+* Fixed a double max height in persistent vars window
+
+## 5.28.1
+
+### Legion
+* Added `justice` support to `API.Virtue()` - [P.R 938](https://github.com/PlayTazUO/TazUO/pull/938) ([bittiez](https://github.com/bittiez))
+* Added `API.OpenQuestLog()` to open the quest log gump - [P.R 938](https://github.com/PlayTazUO/TazUO/pull/938) ([bittiez](https://github.com/bittiez))
+* Added `API.OpenHelp()` to open the help menu - [P.R 938](https://github.com/PlayTazUO/TazUO/pull/938) ([bittiez](https://github.com/bittiez))
+* Added run parameter to pathfinding methods
+* Added `.IsParalyzed` to mobile objects
+
+### Features
+* Added a visual effects composition and management system to allow for custom UI effects such as fog and blur. - [P.R 958](https://github.com/PlayTazUO/TazUO/pull/958) ([yuval-po](https://github.com/yuval-po))
+* Added a right-click option to the Journal tab on the top menu bar that opens a context menu with an "Open original journal" option, opening the classic `JournalGump` instead of the resizable journal
+* Added a setting to show heal/cure buttons on pet health bars, separate from the existing all-health-bar and friends-list toggles ([bittiez](https://github.com/bittiez))
+* Added current global action queue and main thread queue counts to the Profiler window, along with a button to clear the action queue, all refreshed at 250ms
+* Added an option to block walking into closed doors, preventing walk requests that the server rejects and the client bounces back from ([bittiez](https://github.com/bittiez))
+* Redesign bandage agent tab UI, and add option to use a server command for self heal ([bittiez](https://github.com/bittiez))
+* Added a configurable bandage distance to the Bandage Agent (1-15 tiles, default 3) that controls how far friends and allies must be to be bandaged, replacing the previously hardcoded 3-tile range ([bittiez](https://github.com/bittiez))
+* Added a configurable auto-target type option to the Bandage Agent (Neutral/Harmful/Beneficial), replacing the previously hardcoded beneficial target type ([bittiez](https://github.com/bittiez))
+* When a pin is placed on a server-sent map gump, the client now prints a message with the deciphered coordinates ("I can't be certain but I believe this is somewhere near {x} and {y}.")
+* Corpse grid containers now remember their own position (separate from regular containers), saving and restoring it per profile ([bittiez](https://github.com/bittiez))
+
+### Misc
+* Replace tooltip override window with a new, easier to view and understand window
+* Right click to close should be more accurate now
+* Drawing one more tile outside the viewport for smooth static loading
+* Clicking login music toggle on login screen should stop music now
+* Improved client performance when entering heavily populated areas: network packets are now processed under a per-frame time budget instead of a fixed message cap, unchanged item/mobile updates are skipped, and world object lookups/insertions use single-hash dictionary operations
+* Moved the corpse opening settings (auto open corpses, corpse open distance, corpse open options) from the Misc options tab into a "Corpse Opening" container under Gameplay -> Mobiles -> Misc ([bittiez](https://github.com/bittiez))
+* Made looting take higher priority over opening corpses *except your own corpse and manually opened corpses*
+* Migrated WASD Movement and Single click to cast spell settings to Global settings, migrated turn delay to server settings ([bittiez](https://github.com/bittiez))
+* Add some missing weapon abilities
+
+### Fixes
+* Fixed a `NoAudioHardwareException` crash on machines without an audio device: the audio availability probe no longer creates a `DynamicSoundEffectInstance` (which left a partially-built object for the GC finalizer to crash on) and instead reads `SoundEffect.MasterVolume` ([bittiez](https://github.com/bittiez))
+* Remove presets for auto skinnig knife id's to prevent trying to use the incorrect item on servers ([bittiez](https://github.com/bittiez))
+* Fixed a rare crash that could occur when a grid container is moved - [P.R 958](https://github.com/PlayTazUO/TazUO/pull/958) ([yuval-po](https://github.com/yuval-po))
+* Fixed the candle flicker effect speeding up while moving: the flicker phase is now seeded from each light's world position instead of its screen position, so it oscillates at a constant speed
+* Fixed a NullReferenceException in the counter bar when an item or spell graphic could not be loaded; the icon is now skipped instead of crashing the client ([bittiez](https://github.com/bittiez))
+* Fixed stuttering on UltimaLive servers: `GetBlockCrc` now reads the map/statics block with bulk reads instead of one locked seek+read syscall per byte, terrain updates no longer re-read the same map blocks from disk dozens of times per chunk (cached on stream-based files), chunk reloads triggered by streamed terrain/statics updates are now coalesced and time-throttled (rebuilt at most once per frame, spread across frames instead of all at once), and packet file writes are no longer flushed synchronously on the render thread (flushing moved to a background thread) ([bittiez](https://github.com/bittiez))
+* Fixed an `ArgumentOutOfRangeException` on UltimaLive servers when the client connected: all reads on UltimaLive's dynamically-growing map/statics files are now serialized under a single lock (previously some read paths bypassed it and could race with the background flush thread) ([bittiez](https://github.com/bittiez))
+* Fixed a 1-2 second freeze when taking a screenshot: PNG encoding and file writing now run on a background thread so the frame is no longer stalled
+
+## 5.24.5
+
+### Features
+* Added an option to use the modern color picker for things like dye tubs - [P.R 920](https://github.com/PlayTazUO/TazUO/pull/920) ([bittiez](https://github.com/bittiez))
+* Added option to allow auto open door system to also close doors - [P.R 919](https://github.com/PlayTazUO/TazUO/pull/919) ([bittiez](https://github.com/bittiez))
+
+### Legion
+* Added optional font size to ApiUiTtfTextInputField control - [P.R 912](https://github.com/PlayTazUO/TazUO/pull/912) ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Fixed characters remaining mounted upon death on POL servers - [P.R 923](https://github.com/PlayTazUO/TazUO/pull/923) ([bittiez](https://github.com/bittiez))
+* Auto skinning was not firing for old grid loot style ([bittiez](https://github.com/bittiez))
+* Query for criminal action should not continue reopening for the same serial ([bittiez](https://github.com/bittiez))
+* Fixed a crash (`NoAudioHardwareException`) when the audio device becomes unavailable while sounds are still held by the client; sound instances are now disposed deterministically instead of being left to the garbage collector, so the audio finalizer can no longer crash the client - [P.R 916](https://github.com/PlayTazUO/TazUO/pull/916) ([bittiez](https://github.com/bittiez))
+* Fixed the Alt/Shift/Ctrl modifier state getting stuck after Alt+Tab, since the key-up event is never delivered when the window loses focus; modifiers are now cleared on focus loss/gain ([bittiez](https://github.com/bittiez))
+* Added a suggested crash fix for plugins crashing TazUO while injecting a network packet into the client (e.g. an assistant's `SendToClient` passing a packet that does not fit its buffer), pointing the user at the plugin rather than TazUO ([bittiez](https://github.com/bittiez))
+* Fixed target aura not in the correct spot when game scaled - [P.R 911](https://github.com/PlayTazUO/TazUO/pull/911) ([bittiez](https://github.com/bittiez))
+* Fixed a NullReferenceException when scrolling with the opacity hotkey after the current profile is unloaded - [P.R 910](https://github.com/PlayTazUO/TazUO/pull/910) ([bittiez](https://github.com/bittiez))
+
+### Misc
+* When built in Debug there is now an asset load time on the login scene ([bittiez](https://github.com/bittiez))
+* Moved Cliloc load to load async, improving load times when starting the client - [P.R 899](https://github.com/PlayTazUO/TazUO/pull/899) ([bittiez](https://github.com/bittiez))
+* Migrated circle of transparency and sound/music settings (master sound/music volume, footsteps, rain, combat music, background audio) from per-character profiles to global settings ([bittiez](https://github.com/bittiez))
+
+## 5.22.15
+
+### Legion
+* Added `Highlight(hue)` to game objects, setting the hue and remembering the original so it can be restored with `Highlight(None)`; on mobiles it also recolors all equipped items - [P.R 881](https://github.com/PlayTazUO/TazUO/pull/881) ([bittiez](https://github.com/bittiez))
+* Added `API.UpdateCooldown(name, maxValue, currentValue)`, `API.RestartCooldown(name)`, `API.DeleteCooldown(name)` and `API.CooldownExists(name)` to manage cooldown bars created with `API.CreateCooldownBar` ([bittiez](https://github.com/bittiez))
+
+### Features
+* Added Friend option to Select Nearest macro - ([bittiez](https://github.com/bittiez))
+* Added tooltips to empty slots on paperdoll for what layer they are ([bittiez](https://github.com/bittiez))
+* Added a screenshot on death option(enabled by default) - [P.R 857](https://github.com/PlayTazUO/TazUO/pull/857) ([bittiez](https://github.com/bittiez))
+* Added a Randomize button to the character creation screen that picks random hair/facial hair styles and random colors (skin, shirt, pants, hair, beard) while keeping the selected race and gender ([bittiez](https://github.com/bittiez))
+* Spell names, reagent names, and magic circle names now use server cliloc strings when available, falling back to the built-in English strings otherwise - [P.R 885](https://github.com/PlayTazUO/TazUO/pull/885) ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Fixed an `IO_SharingViolation_File` crash when running multiple TazUO clients against a shared `Data/language.*.ini`; language files are now opened with shared read/write access and rewritten atomically via a temp file so concurrent clients can read and merge them without collisions ([bittiez](https://github.com/bittiez))
+* Fixed a NullReferenceException when toggling "Stay active" in the nameplate manager gump on shards whose gumpart is missing the radio button art; failed button construction is now handled gracefully instead of leaving a broken control behind ([bittiez](https://github.com/bittiez))
+* Fixed empty chat input entries being saved to the message history - [P.R 900](https://github.com/PlayTazUO/TazUO/pull/900) ([bittiez](https://github.com/bittiez))
+* Fixed a rare "The deque is empty" crash when processing mobile movement steps, caused by the steps deque being cleared concurrently while the main thread removed a step ([bittiez](https://github.com/bittiez))
+* Minor UI bug fixes in modern paperdoll and myra windows ([bittiez](https://github.com/bittiez))
+* MacroManager select next/previous/nearest with the Hostile scan type now skips anyone on the friends list - [P.R 880](https://github.com/PlayTazUO/TazUO/pull/880) ([bittiez](https://github.com/bittiez))
+* Auto skinning now responds to any target cursor type instead of only neutral, so it works on servers that send a different target type for the skinning knife - [P.R 879](https://github.com/PlayTazUO/TazUO/pull/879) ([bittiez](https://github.com/bittiez))
+* Fixed in-game screenshots showing the world viewport as partially transparent by forcing the saved image to be fully opaque - [P.R 870](https://github.com/PlayTazUO/TazUO/pull/870) ([bittiez](https://github.com/bittiez))
+* Fix journal partially scrolled sometimes still scrolling up - [P.R 858](https://github.com/PlayTazUO/TazUO/pull/858) ([bittiez](https://github.com/bittiez))
+
+### Misc
+* Updated to latest FNA release ([bittiez](https://github.com/bittiez))
+* Converted previous ResGumps language system into TazLang language.ini system ([bittiez](https://github.com/bittiez))
+* Converted ResGeneral and ResErrorMessages into TazLang language.ini system ([bittiez](https://github.com/bittiez))
+
+## 5.20.26
+
+### Legion
+* Added `API.ActiveSpells()`, `API.ActiveSpellNames()` and `API.IsSpellActive(spell)` so scripts can see which toggle spells/moves are currently active (the same ones the spell bar highlights) ([bittiez](https://github.com/bittiez))
+
+### Features
+* Option window font selectors are now searchable - [P.R 847](https://github.com/PlayTazUO/TazUO/pull/847) ([yuval-po](https://github.com/yuval-po))
+* Counter bar slots can now trigger Dress or Undress for any dress-agent configuration belonging to the current character - [P.R 844](https://github.com/PlayTazUO/TazUO/pull/844) ([Nesci28](https://github.com/Nesci28))
+* The Legion Script Manager window now remembers its size and position and restores them when reopened - [P.R 828](https://github.com/PlayTazUO/TazUO/pull/828) ([bittiez](https://github.com/bittiez))
+* Added an optional candle flicker effect that makes lights gently ebb and flow (enabled by default, toggle under Video > Lighting) - [P.R 824](https://github.com/PlayTazUO/TazUO/pull/824) ([bittiez](https://github.com/bittiez))
+* Added optional FSR shader to post processing effects - [P.R 821](https://github.com/PlayTazUO/TazUO/pull/821) ([bittiez](https://github.com/bittiez))
+* Assistant Macros tab action selector is now searchable (Searchable Combobox support) - [P.R 823](https://github.com/PlayTazUO/TazUO/pull/823) ([yuval-po](https://github.com/yuval-po))
+* Counter bar cells can now hold any spell bar action (spell, macro, weapon ability, script, or skill) in addition to item counters, with per-cell hotkeys (via the shared hotkey window), optional keybind labels, active-ability highlighting, and a hotkey-press flash - [P.R 812](https://github.com/PlayTazUO/TazUO/pull/812) ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Guard GameActions.Print against null world(Causing a rare crash when trying to send a message before game world is initialized) - [P.R 852](https://github.com/PlayTazUO/TazUO/pull/852) ([yuval-po](https://github.com/yuval-po))
+* Address a concurrency issue causing a rare crash - [P.R 851](https://github.com/PlayTazUO/TazUO/pull/851) ([yuval-po](https://github.com/yuval-po))
+* Fixed ScriptManagerWindow not restoring to the correct size - [P.R 847](https://github.com/PlayTazUO/TazUO/pull/847) ([yuval-po](https://github.com/yuval-po))
+* Fixed the bandage agent monopolizing the shared action queue: heals still run through the queue, but the queued heal is now re-validated when it runs and only resets the global action cooldown on rounds where a bandage is actually applied - so no-op heal rounds (mobile recovered, still on the bandage timer, no bandage, etc.) no longer stall the player's own queued loot/move/equip actions - [P.R 846](https://github.com/PlayTazUO/TazUO/pull/846) ([bittiez](https://github.com/bittiez))
+* Fixed text draw position bouncing with always show names enabled - [P.R 840](https://github.com/PlayTazUO/TazUO/pull/840) ([bittiez](https://github.com/bittiez))
+* Fixed spell cast bar not drawing based on actual player position - [P.R 839](https://github.com/PlayTazUO/TazUO/pull/839) ([bittiez](https://github.com/bittiez))
+* Fixed unexpected behaviour when clicking outside of an input field - [P.R 837](https://github.com/PlayTazUO/TazUO/pull/837) ([bittiez](https://github.com/bittiez))
+* Fixed mobile names not being drawn at the edge of the screen for off-screen mobiles - [P.R 838](https://github.com/PlayTazUO/TazUO/pull/838) ([bittiez](https://github.com/bittiez))
+* Added a suggested crash fix for "Bad uop file" errors, explaining that a `.uop` data file is corrupt, truncated, or mid-patch and how to resolve it - [P.R 841](https://github.com/PlayTazUO/TazUO/pull/841) ([bittiez](https://github.com/bittiez))
+* Guarded the remaining LegionAPI/ApiUiGump methods that touched the game world, UI manager, or gump controls off the main thread, fixing a double-free malloc crash caused by Legion scripts racing with the main thread - [P.R 836](https://github.com/PlayTazUO/TazUO/pull/836) ([bittiez](https://github.com/bittiez))
+* Fixed NullReferenceException in Chunk.Destroy when Node is null - [P.R 835](https://github.com/PlayTazUO/TazUO/pull/835) ([bittiez](https://github.com/bittiez))
+* Fixed a client crash from oversized font sizes overflowing the font texture atlas ("Could not add rect to the newly created atlas") - [P.R 834](https://github.com/PlayTazUO/TazUO/pull/834) ([bittiez](https://github.com/bittiez))
+* Better light handling for lights under ground - [P.R 825](https://github.com/PlayTazUO/TazUO/pull/825) ([bittiez](https://github.com/bittiez))
+* Fixed NullReferenceException in PartyInviteGump when inviter name is null - [P.R 832](https://github.com/PlayTazUO/TazUO/pull/832) ([bittiez](https://github.com/bittiez))
+* Fixed InvalidCastException in DelayedObjectClickManager.Update - [P.R 831](https://github.com/PlayTazUO/TazUO/pull/831) ([bittiez](https://github.com/bittiez))
+* Removed the Camera Smoothing option; the camera now always stays locked on the player (the smoothing effect caused the camera to lag behind the player) - ([bittiez](https://github.com/bittiez))
+* Hotkey input window doesn't loose keys when releasing them ([bittiez](https://github.com/bittiez))
+* Fixed a journal crash (`InvalidOperation_EnumFailedVersion`) caused by a race while checking the top-most gump for inactive transparency - [P.R 822](https://github.com/PlayTazUO/TazUO/pull/822) ([bittiez](https://github.com/bittiez))
+* Fixed several bandage agent bugs: a client crash from the retry timer touching game state off the main thread, a duplicate bandage in "check for buff" mode, a stuck bandaging buff that could disable healing, and the retry timer spinning indefinitely for un-healable targets - [P.R 826](https://github.com/PlayTazUO/TazUO/pull/826) ([bittiez](https://github.com/bittiez))
+* Reworked the bandage agent to drive its heal retries from the game update loop instead of a background timer, removing the timer/thread-marshaling complexity and making healing more consistent - [P.R 829](https://github.com/PlayTazUO/TazUO/pull/829) ([bittiez](https://github.com/bittiez))
+
+## V5.17.7
+
+### Legion
+* `SetTooltip(text)` and `SetEntityTooltip(serial)` now enable mouse input automatically so hover tooltips work without extra setup, and added a dedicated `SetAcceptMouseInput(enabled)` method to the base UI control - [P.R 811](https://github.com/PlayTazUO/TazUO/pull/811) ([bittiez](https://github.com/bittiez))
+* Added `SetTooltip(text)`, `SetEntityTooltip(serial)` and `ClearTooltip()` to the base UI control so scripts can attach plain-text or entity-property tooltips to any control - [P.R 810](https://github.com/PlayTazUO/TazUO/pull/810) ([bittiez](https://github.com/bittiez))
+* Added `API.ListRunningScripts()` and `API.IsScriptRunning(path)`, and switched `API.PlayScript`, `API.StopScript` and `API.ToggleScript` to match scripts by their path relative to the LegionScripts folder so scripts sharing a file name are no longer ambiguous - [P.R 809](https://github.com/PlayTazUO/TazUO/pull/809) ([bittiez](https://github.com/bittiez))
+* Added a string-based `API.ContextMenu(serial, entry)` overload that selects a context menu entry by its text - [P.R 808](https://github.com/PlayTazUO/TazUO/pull/808) ([bittiez](https://github.com/bittiez))
+
+### Features
+* Added journal triggers for macros - [P.R 802](https://github.com/PlayTazUO/TazUO/pull/802) ([bittiez](https://github.com/bittiez))
+* Added .bmp support to external images loader - [P.R 796](https://github.com/PlayTazUO/TazUO/pull/796) ([credzba](https://github.com/credzba))
+* Added a grid container band system that groups items into configurable, color-coded sections (by item layer and/or graphic), with separate configurations for corpses, backpack, and other containers and a per-container opt-out - [P.R 795](https://github.com/PlayTazUO/TazUO/pull/795) ([bittiez](https://github.com/bittiez))
+* Added a new reusable hotkey setting window, all hotkey assignment goes through this window now - [P.R 793](https://github.com/PlayTazUO/TazUO/pull/793) ([bittiez](https://github.com/bittiez))
+* Replaced the old Myra window style with a new themed one. Thank you NewYears! - [P.R 774](https://github.com/PlayTazUO/TazUO/pull/774) ([bittiez](https://github.com/bittiez))
+
+### Misc
+* Changed grid highlight import/export to use the clipboard instead of the file browser - [P.R 806](https://github.com/PlayTazUO/TazUO/pull/806) ([bittiez](https://github.com/bittiez))
+* Added a new PrivateSay macro option(Only you can see it) - [P.R 803](https://github.com/PlayTazUO/TazUO/pull/803) ([bittiez](https://github.com/bittiez))
+* Pathfinding now re-plans when a house is loaded mid-walk and keeps a soft 1-tile buffer around houses so paths route around them better - [P.R 799](https://github.com/PlayTazUO/TazUO/pull/799) ([bittiez](https://github.com/bittiez))
+* Migrate tooltip override saves to its own json file - [P.R 798](https://github.com/PlayTazUO/TazUO/pull/798) ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Prevent a Myra render NullReferenceException from crashing the client when a widget is detached from the desktop mid-render - [P.R 807](https://github.com/PlayTazUO/TazUO/pull/807) ([bittiez](https://github.com/bittiez))
+* Load SQL profile settings before saved gumps are restored at login, so gumps use the correct setting values - [P.R 804](https://github.com/PlayTazUO/TazUO/pull/804) ([bittiez](https://github.com/bittiez))
+* Restore default cooldown duration and hue - [P.R 802](https://github.com/PlayTazUO/TazUO/pull/802) ([bittiez](https://github.com/bittiez))
+* Recover from a corrupt SQLite database instead of crashing at login; the bad file is quarantined and an empty database is recreated - [P.R 800](https://github.com/PlayTazUO/TazUO/pull/800) ([bittiez](https://github.com/bittiez))
+* Fixed Myra windows not closing with right click - ([bittiez](https://github.com/bittiez))
+* Fixed menu color that failed to get the new myrs colors - ([bittiez](https://github.com/bittiez))
+* Fixed potential crashes with FSS text generation - ([bittiez](https://github.com/bittiez))
+* Fixed an IndexOutOfRangeException crash when pressing Undo/Redo in a text box whose contents had been changed outside the undo system (e.g. set directly, refreshed by the server, or truncated by a max length); stale undo/redo history is now discarded instead of indexing past the end of the text - [P.R 805](https://github.com/PlayTazUO/TazUO/pull/805) ([bittiez](https://github.com/bittiez))
+
+## V5.12.0
+
+### Features
+* Added support for in-game art using /i[0x0000] format in FSS text - [P.R 789](https://github.com/PlayTazUO/TazUO/pull/789) ([bittiez](https://github.com/bittiez))
+* Added a "Sort by Layer" option to the grid container sort menu, ordering items by their equipment layer (graphic and hue as tiebreakers) - [P.R 785](https://github.com/PlayTazUO/TazUO/pull/785) ([bittiez](https://github.com/bittiez))
+* Added an optional toggle (enabled by default) to ignore tooltip overrides for mobiles, so their raw tooltip text is shown instead of override-formatted text - [P.R 784](https://github.com/PlayTazUO/TazUO/pull/784) ([bittiez](https://github.com/bittiez))
+* The grid container top/label section now accepts target cursors to select the container (bag) itself, matching how clicking an empty grid slot behaves - [P.R 781](https://github.com/PlayTazUO/TazUO/pull/781) ([bittiez](https://github.com/bittiez))
+* Added named auto loot lists so you can quickly swap between multiple loot configurations; a "Loot Lists" selector with New/Rename/Delete controls was added to the Auto Loot agent, existing entries are migrated into a "Default" list, and at least one list is always kept - [P.R 766](https://github.com/PlayTazUO/TazUO/pull/766) ([bittiez](https://github.com/bittiez))
+* Replaced the tooltip override configuration gump with a new Myra window, and added an optional per-rule custom tooltip border color (drawn as a thick border around the tooltip when the rule matches) - [P.R 768](https://github.com/PlayTazUO/TazUO/pull/768) ([bittiez](https://github.com/bittiez))
+* Reworked the container options into a new General tab with a "Container Style" dropdown (Grid/Original) and a "Corpse Container Style" dropdown (Grid/Original/Old Grid Loot/Old Grid Loot + Container), replacing the old "Enable grid containers" toggle and "Original Style Grid Loot" setting; moved "Default container view" to the Grid tab and migrated existing preferences - [P.R 761](https://github.com/PlayTazUO/TazUO/pull/761) ([bittiez](https://github.com/bittiez))
+* Added an option to only apply the trees-to-stumps replacement to trees within the circle of transparency radius, leaving farther trees at their normal appearance - [P.R 765](https://github.com/PlayTazUO/TazUO/pull/765) ([bittiez](https://github.com/bittiez))
+
+### Misc
+* language.ini is no longer versioned, it will be checked every run for correctness ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Fixed a crash when we fail to write text to a file - ([bittiez](https://github.com/bittiez))
+* Fixed a crash where image resolver was not set in fonts - ([bittiez](https://github.com/bittiez))
+* Changed macro hotkey input to not accept clicks, added Set button instead - [P.R 788](https://github.com/PlayTazUO/TazUO/pull/788) ([bittiez](https://github.com/bittiez))
+* Fixed a failed macro load when the main key was not a valid entry - [P.R 787](https://github.com/PlayTazUO/TazUO/pull/787) ([bittiez](https://github.com/bittiez))
+* Fixed an issue in which the Window Background Color setting was ignored - [P.R 778](https://github.com/PlayTazUO/TazUO/pull/778) ([yuval-po](https://github.com/yuval-po)) 
+* Fixed an IO_SharingViolation IOException crash on startup when the default `vegetation.txt` (or `cave.txt`/`tree.txt`) filter file could not be written or read - e.g. a second client instance generating it at the same time, or a read-only/locked `Data/Client` folder; generating and reading these files is now best-effort and the tile filters fall back to in-memory defaults instead of crashing - [P.R 780](https://github.com/PlayTazUO/TazUO/pull/780) ([bittiez](https://github.com/bittiez))
+* Fixed an "No supported FNA3D driver found!" InvalidOperationException crash on startup when FNA3D could not initialize any rendering backend (Direct3D 11, Vulkan, or OpenGL); a suggested crash fix now explains the cause and advises updating graphics drivers, avoiding remote-desktop/VM GPU limitations, or trying the `-force_driver 1`, `2`, or `3` launch args - [P.R 779](https://github.com/PlayTazUO/TazUO/pull/779) ([bittiez](https://github.com/bittiez))
+* Fixed a TypeInitializationException crash on entering the world when the `Data/Client` directory was missing; the SeasonManager now creates the directory before writing the default `seasons.txt` and degrades gracefully (season graphics fall back to their originals) instead of crashing if the seasons file can't be loaded - [P.R 777](https://github.com/PlayTazUO/TazUO/pull/777) ([bittiez](https://github.com/bittiez))
+* Fixed Ninjitsu toggle moves (e.g. Backstab, Ki Attack, Surprise Attack, Focus Attack, Death Strike) placed on the spell bar not turning red/highlighted when activated; the active-toggle state is now populated from the server packet regardless of whether a floating spell button is on screen, and spell-bar slots highlight to match - [P.R 775](https://github.com/PlayTazUO/TazUO/pull/775) ([bittiez](https://github.com/bittiez))
+* Fixed a JsonException crash on startup when a configuration file (e.g. settings.json or a profile) was corrupt or malformed; the corrupt file is now backed up to a `.corrupt` file and default settings are used instead of crashing, and the user is notified in-world which file was affected - [P.R 773](https://github.com/PlayTazUO/TazUO/pull/773) ([bittiez](https://github.com/bittiez))
+* Fixed a "SQLite Error 8: attempt to write a readonly database" crash on entering the world when the persistent vars database file was flagged read-only (e.g. by OneDrive/cloud-sync, antivirus, or restoring the Data folder from a backup); the read-only attribute is now cleared before opening any SQLite database - [P.R 772](https://github.com/PlayTazUO/TazUO/pull/772) ([bittiez](https://github.com/bittiez))
+* Fixed a MissingMethodException crash on startup when launching with the `-zlib` argument against a mismatched/out-of-date ClassicUO.Utility.dll (e.g. after a partial update); the `-zlib` argument now falls back gracefully instead of crashing, and a suggested crash fix explains the file mismatch and points to enabling managed zlib from the Options menu or reinstalling - [P.R 771](https://github.com/PlayTazUO/TazUO/pull/771) ([bittiez](https://github.com/bittiez))
+* Fixed an IndexOutOfRangeException crash in FontStashSharp caused by Legion script error handlers printing messages and building error windows on the script's background thread; those UI calls now run on the main thread so the shared, non-thread-safe font caches aren't corrupted - [P.R 770](https://github.com/PlayTazUO/TazUO/pull/770) ([bittiez](https://github.com/bittiez))
+* Fixed missing mouse binding support for Assistant -> Macro hotkeys - [P.R 764](https://github.com/PlayTazUO/TazUO/pull/764) ([yuval-po](https://github.com/yuval-po))
+* Localized Assistant -> Macro tab - [P.R 764](https://github.com/PlayTazUO/TazUO/pull/764) ([yuval-po](https://github.com/yuval-po))
+* Fixed a NullReferenceException crash while drawing a tooltip when no profile was loaded (e.g. during login/logout transitions); the tooltip override builder now guards against a null override list and null profile instead of crashing the client - [P.R 769](https://github.com/PlayTazUO/TazUO/pull/769) ([bittiez](https://github.com/bittiez))
+* Fixed tooltip overrides no longer applying to items shown in server-sent gumps (which aren't real world items, like vendor search results); the override now falls back to the item's OPL text instead of showing the raw tooltip - [P.R 767](https://github.com/PlayTazUO/TazUO/pull/767) ([bittiez](https://github.com/bittiez))
+* Fixed a FormatException crash when loading a world map marker file that contained a malformed line; malformed lines are now logged and skipped instead of crashing the client, and a warning is shown in-game noting how many lines were skipped - [P.R 763](https://github.com/PlayTazUO/TazUO/pull/763) ([bittiez](https://github.com/bittiez))
+* Fixed an IndexOutOfRangeException crash when the server sent a map change (ExtendedCommand 0x08) with an out-of-range map index while no map was loaded; the index is now clamped before the map is constructed - [P.R 762](https://github.com/PlayTazUO/TazUO/pull/762) ([bittiez](https://github.com/bittiez))
+
+## V5.5.0
+
+### Features
+* Added a Gump Position Manager (More > Tools > Gump Positions) to permanently save server gump positions in a database, with per-gump save/center/identify actions, a "save all gumps automatically" option, and a list of saved positions to delete - [P.R 752](https://github.com/PlayTazUO/TazUO/pull/752) ([bittiez](https://github.com/bittiez))
+* Added an option to strip the leading "<id>" prefix from chat usernames (e.g. "<36475858>username" -> "username") - [P.R 751](https://github.com/PlayTazUO/TazUO/pull/751) ([bittiez](https://github.com/bittiez))
+* Added an option to draw overheads (names, health bars, overhead text) at a constant size regardless of the camera zoom - [P.R 730](https://github.com/PlayTazUO/TazUO/pull/730) ([bittiez](https://github.com/bittiez))
+
+### Fixes
+* Fixed the world map border being tied to the top-most state; the border now follows the lock state (hidden while locked, visible while unlocked) and the top-most/layer-order option has been removed - [P.R 757](https://github.com/PlayTazUO/TazUO/pull/757) ([bittiez](https://github.com/bittiez))
+* Fixed a NullReferenceException crash in MapLoader.LoadMap when a map's statics index (staidx) file was missing/unavailable; the loader now skips the static lookup for that block instead of crashing on entering the world, and a suggested crash fix explains that the map data files may be missing, incomplete, or version-mismatched - [P.R 756](https://github.com/PlayTazUO/TazUO/pull/756) ([bittiez](https://github.com/bittiez))
+* Fixed a NullReferenceException crash in StringHelper.GetPluralAdjustedString when an item's data name was null (e.g. while adding items to a container); it now guards against null/empty input - [P.R 755](https://github.com/PlayTazUO/TazUO/pull/755) ([bittiez](https://github.com/bittiez))
+* Fixed an IndexOutOfRangeException crash in FontStashSharp caused by CustomToolTip building and measuring tooltip text on a background thread; the retry now runs on the main thread so the shared, non-thread-safe font caches aren't corrupted - [P.R 753](https://github.com/PlayTazUO/TazUO/pull/753) ([bittiez](https://github.com/bittiez))
+* Fixed an ArgumentNullException crash in TrueTypeLoader.GetFont when called with a null or empty font name; it now falls back to the default embedded font - [P.R 750](https://github.com/PlayTazUO/TazUO/pull/750) ([bittiez](https://github.com/bittiez))
+* Fixed a startup crash (IndexOutOfRangeException) in the animations loader when AnimationSequence.uop contained an out-of-range animation group index - [P.R 749](https://github.com/PlayTazUO/TazUO/pull/749) ([bittiez](https://github.com/bittiez))
+* Fixed a crash when a Legion Python script was stopped at the exact moment it was displaying an error, caused by a thread interrupt surfacing while IronPython formatted the exception - [P.R 748](https://github.com/PlayTazUO/TazUO/pull/748) ([bittiez](https://github.com/bittiez))
+* Fixed a crash when exporting grid highlight settings to an invalid or inaccessible file path; the client now shows an error message instead - [P.R 747](https://github.com/PlayTazUO/TazUO/pull/747) ([bittiez](https://github.com/bittiez))
+
+### Misc
+* Began migrating settings from profile.json to settings.db, this will take some time. - ([bittiez](https://github.com/bittiez))
+
+## V5.4.0
 
 ### Features
 * Rebuilt the grid highlight menu, per-rule property editor, and shared property-list config as Myra windows - [P.R 735](https://github.com/PlayTazUO/TazUO/pull/735) ([bittiez](https://github.com/bittiez))

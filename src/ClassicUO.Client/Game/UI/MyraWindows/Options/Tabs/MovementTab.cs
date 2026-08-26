@@ -47,8 +47,18 @@ public static class MovementTab
                     TazLang.Get("mog_movementtab_doors_autoopenhidden"),
                     new Accessor<bool>(() => profile.AutoOpenDoorsIfHidden),
                     search: new SearchMetadata(TazLang.Get("mog_movementtab_doors_autoopenhidden"), Keywords: [TazLang.Get("mog_kw_door"), TazLang.Get("mog_kw_hidden")])
+                ),
+                Option.Checkbox(
+                    TazLang.Get("mog_movementtab_doors_autoclosedoors"),
+                    new Accessor<bool>(() => ProfileManager.GlobalSettings.AutoCloseDoors),
+                    search: new SearchMetadata(TazLang.Get("mog_movementtab_doors_autoclosedoors"), Keywords: [TazLang.Get("mog_kw_door")])
                 )
             ).WithSearch(new SearchMetadata(TazLang.Get("mog_movementtab_label"), Tags: [TazLang.Get("mog_kw_movement")], Keywords: [TazLang.Get("mog_kw_door")])),
+            Option.Checkbox(
+                TazLang.Get("mog_movementtab_doors_blockdoormovement"),
+                new Accessor<bool>(() => profile.BlockDoorMovement),
+                search: new SearchMetadata(TazLang.Get("mog_movementtab_doors_blockdoormovement"), Keywords: [TazLang.Get("mog_kw_door"), TazLang.Get("mog_kw_block")])
+            ),
             Option.Checkbox(
                 TazLang.Get("mog_movementtab_autoavoidobstacles"),
                 new Accessor<bool>(() => profile.AutoAvoidObstacules),
@@ -56,7 +66,7 @@ public static class MovementTab
             ),
             Option.Checkbox(
                 TazLang.Get("mog_movementtab_usewasdmovement"),
-                new Accessor<bool>(() => profile.UseWASDInsteadArrowKeys),
+                new Accessor<bool>(() => ProfileManager.GlobalSettings.UseWASDInsteadArrowKeys),
                 search: new SearchMetadata(TazLang.Get("mog_movementtab_usewasdmovement"), Keywords: [TazLang.Get("mog_kw_wasd"), TazLang.Get("mog_kw_keyboard")])
             ),
             OptionsUi.VisualContainer(
@@ -79,7 +89,7 @@ public static class MovementTab
                 TazLang.Get("mog_tazuo_turndelay"),
                 45,
                 120,
-                new Accessor<ushort>(() => profile.TurnDelay),
+                new Accessor<ushort>(() => ProfileManager.ServerSettings.TurnDelay),
                 search: new SearchMetadata(TazLang.Get("mog_tazuo_turndelay"), Keywords: [TazLang.Get("mog_kw_turn"), TazLang.Get("mog_kw_delay")])
             ),
             OptionsUi.VisualContainer(

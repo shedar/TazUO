@@ -1,6 +1,7 @@
 ﻿// SPDX-License-Identifier: BSD-2-Clause
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -133,6 +134,87 @@ namespace ClassicUO.Utility
             catch (Exception ex)
             {
                 Log.Error($"Error opening directory '{dirOrFilePath}': {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Safely write a file in try/catch.
+        /// Writes to a temp file and atomically replaces the target so concurrent readers never see partial content.
+        /// Will log the error on failure.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="lines"></param>
+        /// <returns>true/false</returns>
+        public static bool WriteAllLinesSafe(string filePath, List<string> lines)
+        {
+            string tempPath = $"{filePath}.{Environment.ProcessId}.tmp";
+
+            try
+            {
+                using (FileStream fs = new FileStream(tempPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (StreamWriter writer = new StreamWriter(fs, new UTF8Encoding(false)))
+                {
+                    foreach (string line in lines)
+                        writer.WriteLine(line);
+                }
+
+                File.Move(tempPath, filePath, true);
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log.Error(e.ToString());
+
+                try { File.Delete(tempPath); } catch { }
+
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Reads all lines with a shared handle so multiple clients can access the file concurrently.
+        /// </summary>
+        public static string[] ReadAllLinesShared(string filePath)
+        {
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(fs, new UTF8Encoding(false));
+            var lines = new List<string>();
+
+            while (reader.ReadLine() is { } line)
+                lines.Add(line);
+
+            return lines.ToArray();
+        }
+
+        /// <summary>
+        /// Reads all text with a shared handle so multiple clients can access the file concurrently.
+        /// </summary>
+        public static string ReadAllTextShared(string filePath)
+        {
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(fs, new UTF8Encoding(false));
+
+            return reader.ReadToEnd();
+        }
+
+        /// <summary>
+        /// Safely write a file in try/catch.
+        /// Will log the error on failure.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="lines"></param>
+        /// <returns>true/false</returns>
+        public static bool WriteAllTextSafe(string filePath, string text)
+        {
+            try 
+            {
+                File.WriteAllText(filePath, text, Encoding.UTF8);
+                return true;
+            } catch(Exception e)
+            {
+                Log.Error(e.ToString());
                 return false;
             }
         }

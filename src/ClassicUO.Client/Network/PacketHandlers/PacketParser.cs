@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 using System;
+using System.Diagnostics;
 using ClassicUO.Game;
 using ClassicUO.IO;
 using ClassicUO.Utility.Logging;
@@ -40,7 +41,8 @@ internal sealed class PacketParser
         try
         {
             Append(data, false);
-            return ParsePackets(world, _buffer, true) + ParsePackets(world, _pluginsBuffer, false);
+            return ParsePackets(world, _buffer, true, int.MaxValue, long.MaxValue)
+                + ParsePackets(world, _pluginsBuffer, false, int.MaxValue, long.MaxValue);
         }
         catch (Exception)
         {
@@ -52,6 +54,28 @@ internal sealed class PacketParser
             throw;
         }
     }
+
+    /// <summary>
+    /// Appends raw socket data to the main buffer without parsing, so a large burst can be consumed over several frames.
+    /// </summary>
+    public void AppendToMainBuffer(Span<byte> data) => Append(data, false);
+
+    /// <summary>
+    /// Parses up to <paramref name="maxPackets"/> packets from the main buffer, stopping early once <paramref name="deadlineTicks"/> is reached.
+    /// Leftover bytes remain buffered for the next call, so a single huge message can span frames without a hitch.
+    /// </summary>
+    public int ParseAvailablePackets(World world, int maxPackets, long deadlineTicks)
+    {
+        return ParsePackets(world, _buffer, true, maxPackets, deadlineTicks);
+    }
+
+    public int ParsePluginsPackets(World world)
+    {
+        return ParsePackets(world, _pluginsBuffer, false, int.MaxValue, long.MaxValue);
+    }
+
+    /// <summary>True when packets parsed earlier frames are still waiting in the main buffer.</summary>
+    public bool HasBufferedData => _buffer.Length > 0;
 
     public void AddHandler(uint id, PacketHandler handler, bool allowOverride = true)
     {
@@ -78,11 +102,24 @@ internal sealed class PacketParser
         (fromPlugins ? _pluginsBuffer : _buffer).Enqueue(data);
     }
 
+    public void ClearBuffers()
+    {
+        lock (_buffer)
+        {
+            _buffer.Clear();
+        }
+
+        lock (_pluginsBuffer)
+        {
+            _pluginsBuffer.Clear();
+        }
+    }
+
     #endregion
 
     #region Privates
 
-    private int ParsePackets(World world, CircularBuffer stream, bool allowPlugins)
+    private int ParsePackets(World world, CircularBuffer stream, bool allowPlugins, int maxPackets, long deadlineTicks)
     {
         int packetsCount = 0;
 
@@ -90,8 +127,11 @@ internal sealed class PacketParser
         {
             ref byte[] packetBuffer = ref _readingBuffer;
 
-            while (stream.Length > 0)
+            while (stream.Length > 0 && packetsCount < maxPackets)
             {
+                if (deadlineTicks != long.MaxValue && Stopwatch.GetTimestamp() >= deadlineTicks)
+                    break;
+
                 if (
                     !GetPacketInfo(
                         stream,

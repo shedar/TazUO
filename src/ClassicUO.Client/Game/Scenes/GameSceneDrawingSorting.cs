@@ -47,12 +47,6 @@ namespace ClassicUO.Game.Scenes
             _oldPlayerZ;
         private int _foliageCount;
 
-        // Smooth camera following
-        private Vector2 _currentSmoothedOffset = Vector2.Zero;
-        private int _smoothLastPlayerX = int.MinValue,
-            _smoothLastPlayerY = int.MinValue;
-
-
         private readonly List<GameObject> _renderListStatics = new List<GameObject>();
         private readonly List<GameObject> _renderListTransparentObjects = new List<GameObject>();
         private readonly List<GameObject> _renderListAnimations = new List<GameObject>();
@@ -359,9 +353,9 @@ namespace ClassicUO.Game.Scenes
         )
         {
             allowSelection = true;
-            if (ProfileManager.CurrentProfile.UseCircleOfTransparency && ProfileManager.CurrentProfile.CircleOfTransparencyType == 2)
+            if (ProfileManager.GlobalSettings.UseCircleOfTransparency && ProfileManager.GlobalSettings.CircleOfTransparencyType == 2)
             {
-                if (Vector2.Distance(new Vector2(obj.RealScreenPosition.X, obj.RealScreenPosition.Y), playerPos) < ProfileManager.CurrentProfile.CircleOfTransparencyRadius)
+                if (Vector2.Distance(new Vector2(obj.RealScreenPosition.X, obj.RealScreenPosition.Y), playerPos) < ProfileManager.GlobalSettings.CircleOfTransparencyRadius)
                 {
                     if (obj.Z >= _maxZ)
                     {
@@ -454,9 +448,9 @@ namespace ClassicUO.Game.Scenes
             ref bool allowSelection
         )
         {
-            if (ProfileManager.CurrentProfile.UseCircleOfTransparency && obj.TransparentTest(maxZ))
+            if (ProfileManager.GlobalSettings.UseCircleOfTransparency && obj.TransparentTest(maxZ))
             {
-                int maxDist = ProfileManager.CurrentProfile.CircleOfTransparencyRadius + 0;
+                int maxDist = ProfileManager.GlobalSettings.CircleOfTransparencyRadius + 0;
                 var pos = new Vector2(obj.RealScreenPosition.X, obj.RealScreenPosition.Y - 44);
                 Vector2.Distance(ref playerPos, ref pos, out float dist);
 
@@ -488,6 +482,27 @@ namespace ClassicUO.Game.Scenes
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Determines whether a foliage object should be hidden as part of the tree-to-stumps
+        /// feature. When <see cref="Profile.TreeToStumpsWithinRadius"/> is enabled the foliage is
+        /// only hidden while it is within the circle of transparency radius from the player.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool HideFoliageForStumps(GameObject obj, Profile profile, ref Vector2 playerScreePos)
+        {
+            if (!profile.TreeToStumps || World.DisabledFeatures.Contains(Network.EnhancedPacketDisabledFeaturesEnum.TreeToStumps))
+            {
+                return false;
+            }
+
+            if (profile.TreeToStumpsWithinRadius)
+            {
+                return StaticFilters.IsWithinStumpRadius(obj.GetScreenPosition(), playerScreePos, ref obj.WithinStumpRadius);
+            }
+
+            return true;
         }
 
         private static bool CalculateAlpha(ref byte alphaHue, int maxAlpha)
@@ -628,6 +643,8 @@ namespace ClassicUO.Game.Scenes
                 return;
             }
 
+            RecordLightOccluder(obj);
+
             // slow as fuck
             if (
                 allowSelection
@@ -657,6 +674,44 @@ namespace ClassicUO.Game.Scenes
             {
                 renderList.Add(obj);
             }
+        }
+
+        // Records a drawn opaque tile (terrain/static/multi) as a light occluder, bucketed by isometric column (X - Y).
+        private void RecordLightOccluder(GameObject obj)
+        {
+            if (!UseLights && !UseAltLights)
+            {
+                return;
+            }
+
+            int z;
+
+            if (obj is Land land)
+            {
+                z = land.IsStretched ? land.AverageZ : land.Z;
+            }
+            else if (obj is Static s && !s.ItemData.IsTransparent)
+            {
+                z = obj.Z;
+            }
+            else if (obj is Multi m && !m.ItemData.IsTransparent)
+            {
+                z = obj.Z;
+            }
+            else
+            {
+                return;
+            }
+
+            int column = obj.X - obj.Y;
+
+            if (!_lightOccluders.TryGetValue(column, out List<LightOccluder> bucket))
+            {
+                bucket = _lightOccluderPool.Count > 0 ? _lightOccluderPool.Pop() : new List<LightOccluder>();
+                _lightOccluders[column] = bucket;
+            }
+
+            bucket.Add(new LightOccluder { X = obj.X, Z = z });
         }
 
         private unsafe bool AddTileToRenderList(
@@ -745,7 +800,7 @@ namespace ClassicUO.Game.Scenes
                             }
 
                             //we avoid to hide impassable foliage or bushes, if present...
-                            if (itemData.IsFoliage && profile.TreeToStumps)
+                            if (itemData.IsFoliage && HideFoliageForStumps(obj, profile, ref playerScreePos))
                             {
                                 continue;
                             }
@@ -834,7 +889,7 @@ namespace ClassicUO.Game.Scenes
 
                             if (!itemData.IsMultiMovable)
                             {
-                                if (itemData.IsFoliage && profile.TreeToStumps)
+                                if (itemData.IsFoliage && HideFoliageForStumps(obj, profile, ref playerScreePos))
                                 {
                                     continue;
                                 }
@@ -981,7 +1036,7 @@ namespace ClassicUO.Game.Scenes
                             if (
                                 !itemData.IsMultiMovable
                                 && itemData.IsFoliage
-                                && profile.TreeToStumps
+                                && HideFoliageForStumps(obj, profile, ref playerScreePos)
                             )
                             {
                                 continue;
@@ -1117,7 +1172,8 @@ namespace ClassicUO.Game.Scenes
                 winGameScaledHeight = 0;
             }
 
-            int size = (int)(Math.Max(winGameWidth / 44f + 1, winGameHeight / 44f + 1) * zoom);
+            // +1 extra tile in all directions to keep edge objects from popping out
+            int size = (int)(Math.Max(winGameWidth / 44f + 1, winGameHeight / 44f + 1) * zoom) + 1;
 
             if (Camera.Offset.X != 0 || Camera.Offset.Y != 0)
             {
@@ -1169,49 +1225,8 @@ namespace ClassicUO.Game.Scenes
             _maxPixel.X = maxPixelsX;
             _maxPixel.Y = maxPixelsY;
 
-            // Apply smooth camera interpolation
-            var targetOffset = new Vector2(winDrawOffsetX, winDrawOffsetY);
-            float smoothingFactor = ProfileManager.CurrentProfile.CameraSmoothingFactor;
-
-            // Detect a teleport (e.g. dungeon entrance/exit, recall, gate). A normal walk step
-            // never moves the player by more than one tile between updates, so anything larger
-            // must be an instant relocation. Snap the camera instead of panning across the map.
-            bool teleported =
-                _smoothLastPlayerX != int.MinValue
-                && (Math.Abs(_world.Player.X - _smoothLastPlayerX) > 1
-                    || Math.Abs(_world.Player.Y - _smoothLastPlayerY) > 1);
-
-            _smoothLastPlayerX = _world.Player.X;
-            _smoothLastPlayerY = _world.Player.Y;
-
-            if (smoothingFactor > 0f && !teleported)
-            {
-                // Calculate distance to target
-                float distance = Vector2.Distance(_currentSmoothedOffset, targetOffset);
-
-                if (distance > 0.5f)
-                {
-                    // Smooth interpolation with easing - similar to Camera.CalculatePeek()
-                    // Higher smoothing factor = slower camera movement (more smoothing)
-                    float lerpAmount = Math.Min(Time.Delta * (10f / smoothingFactor), 1f);
-                    _currentSmoothedOffset = Vector2.Lerp(_currentSmoothedOffset, targetOffset, lerpAmount);
-                }
-                else
-                {
-                    // Snap to target when very close to avoid jitter
-                    _currentSmoothedOffset = targetOffset;
-                }
-
-                _offset.X = (int)_currentSmoothedOffset.X;
-                _offset.Y = (int)_currentSmoothedOffset.Y;
-            }
-            else
-            {
-                // No smoothing - instant camera follow (classic behavior)
-                _currentSmoothedOffset = targetOffset;
-                _offset.X = winDrawOffsetX;
-                _offset.Y = winDrawOffsetY;
-            }
+            _offset.X = winDrawOffsetX;
+            _offset.Y = winDrawOffsetY;
 
             _last_scaled_offset.X = winGameScaledOffsetX;
             _last_scaled_offset.Y = winGameScaledOffsetY;

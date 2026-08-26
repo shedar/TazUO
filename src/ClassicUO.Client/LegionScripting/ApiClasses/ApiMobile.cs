@@ -1,3 +1,4 @@
+using ClassicUO.Game;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
 using static ClassicUO.LegionScripting.LegionAPI;
@@ -33,6 +34,7 @@ public class ApiMobile : ApiEntity
     public bool IsMounted => Read(static m => m.IsMounted);
     public bool IsDrivingBoat => Read(static m => m.IsDrivingBoat);
     public bool IsRunning => Read(static m => m.IsRunning);
+    public bool IsParalyzed => Read(static m => m.IsParalyzed);
     /// <summary>
     /// Get this mobiles direction as a string, for example: "west", "east", etc
     /// </summary>
@@ -91,6 +93,33 @@ public class ApiMobile : ApiEntity
 
             return m != null ? selector(m) : fallback;
         });
+
+    /// <summary>
+    /// Highlight this mobile and all of its equipped items with the given hue.
+    /// The original hues are remembered so they can be restored.
+    /// Call with <c>None</c> to restore the mobile and its equipped items to their original hues.
+    /// Example:
+    /// ```py
+    /// mob.Highlight(0x0021)
+    /// mob.Highlight(None)
+    /// ```
+    /// </summary>
+    /// <param name="hue">The hue to apply, or <c>null</c> to restore the original hues.</param>
+    public override void Highlight(ushort? hue = null) => MainThreadQueue.EnqueueAction(() =>
+                                                               {
+                                                                   Mobile m = GetMobileUnsafe();
+
+                                                                   if (m == null || m.IsDestroyed)
+                                                                       return;
+
+                                                                   ApplyHighlight(m, hue);
+
+                                                                   for (LinkedObject i = m.Items; i != null; i = i.Next)
+                                                                   {
+                                                                       if (i is Item it)
+                                                                           ApplyHighlight(it, hue);
+                                                                   }
+                                                               });
 
     /// <summary>
     /// Gets the mobile name and properties (tooltip text).

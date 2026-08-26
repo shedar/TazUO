@@ -6,7 +6,6 @@ description: ApiUiGump class documentation
 ## Properties
 *No properties found.*
 
-*No fields found.*
 
 ## Enums
 *No enums found.*
@@ -37,7 +36,7 @@ description: ApiUiGump class documentation
 ---
 
 ### CreateModernGump
-`(x, y, width, height, resizable, minWidth, minHeight, onResized)`
+`(x, y, width, height, resizable, minWidth, minHeight, onResized, keepOpen)`
  Creates a modern nine-slice gump using ModernUIConstants for consistent styling.
  The gump uses the standard modern UI panel texture and border size internally.
 
@@ -54,6 +53,7 @@ description: ApiUiGump class documentation
 | `minWidth` | `int` | ✅ Yes | Minimum width (default: 50) |
 | `minHeight` | `int` | ✅ Yes | Minimum height (default: 50) |
 | `onResized` | `object` | ✅ Yes | Optional callback function called when the gump is resized |
+| `keepOpen` | `bool` | ✅ Yes |  |
 
 **Return Type:** `ApiUiNineSliceGump`
 
@@ -293,7 +293,7 @@ description: ApiUiGump class documentation
 ---
 
 ### CreateGumpTextBox
-`(text, width, height, multiline)`
+`(text, width, height, multiline, fontSize)`
  Create a text area control.
  Example:
  ```py
@@ -328,6 +328,7 @@ description: ApiUiGump class documentation
 | `width` | `int` | ✅ Yes |  |
 | `height` | `int` | ✅ Yes |  |
 | `multiline` | `bool` | ✅ Yes |  |
+| `fontSize` | `float` | ✅ Yes | TTF font size, default is 20 |
 
 **Return Type:** `ApiUiTtfTextInputField`
 

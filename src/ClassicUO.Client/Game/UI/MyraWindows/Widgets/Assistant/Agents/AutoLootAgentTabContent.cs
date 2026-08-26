@@ -6,6 +6,7 @@ using System.Linq;
 using ClassicUO.Configuration;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Game.Managers;
+using ClassicUO.Game.UI.MyraWindows.Widgets.ArtTexture;
 using ClassicUO.Utility;
 using Myra.Graphics2D.UI;
 using Myra.Graphics2D;
@@ -37,9 +38,6 @@ public static class AutoLootAgentTabContent
         root.Widgets.Add(topRow);
 
         // Options
-        root.Widgets.Add(new MyraSpacer(15, 5));
-        root.Widgets.Add(new MyraLabel("Options:", MyraLabel.TextStyle.H2));
-
         var optRow1 = new HorizontalStackPanel { Spacing = 8 };
         optRow1.Widgets.Add(MyraCheckButton.CreateWithCallback(
             profile.EnableScavenger,
@@ -51,7 +49,6 @@ public static class AutoLootAgentTabContent
             b => profile.EnableAutoLootProgressBar = b,
             "Enable Progress Bar",
             "Shows a progress bar gump."));
-        root.Widgets.Add(optRow1);
 
         var optRow2 = new HorizontalStackPanel { Spacing = 8 };
         optRow2.Widgets.Add(MyraCheckButton.CreateWithCallback(
@@ -64,7 +61,6 @@ public static class AutoLootAgentTabContent
             b => profile.HueCorpseAfterAutoloot = b,
             "Hue Corpse After Processing",
             "Hue corpses after processing to make it easier to see if autoloot has processed them."));
-        root.Widgets.Add(optRow2);
 
         var optRow3 = new HorizontalStackPanel { Spacing = 8, VerticalAlignment = Myra.Graphics2D.UI.VerticalAlignment.Center };
         optRow3.Widgets.Add(new MyraLabel("Corpse retry delay (ms):", MyraLabel.TextStyle.P)
@@ -89,12 +85,15 @@ public static class AutoLootAgentTabContent
             b => profile.DisableAutolootCorpseRetry = b,
             TazLang.Get("autoloot_disableretry"),
             TazLang.Get("autoloot_disableretry_tooltip")));
-        root.Widgets.Add(optRow3);
+
+        root.Widgets.Add(new VisualContainer(
+            new VisualContainerProps { LabelText = "Options:" },
+            optRow1,
+            optRow2,
+            optRow3
+        ));
 
         // Auto skinning section
-        root.Widgets.Add(new MyraSpacer(15, 5));
-        root.Widgets.Add(new MyraLabel(TazLang.Get("autoskinning_title", "Auto Skinning"), MyraLabel.TextStyle.H2));
-
         var skinGraphicsBox = new MyraInputBox
         {
             Text = profile.AutoSkinningKnifeGraphics,
@@ -125,7 +124,6 @@ public static class AutoLootAgentTabContent
                 }
             });
         }) { Tooltip = TazLang.Get("autoskinning_targetweapon_tooltip", "Target a weapon to add its graphic to the skinning knife list.") });
-        root.Widgets.Add(skinRow);
 
         var skinGraphicsRow = new HorizontalStackPanel { Spacing = 8, VerticalAlignment = Myra.Graphics2D.UI.VerticalAlignment.Center };
         skinGraphicsRow.Widgets.Add(new MyraLabel(TazLang.Get("autoskinning_graphics", "Knife graphic IDs:"), MyraLabel.TextStyle.P)
@@ -135,18 +133,112 @@ public static class AutoLootAgentTabContent
         });
         skinGraphicsBox.TextChangedByUser += (_, _) => profile.AutoSkinningKnifeGraphics = skinGraphicsBox.Text;
         skinGraphicsRow.Widgets.Add(skinGraphicsBox);
-        root.Widgets.Add(skinGraphicsRow);
+
+        root.Widgets.Add(new VisualContainer(
+            new VisualContainerProps { LabelText = TazLang.Get("autoskinning_title", "Auto Skinning") },
+            skinRow,
+            skinGraphicsRow
+        ));
+
+        // Entries panel (declared early so the loot-list selector callbacks can rebuild it).
+        var entriesPanel = new VerticalStackPanel { Spacing = 4 };
+
+        // Loot list selection
+        root.Widgets.Add(new MyraSpacer(15, 5));
+        root.Widgets.Add(new MyraLabel("Loot Lists:", MyraLabel.TextStyle.H2));
+
+        var listSelectRow = new HorizontalStackPanel { Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+
+        var listCombo = new ComboView { MinWidth = 160, VerticalAlignment = VerticalAlignment.Center };
+        bool suppressListEvent = false;
+        MyraButton deleteListBtn = null!;
+
+        void RefreshListCombo()
+        {
+            suppressListEvent = true;
+            listCombo.ListView.Widgets.Clear();
+
+            IReadOnlyList<AutoLootManager.AutoLootList> lists = AutoLootManager.Instance.Lists;
+            int selectedIdx = 0;
+            for (int i = 0; i < lists.Count; i++)
+            {
+                listCombo.ListView.Widgets.Add(new Label { Text = lists[i].Name });
+                if (lists[i] == AutoLootManager.Instance.CurrentList) selectedIdx = i;
+            }
+
+            if (lists.Count > 0) listCombo.ListView.SelectedIndex = selectedIdx;
+            if (deleteListBtn != null) deleteListBtn.Enabled = lists.Count > 1;
+            suppressListEvent = false;
+        }
+
+        listCombo.ListView.SelectedIndexChanged += (_, _) =>
+        {
+            if (suppressListEvent) return;
+
+            int? idx = listCombo.ListView.SelectedIndex;
+            IReadOnlyList<AutoLootManager.AutoLootList> lists = AutoLootManager.Instance.Lists;
+            if (idx.HasValue && idx.Value >= 0 && idx.Value < lists.Count)
+            {
+                AutoLootManager.Instance.SelectList(lists[idx.Value]);
+                BuildEntriesList();
+            }
+        };
+        listSelectRow.Widgets.Add(listCombo);
+
+        listSelectRow.Widgets.Add(new MyraButton("New", () =>
+        {
+            var nameBox = new MyraInputBox { HintText = "List name", Width = 220 };
+            new MyraDialog("New Loot List", nameBox, ok =>
+            {
+                if (!ok) return;
+                AutoLootManager.Instance.AddList(nameBox.Text);
+                RefreshListCombo();
+                BuildEntriesList();
+            });
+        }) { Tooltip = "Create a new loot list and switch to it." });
+
+        listSelectRow.Widgets.Add(new MyraButton("Rename", () =>
+        {
+            AutoLootManager.AutoLootList current = AutoLootManager.Instance.CurrentList;
+            var nameBox = new MyraInputBox { Text = current.Name, HintText = "List name", Width = 220 };
+            new MyraDialog("Rename Loot List", nameBox, ok =>
+            {
+                if (!ok || string.IsNullOrWhiteSpace(nameBox.Text)) return;
+                AutoLootManager.Instance.RenameList(current, nameBox.Text);
+                RefreshListCombo();
+            });
+        }) { Tooltip = "Rename the selected loot list." });
+
+        deleteListBtn = new MyraButton("Delete List", () =>
+        {
+            if (AutoLootManager.Instance.Lists.Count <= 1)
+            {
+                GameActions.Print("You must have at least one loot list.", Constants.HUE_ERROR);
+                return;
+            }
+
+            AutoLootManager.AutoLootList current = AutoLootManager.Instance.CurrentList;
+            new MyraDialog("Delete Loot List",
+                new MyraLabel($"Delete list \"{current.Name}\" and all of its entries?", MyraLabel.TextStyle.P),
+                ok =>
+                {
+                    if (!ok || !AutoLootManager.Instance.DeleteList(current)) return;
+                    RefreshListCombo();
+                    BuildEntriesList();
+                });
+        }) { Tooltip = "Delete the selected loot list. At least one list must remain." };
+        listSelectRow.Widgets.Add(MyraStyle.ApplyButtonDangerStyle(deleteListBtn));
+
+        root.Widgets.Add(listSelectRow);
 
         // Entries section
         root.Widgets.Add(new MyraSpacer(15, 5));
         root.Widgets.Add(new MyraLabel("Entries:", MyraLabel.TextStyle.H2));
 
-        var entriesPanel = new VerticalStackPanel { Spacing = 4 };
-
         void BuildEntriesList()
         {
             entriesPanel.Widgets.Clear();
-            List<AutoLootManager.AutoLootConfigEntry>? entries = AutoLootManager.Instance.AutoLootList;
+            List<AutoLootManager.AutoLootConfigEntry>? entries = AutoLootManager.Instance.AutoLootEntries;
 
             if (entries.Count == 0)
             {
@@ -161,6 +253,7 @@ public static class AutoLootAgentTabContent
                 GridColumnInfo.Auto("Hue"),
                 GridColumnInfo.Auto("Regex"),
                 GridColumnInfo.Auto("Priority"),
+                GridColumnInfo.Auto("Max"),
                 GridColumnInfo.Fill("Destination"),
                 GridColumnInfo.Auto("Order"),
                 GridColumnInfo.Auto("Actions")
@@ -244,6 +337,20 @@ public static class AutoLootAgentTabContent
                 }));
                 grid.AddWidget(priorityRow, dataRow, 4);
 
+                // Max amount to keep in the destination (0 = no limit)
+                var maxBox = new MyraInputBox
+                {
+                    Text = entry.MaxAmount.ToString(),
+                    Tooltip = "Max matching items to keep in the destination container. Counts items already in the destination.\n(0 = no limit)",
+                    Width = 70,
+                };
+                maxBox.TextChangedByUser += (_, _) =>
+                {
+                    if (int.TryParse(maxBox.Text, out int max) && max >= 0)
+                        entry.MaxAmount = max;
+                };
+                grid.AddWidget(maxBox, dataRow, 5);
+
                 // Destination box + Target button
                 var destCell = new HorizontalStackPanel { Spacing = 4 };
                 var destBox = new MyraInputBox
@@ -273,7 +380,7 @@ public static class AutoLootAgentTabContent
                         }
                     });
                 }) { Tooltip = "Target a container to use as the destination for this entry." });
-                grid.AddWidget(destCell, dataRow, 5);
+                grid.AddWidget(destCell, dataRow, 6);
 
                 // Up / Down reorder buttons (col 6)
                 // Display is reversed: i = entries.Count-1 is top row, i=0 is bottom row.
@@ -301,7 +408,7 @@ public static class AutoLootAgentTabContent
                 if (i == 0) downBtn.Enabled = false;
                 orderRow.Widgets.Add(upBtn);
                 orderRow.Widgets.Add(downBtn);
-                grid.AddWidget(orderRow, dataRow, 6);
+                grid.AddWidget(orderRow, dataRow, 7);
 
                 var delBtn = new MyraButton("Delete", () =>
                 {
@@ -309,7 +416,7 @@ public static class AutoLootAgentTabContent
                     BuildEntriesList();
                 });
                 delBtn.VerticalAlignment = VerticalAlignment.Center;
-                grid.AddWidget(MyraStyle.ApplyButtonDangerStyle(delBtn), dataRow, 7);
+                grid.AddWidget(MyraStyle.ApplyButtonDangerStyle(delBtn), dataRow, 8);
 
                 dataRow += 1;
             }
@@ -318,6 +425,7 @@ public static class AutoLootAgentTabContent
         }
 
         BuildEntriesList();
+        RefreshListCombo();
 
         // Add entry inline panel
         var addEntryPanel = new VerticalStackPanel { Visible = false, Spacing = 4 };
@@ -325,6 +433,7 @@ public static class AutoLootAgentTabContent
         var newGraphicBox = new MyraInputBox { HintText = "Graphic ID", Width = 100, Tooltip = "Graphic (-1 = any)" };
         var newHueBox = MyraInputBox.Hue(ushort.MaxValue, 100, "Hue (-1 = any)");
         var newRegexBox = new MyraInputBox { HintText = "Regex (optional)", Width = 200 };
+        var newMaxBox = new MyraInputBox { HintText = "Max (0 = no limit)", Width = 100, Tooltip = "Max matching items to keep in the destination container. 0 = no limit." };
 
         var addFieldsRow = new HorizontalStackPanel { Spacing = 4 };
         addFieldsRow.Widgets.Add(new MyraLabel("Name:", MyraLabel.TextStyle.P));
@@ -335,6 +444,8 @@ public static class AutoLootAgentTabContent
         addFieldsRow.Widgets.Add(newHueBox);
         addFieldsRow.Widgets.Add(new MyraLabel("Regex:", MyraLabel.TextStyle.P));
         addFieldsRow.Widgets.Add(newRegexBox);
+        addFieldsRow.Widgets.Add(new MyraLabel("Max:", MyraLabel.TextStyle.P));
+        addFieldsRow.Widgets.Add(newMaxBox);
 
         var addConfirmRow = new HorizontalStackPanel { Spacing = 4 };
         addConfirmRow.Widgets.Add(new MyraButton("Add", () =>
@@ -351,12 +462,17 @@ public static class AutoLootAgentTabContent
                     hue = ushort.MaxValue;
 
                 AutoLootManager.AutoLootConfigEntry? entry = AutoLootManager.Instance.AddAutoLootEntry((ushort)graphic, hue, newNameBox.Text);
+                if (entry == null) return;
+
                 entry.RegexSearch = newRegexBox.Text;
+                if (int.TryParse(newMaxBox.Text, out int maxAmount))
+                    entry.MaxAmount = maxAmount;
 
                 newNameBox.Text = "";
                 newGraphicBox.Text = "";
                 newHueBox.Text = "";
                 newRegexBox.Text = "";
+                newMaxBox.Text = "";
                 addEntryPanel.Visible = false;
                 BuildEntriesList();
             }

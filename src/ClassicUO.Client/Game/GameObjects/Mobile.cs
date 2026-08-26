@@ -6,7 +6,6 @@ using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.Managers;
 using ClassicUO.Game.UI.Gumps;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Collections;
 using Microsoft.Xna.Framework;
@@ -46,6 +45,10 @@ namespace ClassicUO.Game.GameObjects
         private bool _animationRepeat;
         private ushort _animationRepeateMode = 1;
         private ushort _animationRepeatModeCount = 1;
+
+        // Smooths the per-frame animation offset that anchors overhead text so it doesn't jitter (-1 = uninitialized).
+        private float _smoothedTextAnimOffset = -1f;
+        private uint _lastTextCoordUpdate;
 
         public Mobile(World world, uint serial) : base(world, serial)
         {
@@ -152,7 +155,7 @@ namespace ClassicUO.Game.GameObjects
             {
                 Item it = Mount;
 
-                if (it != null && !IsDrivingBoat && it.GetGraphicForAnimation() != 0xFFFF)
+                if (it != null && !IsDead && !IsDrivingBoat && it.GetGraphicForAnimation() != 0xFFFF)
                 {
                     return true;
                 }
@@ -257,7 +260,7 @@ namespace ClassicUO.Game.GameObjects
                 World.MessageManager.HandleMessage
                 (
                     World.Player,
-                    ResGeneral.NowFollowing,
+                    TazLang.Get("now_following"),
                     string.Empty,
                     0,
                     MessageType.Regular,
@@ -563,7 +566,7 @@ namespace ClassicUO.Game.GameObjects
         private void ProcessFootstepsSound()
         {
             if (
-                (ProfileManager.CurrentProfile == null || ProfileManager.CurrentProfile.EnableFootstepsSound)
+                (ProfileManager.GlobalSettings == null || ProfileManager.GlobalSettings.EnableFootstepsSound)
                 && IsHuman
                 && !IsHidden
                 && !IsDead
@@ -828,7 +831,7 @@ namespace ClassicUO.Game.GameObjects
                             if (Z - step.Z >= 22)
                             {
                                 // oUCH!!!!
-                                AddMessage(MessageType.Label, ResGeneral.Ouch, TextType.CLIENT);
+                                AddMessage(MessageType.Label, TazLang.Get("ouch"), TextType.CLIENT);
                             }
 
                             if (
@@ -875,7 +878,11 @@ namespace ClassicUO.Game.GameObjects
                         Offset.X = 0;
                         Offset.Y = 0;
                         Offset.Z = 0;
-                        Steps.RemoveFromFront();
+
+                        if (Steps.Count != 0)
+                        {
+                            Steps.RemoveFromFront();
+                        }
 
                         if (Steps.Count == 0)
                         {
@@ -997,8 +1004,12 @@ namespace ClassicUO.Game.GameObjects
                 out int height
             );
 
+            // height/centerY change every animation frame and bounce the text; smooth the anchor so it glides instead of jumping.
+            int targetAnimOffset = height + centerY + 8;
+            int smoothedAnimOffset = SmoothTextAnimOffset(targetAnimOffset);
+
             p.X += (int)Offset.X + 22;
-            p.Y += (int)(Offset.Y - Offset.Z - (height + centerY + 8));
+            p.Y += (int)(Offset.Y - Offset.Z - smoothedAnimOffset);
             // Removed Camera.WorldToScreen() - text is now transformed by worldRTMatrix during rendering
 
             if (ObjectHandlesStatus == ObjectHandlesStatus.DISPLAYING)
@@ -1034,6 +1045,32 @@ namespace ClassicUO.Game.GameObjects
             }
 
             FixTextCoordinatesInScreen();
+        }
+
+        // Frame-rate independent exponential smoothing of the text anchor offset; advances at most once per game tick.
+        private int SmoothTextAnimOffset(int target)
+        {
+            // First use or a large jump (mount/dismount, morph, graphic swap): snap instead of sliding across the gap.
+            if (_smoothedTextAnimOffset < 0f || Math.Abs(target - _smoothedTextAnimOffset) > 40f)
+            {
+                _smoothedTextAnimOffset = target;
+                _lastTextCoordUpdate = Time.Ticks;
+                return target;
+            }
+
+            uint now = Time.Ticks;
+            float dt = (now - _lastTextCoordUpdate) / 1000f;
+
+            if (dt > 0f)
+            {
+                // ~200ms to converge; higher speed = snappier, lower = smoother.
+                const float SPEED = 12f;
+                float t = 1f - MathF.Exp(-SPEED * dt);
+                _smoothedTextAnimOffset += (target - _smoothedTextAnimOffset) * t;
+                _lastTextCoordUpdate = now;
+            }
+
+            return (int)MathF.Round(_smoothedTextAnimOffset);
         }
 
         public override void CheckGraphicChange(byte animIndex = 0)

@@ -25,8 +25,15 @@ namespace ClassicUO.Game.GameObjects
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private ushort GetDisplayGraphic(ushort graphic)
         {
-            if (StaticFilters.IsTree(graphic, out _) && _profile?.TreeToStumps == true)
+            if (StaticFilters.IsTree(graphic, out _) && _profile?.TreeToStumps == true && !World.DisabledFeatures.Contains(Network.EnhancedPacketDisabledFeaturesEnum.TreeToStumps))
             {
+                if (_profile.TreeToStumpsWithinRadius
+                    && World.Player != null
+                    && !StaticFilters.IsWithinStumpRadius(GetScreenPosition(), World.Player.GetScreenPosition(), ref WithinStumpRadius))
+                {
+                    return graphic;
+                }
+
                 return Constants.TREE_REPLACE_GRAPHIC;
             }
             return graphic;

@@ -8,17 +8,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using ClassicUO.Common;
 using ClassicUO.Game.Managers.Structs;
 using ClassicUO.Utility.Logging;
+using System.ComponentModel;
 
 namespace ClassicUO.Game.Managers
 {
     [JsonSerializable(typeof(AutoLootManager.AutoLootConfigEntry))]
     [JsonSerializable(typeof(List<AutoLootManager.AutoLootConfigEntry>))]
     [JsonSerializable(typeof(AutoLootManager.AutoLootPriority))]
+    [JsonSerializable(typeof(AutoLootManager.AutoLootList))]
+    [JsonSerializable(typeof(List<AutoLootManager.AutoLootList>))]
+    [JsonSerializable(typeof(AutoLootManager.AutoLootData))]
     [JsonSourceGenerationOptions(WriteIndented = true)]
     public partial class AutoLootJsonContext : JsonSerializerContext
     {
@@ -36,12 +40,37 @@ namespace ClassicUO.Game.Managers
             }
             private set => field = value;
         }
-        public List<AutoLootConfigEntry> AutoLootList { get => _autoLootItems; set => _autoLootItems = value; }
+        /// <summary>
+        /// Entries of the currently selected loot list. Matching, adding and removing all operate
+        /// against this list.
+        /// </summary>
+        public List<AutoLootConfigEntry> AutoLootEntries => _currentList?.Entries ?? _fallbackEntries;
+
+        /// <summary>
+        /// All configured loot lists. There is always at least one.
+        /// </summary>
+        public IReadOnlyList<AutoLootList> Lists => _data.Lists;
+
+        /// <summary>
+        /// The loot list currently selected/active.
+        /// </summary>
+        public AutoLootList CurrentList => _currentList;
+
+        /// <summary>
+        /// True once the config file has finished loading. Mutating operations are ignored until
+        /// this is true so the background load cannot overwrite user changes.
+        /// </summary>
+        public bool IsLoaded => _loaded;
 
         /// <summary>
         /// The hue applied to corpses after they have been auto looted.
         /// </summary>
         public const ushort LootedCorpseHue = 73;
+
+        /// <summary>
+        /// Name of the list that legacy (flat) configs are migrated into.
+        /// </summary>
+        public const string DefaultListName = "Default";
 
         /// <summary>
         /// Max number of looted corpse serials to remember before evicting the oldest.
@@ -58,9 +87,10 @@ namespace ClassicUO.Game.Managers
         private readonly HashSet<uint> _quickContainsLookup = new ();
         private readonly HashSet<uint> _recentlyLooted = new();
         private static readonly PriorityQueue<(uint item, AutoLootConfigEntry entry), AutoLootPriority> _lootItems = new ();
-        private List<AutoLootConfigEntry> _autoLootItems = new ();
+        private readonly List<AutoLootConfigEntry> _fallbackEntries = new ();
+        private AutoLootData _data = new ();
+        private AutoLootList _currentList;
         private bool _loaded = false;
-        private readonly string _savePath;
         private long _nextLootTime = Time.Ticks;
         private long _nextClearRecents = Time.Ticks + (ProfileManager.CurrentProfile?.AutoLootRetryDelay ?? 5000);
         private ProgressBarGump _progressBarGump;
@@ -72,7 +102,7 @@ namespace ClassicUO.Game.Managers
         private AutoLootManager()
         {
             _world = Client.Game.UO.World;
-            _savePath = Path.Combine(ProfileManager.ProfilePath, "AutoLoot.json");
+            EnsureAtLeastOneList();
         }
 
         public bool IsBeingLooted(uint serial) => _quickContainsLookup.Contains(serial);
@@ -136,7 +166,7 @@ namespace ClassicUO.Game.Managers
         {
             if (!_loaded) return null;
 
-            foreach (AutoLootConfigEntry entry in _autoLootItems)
+            foreach (AutoLootConfigEntry entry in AutoLootEntries)
                 if (entry.Match(i))
                     return entry;
 
@@ -152,13 +182,15 @@ namespace ClassicUO.Game.Managers
         /// <returns></returns>
         public AutoLootConfigEntry AddAutoLootEntry(ushort graphic = 0, ushort hue = ushort.MaxValue, string name = "")
         {
+            if (!_loaded) return null;
+
             var item = new AutoLootConfigEntry() { Graphic = graphic, Hue = hue, Name = name };
 
-            foreach (AutoLootConfigEntry entry in _autoLootItems)
+            foreach (AutoLootConfigEntry entry in AutoLootEntries)
                 if (entry.Equals(item))
                     return entry;
 
-            _autoLootItems.Add(item);
+            AutoLootEntries.Add(item);
 
             return item;
         }
@@ -223,13 +255,98 @@ namespace ClassicUO.Game.Managers
 
         public void TryRemoveAutoLootEntry(string uid)
         {
+            if (!_loaded) return;
+
+            List<AutoLootConfigEntry> entries = AutoLootEntries;
             int removeAt = -1;
 
-            for (int i = 0; i < _autoLootItems.Count; i++)
-                if (_autoLootItems[i].Uid == uid)
+            for (int i = 0; i < entries.Count; i++)
+                if (entries[i].Uid == uid)
                     removeAt = i;
 
-            if (removeAt > -1) _autoLootItems.RemoveAt(removeAt);
+            if (removeAt > -1) entries.RemoveAt(removeAt);
+        }
+
+        /// <summary>
+        /// Ensures there is always at least one loot list and that a list is selected.
+        /// </summary>
+        private void EnsureAtLeastOneList()
+        {
+            _data ??= new AutoLootData();
+            _data.Lists ??= new List<AutoLootList>();
+
+            if (_data.Lists.Count == 0)
+                _data.Lists.Add(new AutoLootList { Name = DefaultListName });
+
+            if (_currentList == null || !_data.Lists.Contains(_currentList))
+            {
+                AutoLootList found = null;
+
+                if (!string.IsNullOrEmpty(_data.SelectedUid))
+                    found = _data.Lists.Find(l => l.Uid == _data.SelectedUid);
+
+                _currentList = found ?? _data.Lists[0];
+                _data.SelectedUid = _currentList.Uid;
+            }
+        }
+
+        /// <summary>
+        /// Selects the given loot list as the active one. All matching/adding will use it.
+        /// </summary>
+        public void SelectList(AutoLootList list)
+        {
+            if (!_loaded || list == null || !_data.Lists.Contains(list) || _currentList == list) return;
+
+            _currentList = list;
+            _data.SelectedUid = list.Uid;
+            Save();
+        }
+
+        /// <summary>
+        /// Creates a new loot list and selects it.
+        /// </summary>
+        public AutoLootList AddList(string name)
+        {
+            if (!_loaded) return null;
+
+            var list = new AutoLootList { Name = string.IsNullOrWhiteSpace(name) ? "New List" : name.Trim() };
+
+            _data.Lists.Add(list);
+            _currentList = list;
+            _data.SelectedUid = list.Uid;
+            Save();
+
+            return list;
+        }
+
+        /// <summary>
+        /// Deletes a loot list. Refuses to delete the last remaining list so there is always at
+        /// least one. If the deleted list was selected, the first remaining list becomes active.
+        /// </summary>
+        /// <returns>True if the list was deleted.</returns>
+        public bool DeleteList(AutoLootList list)
+        {
+            if (!_loaded || list == null || _data.Lists.Count <= 1 || !_data.Lists.Remove(list)) return false;
+
+            if (_currentList == list)
+            {
+                _currentList = _data.Lists[0];
+                _data.SelectedUid = _currentList.Uid;
+            }
+
+            Save();
+            return true;
+        }
+
+        /// <summary>
+        /// Renames a loot list.
+        /// </summary>
+        public void RenameList(AutoLootList list, string newName)
+        {
+            if (!_loaded || list == null || string.IsNullOrWhiteSpace(newName)) return;
+
+            list.Name = newName.Trim();
+            Save();
         }
 
         /// <summary>
@@ -410,12 +527,43 @@ namespace ClassicUO.Game.Managers
                     AutoLootPriority.Low => ActionPriority.LootItem,
                     _ => ActionPriority.LootItemMedium,
                 };
-                ObjectActionQueue.Instance.Enqueue(new MoveRequest(moveItem.Serial, destinationSerial, moveItem.Amount).ToObjectActionQueueItem(), lootPriority);
+
+                ushort amount = GetAmountToMove(moveItem, entry, destinationSerial);
+                if (amount > 0)
+                    ObjectActionQueue.Instance.Enqueue(new MoveRequest(moveItem.Serial, destinationSerial, amount).ToObjectActionQueueItem(), lootPriority);
             }
             else
                 GameActions.Print("Could not find a container to loot into. Try setting a grab bag.");
 
             _nextLootTime = Time.Ticks + ProfileManager.CurrentProfile.MoveMultiObjectDelay;
+        }
+
+        /// <summary>
+        /// Computes how much of <paramref name="item"/> to move so the destination container ends
+        /// up with at most <see cref="AutoLootConfigEntry.MaxAmount"/> matching items. Returns the
+        /// item's full amount when no limit is configured.
+        /// </summary>
+        private ushort GetAmountToMove(Item item, AutoLootConfigEntry entry, uint destinationSerial)
+        {
+            if (entry == null || entry.MaxAmount <= 0)
+                return item.Amount;
+
+            Item destCont = _world.Items.Get(destinationSerial);
+            if (destCont == null)
+                return item.Amount;
+
+            int existing = 0;
+            for (LinkedObject i = destCont.Items; i != null; i = i.Next)
+            {
+                if (i is Item destItem && destItem.Serial != item.Serial && entry.Match(destItem))
+                    existing += destItem.Amount;
+            }
+
+            int toMove = entry.MaxAmount - existing;
+            if (toMove <= 0)
+                return 0;
+
+            return (ushort)Math.Min(toMove, item.Amount);
         }
 
         private void CreateProgressBar()
@@ -436,51 +584,90 @@ namespace ClassicUO.Game.Managers
         {
             if (_loaded) return;
 
-            Task.Factory.StartNew(() =>
+            try
             {
-                string oldPath = Path.Combine(CUOEnviroment.ExecutablePath, "Data", "Profiles", "AutoLoot.json");
-                if(File.Exists(oldPath))
-                    File.Move(oldPath, _savePath);
+                MigrateOldLocationIfNeeded();
+                MigrateLegacyFormatIfNeeded();
 
-                if (!File.Exists(_savePath))
+                _data = AutoLootData.Load();
+                _currentList = null;
+                EnsureAtLeastOneList();
+                _loaded = true;
+            }
+            catch
+            {
+                Log.Error("There was an error loading your auto loot config file, please check it with a json validator.");
+                _loaded = false;
+            }
+        }
+
+        /// <summary>The full path to the current profile's auto loot config file.</summary>
+        private static string SavePath => Path.Combine(JsonSaveLocationHelper.GetScopeDirectory(SettingsScope.Char), AutoLootData.AutoLootFileName);
+
+        /// <summary>
+        /// Moves the very old <c>Data/Profiles/AutoLoot.json</c> into the current profile folder, if present.
+        /// </summary>
+        private static void MigrateOldLocationIfNeeded()
+        {
+            string oldPath = Path.Combine(CUOEnviroment.ExecutablePath, "Data", "Profiles", AutoLootData.AutoLootFileName);
+            string newPath = SavePath;
+
+            if (File.Exists(oldPath) && !File.Exists(newPath))
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(newPath));
+                File.Move(oldPath, newPath);
+            }
+        }
+
+        /// <summary>
+        /// Rewrites a legacy flat-list config (a JSON array of entries) into the wrapped
+        /// <see cref="AutoLootData"/> format so <see cref="JsonSave{T}"/> can load it. The legacy file is
+        /// rotated into the backups folder as part of the save.
+        /// </summary>
+        private static void MigrateLegacyFormatIfNeeded()
+        {
+            string path = SavePath;
+
+            if (!File.Exists(path) || !IsLegacyFormat(path)) return;
+
+            JsonHelper.Load(path, AutoLootJsonContext.Default.ListAutoLootConfigEntry, out List<AutoLootConfigEntry> legacy);
+
+            var data = new AutoLootData();
+            data.Lists.Add(new AutoLootList { Name = DefaultListName, Entries = legacy ?? new List<AutoLootConfigEntry>() });
+            data.Save();
+        }
+
+        /// <summary>
+        /// Determines whether the file at <paramref name="path"/> is a legacy flat-list config
+        /// (a JSON array) rather than the newer <see cref="AutoLootData"/> object format.
+        /// </summary>
+        private static bool IsLegacyFormat(string path)
+        {
+            try
+            {
+                foreach (char c in File.ReadAllText(path))
                 {
-                    _autoLootItems = new List<AutoLootConfigEntry>();
-                    Log.Error("Auto loot save path not found, creating new..");
-                    _loaded = true;
+                    if (char.IsWhiteSpace(c)) continue;
+                    return c == '[';
                 }
-                else
-                {
-                    Log.Info($"Loading: {_savePath}");
-                    try
-                    {
-                        JsonHelper.Load(_savePath, AutoLootJsonContext.Default.ListAutoLootConfigEntry, out _autoLootItems);
+            }
+            catch { }
 
-                        if (_autoLootItems == null)
-                        {
-                            Log.Error("There was an error loading your auto loot config file, defaulted to no configs.");
-                            _autoLootItems = new();
-                        }
-
-                        _loaded = true;
-                    }
-                    catch
-                    {
-                        Log.Error("There was an error loading your auto loot config file, please check it with a json validator.");
-                        _loaded = false;
-                    }
-
-                }
-            });
+            return false;
         }
 
         public void Save()
         {
-            if (_loaded)
-                try
-                {
-                    JsonHelper.SaveAndBackup(_autoLootItems, _savePath, AutoLootJsonContext.Default.ListAutoLootConfigEntry);
-                }
-                catch (Exception e) { Console.WriteLine(e.ToString()); }
+            if (!_loaded) return;
+
+            try
+            {
+                if (_currentList != null)
+                    _data.SelectedUid = _currentList.Uid;
+
+                _data.Save();
+            }
+            catch (Exception e) { Console.WriteLine(e.ToString()); }
         }
 
         public void ClearActiveLootQueue()
@@ -512,10 +699,12 @@ namespace ClassicUO.Game.Managers
             var newItems = new List<AutoLootConfigEntry>();
             int duplicateCount = 0;
 
+            List<AutoLootConfigEntry> currentEntries = AutoLootEntries;
+
             foreach (AutoLootConfigEntry importedItem in entries)
             {
                 bool isDuplicate = false;
-                foreach (AutoLootConfigEntry existingItem in _autoLootItems)
+                foreach (AutoLootConfigEntry existingItem in currentEntries)
                     if (existingItem.Equals(importedItem))
                     {
                         isDuplicate = true;
@@ -528,7 +717,7 @@ namespace ClassicUO.Game.Managers
 
             if (newItems.Count > 0)
             {
-                _autoLootItems.AddRange(newItems);
+                currentEntries.AddRange(newItems);
                 Save();
             }
 
@@ -541,12 +730,26 @@ namespace ClassicUO.Game.Managers
         {
             try
             {
-                string configPath = Path.Combine(characterPath, "AutoLoot.json");
+                string configPath = Path.Combine(characterPath, AutoLootData.AutoLootFileName);
                 if (File.Exists(configPath))
                 {
-                    string data = File.ReadAllText(configPath);
-                    List<AutoLootConfigEntry> items = JsonSerializer.Deserialize(data, AutoLootJsonContext.Default.ListAutoLootConfigEntry);
-                    return items ?? new List<AutoLootConfigEntry>();
+                    if (IsLegacyFormat(configPath))
+                    {
+                        string data = File.ReadAllText(configPath);
+                        List<AutoLootConfigEntry> items = JsonSerializer.Deserialize(data, AutoLootJsonContext.Default.ListAutoLootConfigEntry);
+                        return items ?? new List<AutoLootConfigEntry>();
+                    }
+
+                    // New format: flatten the entries across all of the character's lists.
+                    string json = File.ReadAllText(configPath);
+                    AutoLootData other = JsonSerializer.Deserialize(json, AutoLootJsonContext.Default.AutoLootData);
+                    var flattened = new List<AutoLootConfigEntry>();
+                    if (other?.Lists != null)
+                        foreach (AutoLootList list in other.Lists)
+                            if (list?.Entries != null)
+                                flattened.AddRange(list.Entries);
+
+                    return flattened;
                 }
             }
             catch (Exception e)
@@ -589,7 +792,7 @@ namespace ClassicUO.Game.Managers
         {
             try
             {
-                return JsonSerializer.Serialize(_autoLootItems, AutoLootJsonContext.Default.ListAutoLootConfigEntry);
+                return JsonSerializer.Serialize(AutoLootEntries, AutoLootJsonContext.Default.ListAutoLootConfigEntry);
             }
             catch (Exception e)
             {
@@ -622,6 +825,39 @@ namespace ClassicUO.Game.Managers
 
         public enum AutoLootPriority { Low = 0, Normal = 1, High = 2 }
 
+        /// <summary>
+        /// A named collection of auto loot entries. Users can create multiple lists and quickly
+        /// swap between them.
+        /// </summary>
+        public class AutoLootList
+        {
+            public string Name { get; set; } = "";
+            public List<AutoLootConfigEntry> Entries { get; set; } = new();
+            /// <summary>
+            /// Do not set this manually.
+            /// </summary>
+            public string Uid { get; set; } = Guid.NewGuid().ToString();
+        }
+
+        /// <summary>
+        /// Root persisted object holding every loot list and the currently selected one.
+        /// Saving/loading (with rotating backups) is handled by <see cref="JsonSave{T}"/>.
+        /// </summary>
+        public class AutoLootData : JsonSave<AutoLootData>, INotifyPropertyChanged
+        {
+            public const string AutoLootFileName = "AutoLoot.json";
+
+            public List<AutoLootList> Lists { get; set; } = new();
+            public string SelectedUid { get; set; } = "";
+
+            /// <summary>Lives in the profile folder alongside the other per-character configs.</summary>
+            protected override SettingsScope Scope => SettingsScope.Char;
+
+            protected override string FileName => AutoLootFileName;
+
+            protected override JsonTypeInfo<AutoLootData> TypeInfo => AutoLootJsonContext.Default.AutoLootData;
+        }
+
         public class AutoLootConfigEntry
         {
             public string Name { get; set; } = "";
@@ -631,6 +867,11 @@ namespace ClassicUO.Game.Managers
             public string RegexSearch { get; set; } = string.Empty;
             public uint DestinationContainer { get; set; } = 0;
             public AutoLootPriority Priority { get; set; } = AutoLootPriority.Normal;
+            /// <summary>
+            /// Maximum number of matching items to keep in the destination container when looting
+            /// this entry. Counts items already in the destination. 0 = no limit (loot all).
+            /// </summary>
+            public int MaxAmount { get; set; } = 0;
             private bool RegexMatch => !string.IsNullOrEmpty(RegexSearch);
             /// <summary>
             /// Do not set this manually.

@@ -16,6 +16,7 @@ namespace ClassicUO.Game.UI.Gumps
         private readonly PopupMenuData _data;
 
         public uint Serial => _data.Serial;
+        public PopupMenuData Data => _data;
 
         public PopupMenuGump(World world, PopupMenuData data) : base(world, 0, 0)
         {

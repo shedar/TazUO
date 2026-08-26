@@ -6,21 +6,31 @@ using SDL3;
 namespace ClassicUO.Game.Managers.Hotkeys
 {
     /// <summary>
-    /// One-shot input capture for assigning a hotkey from the UI. While active it listens to
-    /// keyboard, mouse button, mouse wheel and controller input; the first qualifying input is
-    /// turned into a <see cref="HotkeyBinding"/>, reported via the onCaptured callback, and capture
-    /// then stops automatically. Escape cancels.
+    /// Input capture for assigning a hotkey from the UI. While active it listens to keyboard, mouse
+    /// button, mouse wheel and controller input; each qualifying input is turned into a
+    /// <see cref="HotkeyBinding"/> and reported via the onCaptured callback.
+    ///
+    /// In the default one-shot mode (<see cref="AutoStop"/> is <see langword="true"/>) the first
+    /// qualifying input stops the capture automatically and Escape cancels. When <see cref="AutoStop"/>
+    /// is <see langword="false"/> the capture keeps listening after every input and never cancels on
+    /// its own; the owner (e.g. the hotkey capture window) is responsible for calling <see cref="Stop"/>.
     /// </summary>
     public sealed class HotkeyCapture
     {
         private Action<HotkeyBinding>? _onCaptured;
         private Action? _onCancelled;
-        private bool _active;
         private SDL.SDL_Keymod _modAccum;
 
-        public bool IsActive => _active;
+        public bool IsActive { get; private set; }
 
         public bool CapturesMouseEvents { get; set; } = true;
+
+        /// <summary>
+        /// When <see langword="true"/> (default) the capture stops after the first input and Escape
+        /// cancels. When <see langword="false"/> the capture keeps listening after each captured input
+        /// and Escape is ignored, leaving the owner to stop it explicitly.
+        /// </summary>
+        public bool AutoStop { get; set; } = true;
 
         public void Start(Action<HotkeyBinding> onCaptured, Action? onCancelled = null)
         {
@@ -29,7 +39,10 @@ namespace ClassicUO.Game.Managers.Hotkeys
             _onCaptured = onCaptured;
             _onCancelled = onCancelled;
             _modAccum = SDL.SDL_Keymod.SDL_KMOD_NONE;
-            _active = true;
+            IsActive = true;
+
+            // Suppress hotkeys globally until the capture is stopped
+            HotKeys.RequestDisableHotkeys();
 
             Keyboard.KeyDownEvent += OnKey;
             Keyboard.BareModifierEvent += OnBareModifier;
@@ -45,10 +58,10 @@ namespace ClassicUO.Game.Managers.Hotkeys
 
         public void Stop()
         {
-            if (!_active)
+            if (!IsActive)
                 return;
 
-            _active = false;
+            IsActive = false;
             Keyboard.KeyDownEvent -= OnKey;
             Keyboard.BareModifierEvent -= OnBareModifier;
             Mouse.ButtonDownEvent -= OnMouseButton;
@@ -57,6 +70,8 @@ namespace ClassicUO.Game.Managers.Hotkeys
             _onCaptured = null;
             _onCancelled = null;
             _modAccum = SDL.SDL_Keymod.SDL_KMOD_NONE;
+
+            HotKeys.ReleaseDisableHotkeys();
         }
 
         private void OnKey(string hotkey)
@@ -65,6 +80,11 @@ namespace ClassicUO.Game.Managers.Hotkeys
 
             if (key == SDL.SDL_Keycode.SDLK_ESCAPE)
             {
+                // In continuous mode the owning window handles cancellation via its own buttons,
+                // so Escape is simply ignored rather than tearing down the capture.
+                if (!AutoStop)
+                    return;
+
                 Action? cancel = _onCancelled;
                 Stop();
                 cancel?.Invoke();
@@ -79,9 +99,7 @@ namespace ClassicUO.Game.Managers.Hotkeys
 
         private void OnMouseButton(MouseButtonType button)
         {
-            // Left/Right operate the UI (including the "Set" button that started capture), so only the
-            // middle and extra buttons can be bound — matching the legacy HotkeyBox.
-            if (button != MouseButtonType.Middle && button != MouseButtonType.XButton1 && button != MouseButtonType.XButton2)
+            if (button == MouseButtonType.Left || button == MouseButtonType.Right)
                 return;
 
             Capture(new HotkeyBinding
@@ -93,8 +111,7 @@ namespace ClassicUO.Game.Managers.Hotkeys
             });
         }
 
-        private void OnWheel(bool up)
-        {
+        private void OnWheel(bool up) =>
             Capture(new HotkeyBinding
             {
                 WheelScroll = true,
@@ -103,7 +120,6 @@ namespace ClassicUO.Game.Managers.Hotkeys
                 Shift = Keyboard.Shift,
                 Alt = Keyboard.Alt
             });
-        }
 
         private void OnBareModifier(SDL.SDL_Keymod mods)
         {
@@ -118,7 +134,11 @@ namespace ClassicUO.Game.Managers.Hotkeys
             if (_modAccum == SDL.SDL_Keymod.SDL_KMOD_NONE)
                 return;
 
+            // Reset the accumulator before reporting so continuous (non-auto-stop) capture starts
+            // fresh on the next chord instead of unioning it with the one just committed.
             SDL.SDL_Keymod accumulated = _modAccum;
+            _modAccum = SDL.SDL_Keymod.SDL_KMOD_NONE;
+
             Capture(new HotkeyBinding
             {
                 Ctrl = (accumulated & SDL.SDL_Keymod.SDL_KMOD_CTRL) != 0,
@@ -132,13 +152,27 @@ namespace ClassicUO.Game.Managers.Hotkeys
             // Capture every button held at this instant so chords (e.g. LB + A) can be bound.
             SDL.SDL_GamepadButton[] pressed = Controller.PressedButtons();
             if (pressed.Length == 0)
-                pressed = new[] { button };
+                pressed = [button];
 
             Capture(new HotkeyBinding { ControllerButtons = pressed });
         }
 
         private void Capture(HotkeyBinding binding)
         {
+            // A concrete input (key, mouse button, wheel or controller) has been captured, so the
+            // held modifiers are already baked into this binding. Clear the modifier accumulator so a
+            // later modifier release does not commit a bare-modifier binding that overwrites this one
+            // (e.g. pressing Ctrl+1 then releasing Ctrl must keep Ctrl+1, not fall back to just Ctrl).
+            _modAccum = SDL.SDL_Keymod.SDL_KMOD_NONE;
+
+            if (!AutoStop)
+            {
+                // Continuous mode: report the binding but keep listening so the user can keep
+                // adjusting until they explicitly save or cancel.
+                _onCaptured?.Invoke(binding);
+                return;
+            }
+
             Action<HotkeyBinding>? cb = _onCaptured;
             Stop();
             cb?.Invoke(binding);

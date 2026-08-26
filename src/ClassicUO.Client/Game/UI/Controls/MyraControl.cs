@@ -6,6 +6,7 @@ using ClassicUO.Game.UI.Controls.ResizableComponents;
 using ClassicUO.Game.UI.MyraWindows;
 using ClassicUO.Input;
 using ClassicUO.Renderer;
+using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework;
 using Myra.Events;
 using Myra.Graphics2D;
@@ -99,12 +100,21 @@ public class MyraControl : IGui
     private void DesktopOnTouchUp(object sender, EventArgs e) =>
         OnMouseUp(Mouse.Position.X, Mouse.Position.Y, MouseButtonType.Left);
 
-    private void DesktopOnTouchDown(object sender, EventArgs e) =>
+    private void DesktopOnTouchDown(object sender, TouchEventArgs e) =>
         OnMouseDown(Mouse.Position.X, Mouse.Position.Y, MouseButtonType.Left);
 
     private void DesktopOnWidgetGotKeyboardFocus(object sender, GenericEventArgs<Widget> e)
     {
-        if (e.Data.AcceptsKeyboardFocus && e.Data is Myra.Graphics2D.UI.TextBox)
+        // Deliberately narrower than AcceptsKeyboardFocus (see a55398a44): a focused ListBox,
+        // ComboBox, Tree or Window isn't something the player types into, so keys focused on one of
+        // those are meant to keep reaching the game world (WASD still moves the character). Only
+        // widgets that actually consume typed characters should claim focus here - TextBox, and
+        // SpinButton, which wraps one internally for numeric entry (PropertyGrid's int/float rows).
+        // Missing a case here leaves UIManager.KeyboardFocusControl null, which
+        // UIManager.HandleKeyboardInput then silently re-adopts as the system chat box - the state
+        // every gate in the input pipeline reads as "the world owns the keyboard" - so keys typed
+        // into the field also drive movement and hotkeys.
+        if (e.Data.AcceptsKeyboardFocus && e.Data is Myra.Graphics2D.UI.TextBox or SpinButton)
             SetKeyboardFocus();
         else
             UIManager.KeyboardFocusControl = null;
@@ -115,6 +125,7 @@ public class MyraControl : IGui
     #region Fields
     protected Rectangle _bounds = new();
     protected bool _disposeRequested = false;
+    private bool _renderErrorLogged = false;
     protected readonly Queue<Action> _deferredActions = new();
     #endregion
 
@@ -152,7 +163,7 @@ public class MyraControl : IGui
     public int ActivePage { get; set; }
     public List<IGui> Children { get; } = new();
     public ClickPriority Priority { get; set; }
-    public bool CanCloseWithRightClick { get; } = true;
+    public bool CanCloseWithRightClick { get; set; } = true;
     public bool IsModal { get; } = false;
     public float Alpha { get; set; }
     public bool WantUpdateSize { get; set; }
@@ -273,22 +284,29 @@ public class MyraControl : IGui
 
         batcher.FlushBatch(); //Required to draw myra on top of already drawn gumps
 
-        // Myra processes its own mouse/keyboard input inside Desktop.Render(). If we only ran
-        // that for the top-most window, the very first click on a background window would be spent
-        // by the UIManager promoting it to top-most (see UIManager.OnMouseButtonDown) and Myra would
-        // never see the click as a widget press. By also running the input pass while this is the
-        // window under the cursor (MouseOverControl, set during UIManager.Update() before Draw()),
-        // the click is passed through to Myra on the same frame, and hover frames keep Myra's mouse
-        // baseline fresh so the down-edge is detected. Only one window is ever MouseOverControl
-        // (front-most hit), so this does not cause click-through to overlapped windows.
-        if (IsTopMost || ReferenceEquals(UIManager.MouseOverControl, this))
+        // Desktop.Render() runs Myra's input pass. Running it for MouseOverControl too (not just
+        // the top-most window) keeps the first click on a background window from being eaten by
+        // UIManager promoting it to top-most. Only one window is MouseOverControl, so no click-through.
+        try
         {
-            _desktop.Render();
+            if (IsTopMost || ReferenceEquals(UIManager.MouseOverControl, this))
+            {
+                _desktop.Render();
+            }
+            else
+            {
+                _desktop.UpdateLayout();
+                _desktop.RenderVisual();
+            }
         }
-        else
+        catch (Exception ex)
         {
-            _desktop.UpdateLayout();
-            _desktop.RenderVisual();
+            // A Myra render fault (e.g. a widget detached from the desktop mid-pass) must not crash the client; log once per control to avoid frame-rate flooding.
+            if (!_renderErrorLogged)
+            {
+                _renderErrorLogged = true;
+                Log.Error($"Exception while rendering Myra window '{_rootWindow?.Title}': {ex}");
+            }
         }
 
         DrawDebug(batcher, x, y);
@@ -324,6 +342,7 @@ public class MyraControl : IGui
     {
         if (IsDisposed)
             return;
+        IsFocused = false;
         _disposeRequested = true;
     }
 
@@ -360,6 +379,13 @@ public class MyraControl : IGui
     public virtual void OnFocusLost()
     {
         IsFocused = false;
+
+        // A click inside something the desktop is showing - an open context menu, a dialog put up by
+        // a property grid editor - is that thing being used, not focus loss. Closing it here would
+        // detach it mid-press and the click would never complete.
+        if (IsPointOverDesktop(new Point(Mouse.Position.X + ParentX, Mouse.Position.Y + ParentY), includeRoot: false))
+            return;
+
         _desktop.FocusedKeyboardWidget = null;
         _desktop.HideContextMenu();
     }
@@ -399,8 +425,8 @@ public class MyraControl : IGui
     /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
     public void InvokeMouseWheel(MouseEventType delta) { }
 
-    /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
-    public void InvokeMouseCloseGumpWithRClick() { }
+    /// <summary>Right-click close is handled by UIManager through the IGui close flow.</summary>
+    public void InvokeMouseCloseGumpWithRClick() => CloseWithRightClick();
 
     /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
     public void InvokeDragBegin(Point position) { }
@@ -411,7 +437,7 @@ public class MyraControl : IGui
 
     public virtual void HitTest(Point position, ref IGui res)
     {
-        if (!IsVisible || !IsEnabled || IsDisposed || !AcceptMouseInput)
+        if (!IsVisible || !IsEnabled || IsDisposed || !AcceptMouseInput || _disposeRequested)
             return;
 
         if (
@@ -425,12 +451,52 @@ public class MyraControl : IGui
         }
     }
 
+    /// <summary>
+    /// Whether a screen point lands on anything this control's desktop is showing.
+    /// <para>
+    /// <see cref="Bounds"/> only ever tracks the root window. Anything opened with
+    /// <c>Show</c>/<c>ShowModal</c> - a colour picker, a file dialog, whatever a property grid
+    /// editor puts up - is added to the desktop beside the root rather than inside it, so a dialog
+    /// that extends past the window is outside <see cref="Bounds"/> entirely. UIManager would then
+    /// hand the click to whatever is underneath, which is the viewport.
+    /// </para>
+    /// </summary>
+    /// <param name="global">The point, in screen coordinates.</param>
+    /// <param name="includeRoot">Whether the root window counts. False where the caller is asking
+    /// specifically about things layered over it.</param>
+    /// <returns>Whether the desktop owns it.</returns>
+    private bool IsPointOverDesktop(Point global, bool includeRoot = true)
+    {
+        if (_desktop == null)
+            return false;
+
+        // ContainsGlobalPoint is what Myra itself uses for IsTouchInside; a hand-rolled rect from
+        // Left/Top disagrees with it over margins and alignment, and drops clicks near the edges.
+        if (_desktop.ContextMenu is { Visible: true } contextMenu && contextMenu.ContainsGlobalPoint(global))
+            return true;
+
+        foreach (Widget widget in _desktop.Widgets)
+        {
+            if (!includeRoot && ReferenceEquals(widget, _desktop.Root))
+                continue;
+
+            if (widget.Visible && widget.ContainsGlobalPoint(global))
+                return true;
+        }
+
+        return false;
+    }
+
     public void HitTest(int x, int y, ref IGui res) => HitTest(new Point(x, y), ref res);
 
     /// <summary>This is not in use here. Use _rootWindow events instead.</summary>
     public void ChangePage(int pageIndex) { }
 
-    public void CloseWithRightClick() => Dispose();
+    public void CloseWithRightClick()
+    {
+        if (CanCloseWithRightClick)
+            Dispose();
+    }
 
     public bool Contains(int x, int y)
     {
@@ -440,19 +506,7 @@ public class MyraControl : IGui
         if (Bounds.Contains(x + ParentX, y + ParentY))
             return true;
 
-        if (_desktop.ContextMenu is { Visible: true } contextMenu)
-        {
-            var realBounds = new Rectangle(
-                contextMenu.Left,
-                contextMenu.Top,
-                contextMenu.Bounds.Width,
-                contextMenu.Bounds.Height
-            );
-            if (realBounds.Contains(x + ParentX, y + ParentY))
-                return true;
-        }
-
-        return false;
+        return IsPointOverDesktop(new Point(x + ParentX, y + ParentY));
     }
 
     #region OnEventOccured

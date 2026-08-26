@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using System.Xml;
 using System.ComponentModel;
@@ -84,11 +85,16 @@ namespace ClassicUO.Configuration
 
 
 
-    public sealed partial class Profile : INotifyPropertyChanged
+    public sealed partial class Profile : JsonSave<Profile>, INotifyPropertyChanged
     {
-        public event PropertyChangedEventHandler PropertyChanged;
-
         private static Profile _defaultPreview;
+
+        /// <summary>Lives in the profile folder as <c>profile.json</c>.</summary>
+        protected override SettingsScope Scope => SettingsScope.Char;
+
+        protected override string FileName => "profile.json";
+
+        protected override JsonTypeInfo<Profile> TypeInfo => ProfileJsonContext.DefaultToUse.Profile;
 
         /// <summary>
         /// A cached default profile with safe default settings, used as a fallback when no profile
@@ -97,47 +103,31 @@ namespace ClassicUO.Configuration
         /// </summary>
         public static Profile DefaultPreviewProfile => _defaultPreview ??= new Profile();
 
-        /// <summary>
-        /// Raises the <see cref="PropertyChanged"/> event with the specified property name
-        /// </summary>
-        /// <param name="propertyName">The property that was updated. Passed by the compiler.</param>
-        private void OnPropertyChanged([CallerMemberName] string propertyName = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-        /// <summary>
-        /// Updates the given property with the given value if it is different from the current one.
-        /// Raises the <see cref="PropertyChanged" /> event, if a change has occurred
-        /// </summary>
-        /// <param name="storage">The field to update</param>
-        /// <param name="value">The value to set</param>
-        /// <param name="propertyName">The name of the property being updated</param>
-        /// <typeparam name="T">The type of property being updated</typeparam>
-        /// <returns><c>true</c> if a change has occurred, <c>false</c> otherwise</returns>
-        private bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (EqualityComparer<T>.Default.Equals(storage, value))
-                return false;
-
-            storage = value;
-            OnPropertyChanged(propertyName);
-            return true;
-        }
-
         [JsonIgnore] public string Username { get; set => SetProperty(ref field, value); }
         [JsonIgnore] public string ServerName { get; set => SetProperty(ref field, value); }
         [JsonIgnore] public string CharacterName { get; set => SetProperty(ref field, value); }
+        [JsonIgnore] public uint Serial { get; set => SetProperty(ref field, value); }
 
         // voice recognition
         public bool VoiceRecognitionEnabled { get; set => SetProperty(ref field, value); } = false;
         public string VoiceModelPath { get; set => SetProperty(ref field, value); } = string.Empty;
 
         // sounds
+        [Obsolete("Remove after 10/8/26")]
         public bool EnableSound { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/8/26")]
         public int SoundVolume { get; set => SetProperty(ref field, value); } = 50;
+        [Obsolete("Remove after 10/8/26")]
         public bool EnableMusic { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/8/26")]
         public int MusicVolume { get; set => SetProperty(ref field, value); } = 50;
+        [Obsolete("Remove after 10/8/26")]
         public bool EnableFootstepsSound { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/8/26")]
         public bool EnableRainSound { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/8/26")]
         public bool EnableCombatMusic { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/8/26")]
         public bool ReproduceSoundsInBackground { get; set => SetProperty(ref field, value); }
 
         // fonts and speech
@@ -203,9 +193,14 @@ namespace ClassicUO.Configuration
         public bool DisableGargoyleFlyingAnimation { get; set => SetProperty(ref field, value); }
         public int FieldsType { get; set => SetProperty(ref field, value); } // 0 = normal, 1 = static, 2 = tile
         public bool NoColorObjectsOutOfRange { get; set => SetProperty(ref field, value); }
+
+        [Obsolete("Remove after 10/8/26")]
         public bool UseCircleOfTransparency { get; set => SetProperty(ref field, value); }
+        [Obsolete("Remove after 10/8/26")]
         public int CircleOfTransparencyRadius { get; set => SetProperty(ref field, value); } = Constants.MAX_CIRCLE_OF_TRANSPARENCY_RADIUS / 2;
+        [Obsolete("Remove after 10/8/26")]
         public int CircleOfTransparencyType { get; set => SetProperty(ref field, value); } // 0 = normal, 1 = like original client
+
         public int VendorGumpHeight { get; set => SetProperty(ref field, value); } = 350;   //original vendor gump size
         public float DefaultScale { get; set => SetProperty(ref field, value); } = 1.0f;
         public bool EnableMousewheelScaleZoom { get; set => SetProperty(ref field, value); } = true;
@@ -227,6 +222,10 @@ namespace ClassicUO.Configuration
         public bool BandageAgentBandagePets { get; set => SetProperty(ref field, value); } = false;
         public bool BandageAgentUseDexFormula { get; set => SetProperty(ref field, value); } = false;
         public bool BandageAgentDisableSelfHeal { get; set => SetProperty(ref field, value); } = false;
+        public TargetType BandageAgentTargetType { get; set => SetProperty(ref field, value); } = TargetType.Beneficial;
+        public bool BandageAgentUseSelfCommand { get; set => SetProperty(ref field, value); } = false;
+        public string BandageAgentSelfCommand { get; set => SetProperty(ref field, value); } = ".bandage";
+        public bool BandageAgentSelfCommandExpectTarget { get; set => SetProperty(ref field, value); } = false;
         public bool SelfHeal_Enabled { get; set => SetProperty(ref field, value); } = false;
         public bool SelfHeal_UseChivalry { get; set => SetProperty(ref field, value); } = false; // false = Magery (Heal/Cure), true = Chivalry (Close Wounds/Cleanse by Fire)
         public int SelfHeal_FC { get; set => SetProperty(ref field, value); } = 2;   // Faster Casting (used to auto-compute timings)
@@ -243,20 +242,8 @@ namespace ClassicUO.Configuration
         // re-register on load. Entries whose script no longer exists are pruned on load.
         public List<string> ScriptHotkeys { get; set => SetProperty(ref field, value); } = new List<string>();
 
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.BANDAGE_JOURNAL_TRIGGER, false)]
-        public partial bool BandageAgentUseJournalTrigger { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.BANDAGE_JOURNAL_MESSAGES, "")]
-        public partial string BandageAgentJournalMessages { get; set; }
-
-        // Semicolon-separated list of poll ids the user has already voted on (see PollsWindow / FirebasePollsManager).
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.VOTED_POLLS, "")]
-        public partial string VotedPolls { get; set; }
-
         public bool EnableDeathScreen { get; set => SetProperty(ref field, value); } = true;
+        public bool ScreenshotOnDeath { get; set => SetProperty(ref field, value); } = true;
         public bool EnableBlackWhiteEffect { get; set => SetProperty(ref field, value); } = true;
         public ushort HiddenBodyHue { get; set => SetProperty(ref field, value); } = 0x038E;
         public byte HiddenBodyAlpha { get; set => SetProperty(ref field, value); } = 40;
@@ -313,15 +300,16 @@ namespace ClassicUO.Configuration
         public bool OpenModernPaperdollAtMinimizeLoc { get; set => SetProperty(ref field, value); } = false;
 
         // Experimental
+        [Obsolete("Remove after 10/12/26")]
         public bool CastSpellsByOneClick { get; set => SetProperty(ref field, value); }
         public bool BuffBarTime { get; set => SetProperty(ref field, value); }
         public bool FastSpellsAssign { get; set => SetProperty(ref field, value); }
         public bool AutoOpenDoors { get; set => SetProperty(ref field, value); } = true;
+        public bool BlockDoorMovement { get; set => SetProperty(ref field, value); } = true;
         public bool SmoothDoors { get; set => SetProperty(ref field, value); } = true;
         public bool AutoOpenCorpses { get; set => SetProperty(ref field, value); } = true;
         public int AutoOpenCorpseRange { get; set => SetProperty(ref field, value); } = 2;
         public int CorpseOpenOptions { get; set => SetProperty(ref field, value); } = 3;
-        public bool SkipEmptyCorpse { get; set => SetProperty(ref field, value); }
         public bool AutoOpenOwnCorpse { get; set => SetProperty(ref field, value); } = true;
         public bool DisableDefaultHotkeys { get; set => SetProperty(ref field, value); }
         public bool DisableArrowBtn { get; set => SetProperty(ref field, value); }
@@ -351,6 +339,7 @@ namespace ClassicUO.Configuration
         public bool UsePartyHealthBars { get; set => SetProperty(ref field, value); } = true;
         public bool ShowHealCureButtonsAllHealthbars { get; set => SetProperty(ref field, value); }
         public bool ShowHealCureButtonsFriends { get; set => SetProperty(ref field, value); }
+        public bool ShowHealCureButtonsPets { get; set => SetProperty(ref field, value); } = true;
 
         public bool ShowInfoBar { get; set => SetProperty(ref field, value); }
         public int InfoBarHighlightType { get; set => SetProperty(ref field, value); } // 0 = text colour changes, 1 = underline
@@ -393,8 +382,6 @@ namespace ClassicUO.Configuration
         public bool ShowNewCorpseNameIncoming { get; set => SetProperty(ref field, value); } = true;
 
         public uint GrabBagSerial { get; set => SetProperty(ref field, value); }
-
-        public int GridLootType { get; set => SetProperty(ref field, value); } // 0 = none, 1 = only grid, 2 = both
 
         public bool ReduceFPSWhenInactive { get; set => SetProperty(ref field, value); }
 
@@ -466,27 +453,8 @@ namespace ClassicUO.Configuration
         public bool WorldMapShowGridIfZoomed { get; set => SetProperty(ref field, value); } = true;
         public bool WorldMapAllowPositionalTarget { get; set => SetProperty(ref field, value); } = true;
 
-        [JsonIgnore]
-        public int WebMapServerPort
-        {
-            get;
-            set
-            {
-                if (SetProperty(ref field, value))
-                    Client.Settings?.SetAsync(SettingsScope.Global, Constants.SqlSettings.WEB_MAP_PORT, value);
-            }
-        }
-
-        [JsonIgnore]
-        public bool WebMapAutoStart
-        {
-            get;
-            set
-            {
-                if (SetProperty(ref field, value))
-                    Client.Settings?.SetAsync(SettingsScope.Global, Constants.SqlSettings.WEB_MAP_AUTO_START, value);
-            }
-        }
+        public int WebMapServerPort { get; set; } = 8088;
+        public bool WebMapAutoStart { get; set; }
 
         public int AutoFollowDistance { get; set => SetProperty(ref field, value); } = 1;
         public bool DisableAutoFollowAlt { get; set => SetProperty(ref field, value); } = false;
@@ -530,9 +498,11 @@ namespace ClassicUO.Configuration
         public uint SetFavoriteMoveBagSerial { get; set => SetProperty(ref field, value); }
 
         #region GRID CONTAINER
-        public bool UseGridLayoutContainerGumps { get; set => SetProperty(ref field, value); } = true;
+
+        public ContainerStyle ContainerStyle { get; set => SetProperty(ref field, value); }
+        public CorpseContainerStyle CorpseContainerStyle { get; set => SetProperty(ref field, value); }
+
         public bool GridContainersDefaultToOldStyleView { get; set => SetProperty(ref field, value); } = false;
-        public CorpseContainerStyle CorpseContainerStyle { get; set => SetProperty(ref field, value); } = CorpseContainerStyle.Default;
         public int GridContainerViewMode { get; set => SetProperty(ref field, value); } = 0; // 0 = Grid, 1 = List
         public int GridContainerSearchMode { get; set => SetProperty(ref field, value); } = 0;
         public bool EnableGridContainerAnchor { get; set => SetProperty(ref field, value); } = false;
@@ -542,6 +512,14 @@ namespace ClassicUO.Configuration
         public bool GridContainerScaleItems { get; set => SetProperty(ref field, value); } = true;
         public bool GridHighlightLowContrastItems { get; set => SetProperty(ref field, value); } = false;
         public int GridHighlightLowContrastItemsStyle { get; set => SetProperty(ref field, value); } = 0;
+        /// <summary>
+        /// Minimum contrast level used for low-contrast grid item highlighting.
+        /// </summary>
+        public byte GridHighlightLowContrastMinimum
+        {
+            get;
+            set => SetProperty(ref field, Math.Clamp(value, (byte)1, (byte)10));
+        } = 5;
         public bool GridEnableContPreview { get; set => SetProperty(ref field, value); } = true;
         public int Grid_BorderStyle { get; set => SetProperty(ref field, value); } = 0;
         public int Grid_DefaultColumns { get; set => SetProperty(ref field, value); } = 5;
@@ -685,11 +663,19 @@ namespace ClassicUO.Configuration
         public int NamePlateFontSize { get; set => SetProperty(ref field, value); } = 20;
 
         public bool UseNewOptionsWindow { get; set => SetProperty(ref field, value); } = true;
-        public string OptionsFont { get; set => SetProperty(ref field, value); } = "Roboto-Regular";
+        public string OptionsFont
+        {
+            get; set
+            {
+                SetProperty(ref field, value);
+                MyraStyle.SetDefault();
+            }
+        } = "Roboto-Regular";
         public int OptionsFontSize { get; set => SetProperty(ref field, value); } = 18;
 
         public int TextBorderSize { get; set => SetProperty(ref field, value); } = 1;
         public uint SavedMountSerial { get; set => SetProperty(ref field, value); } = 0;
+        public int MountDistance { get; set => SetProperty(ref field, value); } = 1;
 
         public uint SavedMainHandSerial { get; set => SetProperty(ref field, value); } = 0;
         public uint SavedOffHandSerial { get; set => SetProperty(ref field, value); } = 0;
@@ -700,6 +686,7 @@ namespace ClassicUO.Configuration
         public int MaxSoundEntries { get; set => SetProperty(ref field, value); } = 250;
         public bool HideJournalBorder { get; set => SetProperty(ref field, value); } = false;
         public bool JournalTransparencyWhenInactive { get; set => SetProperty(ref field, value); } = false;
+        [Obsolete("Remove on/after 10/17/26")]
         public bool HideJournalTimestamp { get; set => SetProperty(ref field, value); } = false;
         public bool HideJournalSystemPrefix { get; set => SetProperty(ref field, value); } = false;
 
@@ -715,37 +702,23 @@ namespace ClassicUO.Configuration
         public int AdvancedSkillsGumpHeight { get; set => SetProperty(ref field, value); } = 510;
 
         #region ToolTip Overrides
-        public List<string> ToolTipOverride_SearchText { get; set => SetProperty(ref field, value); } = new List<string>() { "Physical Res", "Fire Resist", "Cold Resist", "Poison Resist", "Energy Resist", "Weapon Damage" };
-        public List<string> ToolTipOverride_NewFormat { get; set => SetProperty(ref field, value); } = new List<string>() { "/c[#8c733e]Physical Resist {1}%", "/c[red]Fire Resist {1}%", "/c[teal]Cold Resist {1}%", "/c[green]Poison Resist {1}%", "/c[purple]Energy Resist {1}%", "{0} /c[orange]{1}{4} /cd- /c[red]{2}{5}" };
-        public List<int> ToolTipOverride_MinVal1 { get; set => SetProperty(ref field, value); } = new List<int>() { -1, -1, -1, -1, -1, -1 };
-        public List<int> ToolTipOverride_MinVal2 { get; set => SetProperty(ref field, value); } = new List<int>() { -1, -1, -1, -1, -1, -1 };
-        public List<int> ToolTipOverride_MaxVal1 { get; set => SetProperty(ref field, value); } = new List<int>() { 100, 100, 100, 100, 100, 100 };
-        public List<int> ToolTipOverride_MaxVal2 { get; set => SetProperty(ref field, value); } = new List<int>() { 100, 100, 100, 100, 100, 100 };
-        public List<byte> ToolTipOverride_Layer { get; set => SetProperty(ref field, value); } = new List<byte>() { (byte)TooltipLayers.Any, (byte)TooltipLayers.Any, (byte)TooltipLayers.Any, (byte)TooltipLayers.Any, (byte)TooltipLayers.Any, (byte)TooltipLayers.Any };
+        /// <summary>When enabled, tooltip overrides are not applied to mobile tooltips.</summary>
+        public bool ToolTipOverride_IgnoreMobiles { get; set => SetProperty(ref field, value); } = true;
         #endregion
 
         public string TooltipHeaderFormat { get; set => SetProperty(ref field, value); } = "/c[yellow]{0}";
-
         public bool DisplaySkillBarOnChange { get; set => SetProperty(ref field, value); } = true;
         public string SkillBarFormat { get; set => SetProperty(ref field, value); } = "{0}: {1} / {2}";
-
         public bool DisplayRadius { get; set => SetProperty(ref field, value); } = false;
         public int DisplayRadiusDistance { get; set => SetProperty(ref field, value); } = 10;
         public ushort DisplayRadiusHue { get; set => SetProperty(ref field, value); } = 22;
-
         public bool EnableSpellIndicators { get; set => SetProperty(ref field, value); } = true;
-
         public bool EnableAutoLoot { get; set => SetProperty(ref field, value); } = false;
         public bool AutoLootHumanCorpses { get; set => SetProperty(ref field, value); } = false;
-
-        // Auto skinning: double click a knife/dagger whose graphic is in this list to skin a targeted corpse.
-        // Graphic IDs are separated by ';' and may be hex (0x..) or decimal.
         public bool EnableAutoSkinning { get; set => SetProperty(ref field, value); } = false;
         public bool AutoSkinningHumanCorpses { get; set => SetProperty(ref field, value); } = false;
-        public string AutoSkinningKnifeGraphics { get; set => SetProperty(ref field, value); } = "0x2D2C;0x0F52;0x0EC4;0x0EC3;0x13F6;0x13B6";
-
+        public string AutoSkinningKnifeGraphics { get; set => SetProperty(ref field, value); }
         public bool ItemDatabaseEnabled { get; set => SetProperty(ref field, value); } = true;
-
         public static uint GumpsVersion { get; private set; }
 
         [JsonConverter(typeof(Point2Converter))]
@@ -753,7 +726,6 @@ namespace ClassicUO.Configuration
         public bool InfoBarLocked { get; set => SetProperty(ref field, value); } = false;
         public string InfoBarFont { get; set => SetProperty(ref field, value); } = "Roboto-Regular";
         public int InfoBarFontSize { get; set => SetProperty(ref field, value); } = 18;
-
         public int LastJournalTab { get; set => SetProperty(ref field, value); } = 0;
         public Dictionary<string, MessageType[]> JournalTabs { get; set => SetProperty(ref field, value); } = new Dictionary<string, MessageType[]>()
         {
@@ -788,16 +760,11 @@ namespace ClassicUO.Configuration
 
         public bool UseLastMovedCooldownPosition { get; set => SetProperty(ref field, value); } = true;
         public bool CloseHealthBarIfAnchored { get; set => SetProperty(ref field, value); } = false;
-
         [JsonConverter(typeof(Point2Converter))]
         public Point SkillProgressBarPosition { get; set => SetProperty(ref field, value); } = Point.Zero;
-
         public bool ForceResyncOnHang { get; set => SetProperty(ref field, value); } = false;
-
         public bool UseOneHPBarForLastAttack { get; set => SetProperty(ref field, value); } = true;
-
         public bool DisableMouseInteractionOverheadText { get; set => SetProperty(ref field, value); } = false;
-
         public bool HiddenLayersEnabled { get; set => SetProperty(ref field, value); } = false;
         public List<int> HiddenLayers { get; set => SetProperty(ref field, value); } = new List<int>();
         public bool HideLayersForSelf { get; set => SetProperty(ref field, value); } = true;
@@ -825,40 +792,7 @@ namespace ClassicUO.Configuration
 
         [JsonConverter(typeof(Point2Converter))]
         public Point PlayerOffset { get; set => SetProperty(ref field, value); } = new Point(0, 0);
-
-        public float CameraSmoothingFactor { get; set => SetProperty(ref field, value); } = 0f;
-
         public double PaperdollScale { get; set => SetProperty(ref field, value); } = 1f;
-
-        public double StatusGumpScale { get; set => SetProperty(ref field, Math.Clamp(value, 0.5d, 3.0d)); } = 1f;
-
-        public double SkillsGumpScale { get; set => SetProperty(ref field, Math.Clamp(value, 0.5d, 3.0d)); } = 1f;
-
-        public double ContextMenuScale { get; set => SetProperty(ref field, Math.Clamp(value, 0.5d, 3.0d)); } = 1f;
-
-        public double TradeGumpScale { get; set => SetProperty(ref field, Math.Clamp(value, 0.5d, 3.0d)); } = 1f;
-
-        /// <summary>
-        /// Scale applied to every server created gump (and all of its controls).
-        /// </summary>
-        public double ServerGumpScale { get; set => SetProperty(ref field, Math.Clamp(value, 0.5d, 3.0d)); } = 1f;
-
-        public uint SOSGumpID { get; set => SetProperty(ref field, value); } = 1915258020;
-
-        public bool ModernPaperdollAnchorEnabled { get; set => SetProperty(ref field, value); }
-        public bool JournalAnchorEnabled { get; set => SetProperty(ref field, value); } = false;
-        public bool EnableAutoLootProgressBar { get; set => SetProperty(ref field, value); } = true;
-        public bool UseWASDInsteadArrowKeys { get; set => SetProperty(ref field, value); }
-        public int NearbyLootGumpHeight { get; set => SetProperty(ref field, value); } = 550;
-        public bool ForceTooltipsOnOldClients { get; set => SetProperty(ref field, value); } = true;
-        public bool NearbyLootOpensHumanCorpses { get; set => SetProperty(ref field, value); }
-        public ushort TurnDelay { get; set => SetProperty(ref field, value); } = 100;
-        public bool SellAgentEnabled { get; set => SetProperty(ref field, value); }
-        public int SellAgentMaxUniques { get; set => SetProperty(ref field, value); } = 50;
-        public int SellAgentMaxItems { get; set => SetProperty(ref field, value); } = 0;
-        public bool BuyAgentEnabled { get; set => SetProperty(ref field, value); }
-        public int BuyAgentMaxUniques { get; set => SetProperty(ref field, value); } = 50;
-        public int BuyAgentMaxItems { get; set => SetProperty(ref field, value); } = 0;
         public bool BuyAgentSubContainers { get; set => SetProperty(ref field, value); } = true;
         public bool DisableTargetingGridContainers { get; set => SetProperty(ref field, value); }
         public bool ControllerEnabled { get; set => SetProperty(ref field, value); } = true;
@@ -873,129 +807,74 @@ namespace ClassicUO.Configuration
         public bool DisableGrayEnemies { get; set => SetProperty(ref field, value); }
         public bool EnablePostProcessingEffects { get; set => SetProperty(ref field, value); }
         public ushort PostProcessingType { get; set => SetProperty(ref field, value); }
-        public bool DisableHotkeys { get; set => SetProperty(ref field, value); }
+        /// <summary>
+        ///     Persistently disable hotkey usage.
+        ///     To merely temporarily disable hotkeys, use <see cref="Game.Managers.Hotkeys.HotKeys.RequestDisableHotkeys" />.
+        /// </summary>
+        public bool PersistentDisableHotkeys { get; set => SetProperty(ref field, value); }
         public bool DisableDismountInWarMode { get; set => SetProperty(ref field, value); } = true;
         public bool EnableASyncMapLoading { get; set => SetProperty(ref field, value); } = true;
+        public bool UseGridLayoutContainerGumps { get; set => SetProperty(ref field, value); } = true;
+        public int GridLootType { get; set => SetProperty(ref field, value); } // 0 = none, 1 = only grid, 2 = both
+        public bool ModernPaperdollAnchorEnabled { get; set => SetProperty(ref field, value); }
+        public bool JournalAnchorEnabled { get; set => SetProperty(ref field, value); } = false;
+        public bool EnableAutoLootProgressBar { get; set => SetProperty(ref field, value); } = true;
+        [Obsolete("Remove after 10/12/26")]
+        public bool UseWASDInsteadArrowKeys { get; set => SetProperty(ref field, value); }
+        public int NearbyLootGumpHeight { get; set => SetProperty(ref field, value); } = 550;
+        public bool ForceTooltipsOnOldClients { get; set => SetProperty(ref field, value); } = true;
+        public bool NearbyLootOpensHumanCorpses { get; set => SetProperty(ref field, value); }
+        [Obsolete("Remove after 10/12/26")]
+        public ushort TurnDelay { get; set => SetProperty(ref field, value); } = 80;
+        public bool SellAgentEnabled { get; set => SetProperty(ref field, value); }
+        public int SellAgentMaxUniques { get; set => SetProperty(ref field, value); } = 50;
+        public int SellAgentMaxItems { get; set => SetProperty(ref field, value); } = 0;
+        public bool BuyAgentEnabled { get; set => SetProperty(ref field, value); }
+        public int BuyAgentMaxUniques { get; set => SetProperty(ref field, value); } = 50;
+        public int BuyAgentMaxItems { get; set => SetProperty(ref field, value); } = 0;
+        public uint SOSGumpID { get; set => SetProperty(ref field, value); } = 1915258020;
+        public double StatusGumpScale { get; set => SetProperty(ref field, value); } = 1f;
+        public double SkillsGumpScale { get; set => SetProperty(ref field, value); } = 1f;
+        public double ContextMenuScale { get; set => SetProperty(ref field, value); } = 1f;
+        public double TradeGumpScale { get; set => SetProperty(ref field, value); } = 1f;
+        public double ServerGumpScale { get; set => SetProperty(ref field, value); } = 1f;
+        [JsonConverter(typeof(Point2Converter))] public Point ScriptManagerWindowPosition { get; set; } = Point.Zero;
+        [JsonConverter(typeof(Point2Converter))] public Point ScriptManagerWindowSize { get; set; } = Point.Zero;
+        public bool CandleFlickerLights { get; set; } = true;
+        public string LastLoaded { get; set; }
+        public bool TreeToStumpsWithinRadius { get; set; }
+        public bool AutoSaveGumpPositions { get; set; }
+        public bool StripChatUsernameId { get; set; }
+        public bool OverheadsScaleWithZoom { get; set; } = true;
+        public string VotedPolls { get; set; }
+        public string BandageAgentJournalMessages { get; set; } = "You apply the bandages;You finish applying;You heal what little;You have been cured;You failed to cure;Your fingers slip";
+        public bool BandageAgentUseJournalTrigger { get; set; }
+        public bool CounterBarDisableIconScaling { get; set; }
+        public bool CounterBarDisableItemScaling { get; set; }
+        public bool CounterBarShowHotkeys { get; set; }
+        public bool QueueManualItemMoves { get; set; }
+        public bool AutoOpenDoorsIfHidden { get; set; } = true;
+        public bool QueueManualItemUses { get; set; }
+        public bool HueCorpseAfterAutoloot { get; set; }
+        public int AutoLootRetryDelay { get; set; } = 5000;
+        public int PathfindingZLevelDiff { get; set; } = 10;
+        public int PathfindingMaxNodes { get; set; } = 150000;
+        public int PathfindingMultiBuffer { get; set; } = 4;
+        public int WorldMapPathfindingMaxNodes { get; set; } = 1000000;
+        public int WorldMapPathfindingMaxRetries { get; set; } = 3;
+        public int WorldMapPathfindingTimeout { get; set; } = 5000;
+        public bool SingleClickMobileSetsLastTarget { get; set; } = true;
+        public bool OutlineMobilesNotoriety { get; set; }
+        public uint DisabledOverheadMessageTypes { get; set; }
+        public bool DisableAutolootCorpseRetry { get; set; } = false;
+        public bool DisableWeather { get; set; }
+        public bool EnablePetScaling { get; set; }
+        public bool AutoUnequipForActions { get; set; }
+        public int MinGumpMoveDistance { get; set; } = 5;
+        public int QuickHealSpell { get; set; } = 29;
+        public int QuickCureSpell { get; set; } = 11;
+        [JsonConverter(typeof(Point2Converter))] public Point CoprseContainerPosition { get; set => SetProperty(ref field, value); } = new Point(100, 100);
 
-        public string TazUOChatNick
-        {
-            get
-            {
-                if (field == null)
-                    SetProperty(ref field, TazUOChatManager.GenerateFantasyName(2, 3));
-
-                return field;
-            }
-            set => SetProperty(ref field, value);
-        }
-
-        // SQL-backed settings — property implementations are source-generated into Profile.SqlSettings.g.cs
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.DISABLE_WEATHER, false)]
-        public partial bool DisableWeather { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.SCALE_PETS_ENABLED, false)]
-        public partial bool EnablePetScaling { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.AUTO_UNEQUIP_FOR_ACTIONS, false)]
-        public partial bool AutoUnequipForActions { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.MIN_GUMP_MOVE_DIST, 5)]
-        public partial int MinGumpMoveDistance { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.QUICK_HEAL_SPELL, 29)]
-        public partial int QuickHealSpell { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.QUICK_CURE_SPELL, 11)]
-        public partial int QuickCureSpell { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.QUEUE_MANUAL_ITEM_MOVES, false)]
-        public partial bool QueueManualItemMoves { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Char, Constants.SqlSettings.AUTO_OPEN_DOORS_HIDDEN, true)]
-        public partial bool AutoOpenDoorsIfHidden { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.QUEUE_MANUAL_ITEM_USES, false)]
-        public partial bool QueueManualItemUses { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.HUE_CORPSE_AFTER_AUTOLOOT, false)]
-        public partial bool HueCorpseAfterAutoloot { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.AUTOLOOT_RETRY_DELAY, 5000)]
-        public partial int AutoLootRetryDelay { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.PATH_Z_LEVEL, 10)]
-        public partial int PathfindingZLevelDiff { get; set; }
-
-        // Maximum number of A* nodes the local (in-game) pathfinder will expand before giving up.
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.PATHFINDING_MAX_NODES, 150000)]
-        public partial int PathfindingMaxNodes { get; set; }
-
-        // Maximum number of A* nodes the world map (long-distance) pathfinder will expand before giving up.
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.WORLDMAP_PATH_MAX_NODES, 1000000)]
-        public partial int WorldMapPathfindingMaxNodes { get; set; }
-
-        // How many times world map navigation will replan around a blocked tile before giving up.
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.WORLDMAP_PATH_MAX_RETRIES, 3)]
-        public partial int WorldMapPathfindingMaxRetries { get; set; }
-
-        // Wall-clock cap (milliseconds) on a single world map pathfinding search.
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.WORLDMAP_PATH_TIMEOUT, 5000)]
-        public partial int WorldMapPathfindingTimeout { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.SINGLE_CLICK_SET_LAST_TARG, true)]
-        public partial bool SingleClickMobileSetsLastTarget { get; set; }
-
-        // Hand-written: has side-effect beyond SetAsync
-        [JsonIgnore]
-        public bool OutlineMobilesNotoriety
-        {
-            get;
-            set
-            {
-                if (SetProperty(ref field, value))
-                    _ = Client.Settings.SetAsync(SettingsScope.Global, Constants.SqlSettings.OUTLINE_NOTORIETIES, value);
-            }
-        }
-
-        // Hand-written: has side-effect (TazUOChatManager.Init)
-        [JsonIgnore]
-        public bool DisableConnectToIrcOnLogin
-        {
-            get;
-            set
-            {
-                if (SetProperty(ref field, value))
-                    _ = Client.Settings.SetAsync(SettingsScope.Global, Constants.SqlSettings.IRC_AUTO_CONNECT, value);
-
-                // if(value && !TazUOChatManager.Instance.IsConnected)
-                //     TazUOChatManager.Instance.Init();
-            }
-        }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.OVERHEAD_MESSAGE_TYPES_HIDDEN, (uint)0)]
-        public partial uint DisabledOverheadMessageTypes { get; set; }
-
-        [JsonIgnore]
-        [SqlSetting(SettingsScope.Global, Constants.SqlSettings.DISABLE_AUTOLOOT_RETRY_CORPSE, false)]
-        public partial bool DisableAutolootCorpseRetry { get; set; } = false;
 
         private long lastSave;
 
@@ -1007,40 +886,162 @@ namespace ClassicUO.Configuration
                 return;
             }
 
-            //These are fine if we continue without loading them yet (non-Char scoped)
-            Client.Settings.GetAllAsync(SettingsScope.Global).ContinueWith(t =>
+            Task<Dictionary<string, string>> globalTask = Client.Settings.GetAllAsync(SettingsScope.Global);
+            Task<Dictionary<string, string>> accountTask = Client.Settings.GetAllAsync(SettingsScope.Account);
+            Task<Dictionary<string, string>> serverTask = Client.Settings.GetAllAsync(SettingsScope.Server);
+            Task<Dictionary<string, string>> charTask = Client.Settings.GetAllAsync(SettingsScope.Char);
+
+            if (Task.WhenAll(globalTask, accountTask, serverTask, charTask).Wait(10000))
             {
-                Dictionary<string, string> kvp = t.Result;
-                MainThreadQueue.EnqueueAction(() =>
-                {
-                    LoadGeneratedGlobalSqlSettings(kvp);
+                LoadGeneratedGlobalSqlSettings(globalTask.Result);
+                LoadGeneratedAccountSqlSettings(accountTask.Result);
+                LoadGeneratedServerSqlSettings(serverTask.Result);
+                LoadGeneratedCharSqlSettings(charTask.Result);
 
-                    // Hand-written: IRC has a side-effect in its setter
-                    if (kvp.TryGetValue(Constants.SqlSettings.IRC_AUTO_CONNECT, out string val) && bool.TryParse(val, out bool b))
-                        DisableConnectToIrcOnLogin = b;
-                });
-            });
-
-            //These must be waited before continue for various purposes elsewhere
-            Task[] mustWait = [
-                Client.Settings.GetAsync(SettingsScope.Global, Constants.SqlSettings.WEB_MAP_AUTO_START, false, b => WebMapAutoStart = b),
-                Client.Settings.GetAsync(SettingsScope.Global, Constants.SqlSettings.WEB_MAP_PORT, 8088, p => WebMapServerPort = p),
-                Client.Settings.GetAsync(SettingsScope.Global, Constants.SqlSettings.OUTLINE_NOTORIETIES, false, p => OutlineMobilesNotoriety = p)
-            ];
-
-            Task.WaitAll(mustWait, 5000);
-        }
-
-        internal void LoadCharScopedSettings()
-        {
-            if (Client.Settings == null)
+                HandleMigration();
+            }
+            else
             {
-                Log.Error("Warning, char scoped SQL settings failed to load!");
-                return;
+                Log.Error("SQL settings failed to load within the timeout; using defaults.");
             }
 
-            //Load Char-scoped settings after player is created (when serial is available)
-            LoadGeneratedCharSqlSettings();
+            MyraStyle.SetDefault(); //Also loaded here in case profile settings affect styling
+
+            LastLoaded = DateTime.Now.ToUniversalTime().ToString();
+        }
+
+        private void HandleMigration()
+        {
+            if (ProfileMigrationVersion < 5) //4
+            {
+                ProfileMigrationVersion = 5;
+            }
+
+            if (ProfileMigrationVersion < 6)
+            {
+                CounterBarShowHotkeys = OldCounterBarShowHotkeys;
+                CounterBarDisableItemScaling = OldCounterBarDisableItemScaling;
+                CounterBarDisableIconScaling = OldCounterBarDisableIconScaling;
+                BandageAgentUseJournalTrigger = OldBandageAgentUseJournalTrigger;
+                BandageAgentJournalMessages = OldBandageAgentJournalMessages;
+                VotedPolls = OldVotedPolls;
+                OverheadsScaleWithZoom = OldOverheadsScaleWithZoom;
+                StripChatUsernameId = OldStripChatUsernameId;
+                AutoSaveGumpPositions = OldAutoSaveGumpPositions;
+                TreeToStumpsWithinRadius = OldTreeToStumpsWithinRadius;
+                CandleFlickerLights = OldCandleFlickerLights;
+
+                if (OldScriptManagerWindowSize.HasValue)
+                    ScriptManagerWindowSize = OldScriptManagerWindowSize.Value;
+
+                if (OldScriptManagerWindowPosition.HasValue)
+                    ScriptManagerWindowPosition = OldScriptManagerWindowPosition.Value;
+
+                QueueManualItemMoves = OldQueueManualItemMoves;
+                AutoOpenDoorsIfHidden = OldAutoOpenDoorsIfHidden;
+                QueueManualItemUses = OldQueueManualItemUses;
+                HueCorpseAfterAutoloot = OldHueCorpseAfterAutoloot;
+                AutoLootRetryDelay = OldAutoLootRetryDelay;
+                PathfindingZLevelDiff = OldPathfindingZLevelDiff;
+                PathfindingMaxNodes = OldPathfindingMaxNodes;
+                PathfindingMultiBuffer = OldPathfindingMultiBuffer;
+                WorldMapPathfindingMaxNodes = OldWorldMapPathfindingMaxNodes;
+                WorldMapPathfindingMaxRetries = OldWorldMapPathfindingMaxRetries;
+                WorldMapPathfindingTimeout = OldWorldMapPathfindingTimeout;
+                SingleClickMobileSetsLastTarget = OldSingleClickMobileSetsLastTarget;
+                OutlineMobilesNotoriety = OldOutlineMobilesNotoriety;
+                DisabledOverheadMessageTypes = OldDisabledOverheadMessageTypes;
+                DisableAutolootCorpseRetry = OldDisableAutolootCorpseRetry;
+                DisableWeather = OldDisableWeather;
+                EnablePetScaling = OldEnablePetScaling;
+                AutoUnequipForActions = OldAutoUnequipForActions;
+                MinGumpMoveDistance = OldMinGumpMoveDistance;
+                QuickHealSpell = OldQuickHealSpell;
+                QuickCureSpell = OldQuickCureSpell;
+                WebMapServerPort = OldWebMapServerPort;
+                WebMapAutoStart = OldWebMapAutoStart;
+
+                ProfileMigrationVersion = 6;
+            }
+
+            if (ProfileMigrationVersion < 7)
+            {
+                ProfileManager.GlobalSettings.UseCircleOfTransparency = UseCircleOfTransparency;
+                ProfileManager.GlobalSettings.CircleOfTransparencyRadius = CircleOfTransparencyRadius;
+                ProfileManager.GlobalSettings.CircleOfTransparencyType = CircleOfTransparencyType;
+                
+                ProfileMigrationVersion = 7;
+            }
+
+            if (ProfileMigrationVersion < 8)
+            {
+                ProfileManager.GlobalSettings.EnableSound = EnableSound;
+                ProfileManager.GlobalSettings.SoundVolume = SoundVolume;
+                ProfileManager.GlobalSettings.EnableMusic = EnableMusic;
+                ProfileManager.GlobalSettings.MusicVolume = MusicVolume;
+                ProfileManager.GlobalSettings.EnableFootstepsSound = EnableFootstepsSound;
+                ProfileManager.GlobalSettings.EnableRainSound = EnableRainSound;
+                ProfileManager.GlobalSettings.EnableCombatMusic = EnableCombatMusic;
+                ProfileManager.GlobalSettings.ReproduceSoundsInBackground = ReproduceSoundsInBackground;
+
+                ProfileMigrationVersion = 8;
+            }
+
+            if (ProfileMigrationVersion < 9)
+            {
+                ProfileManager.GlobalSettings.EnableSound = EnableSound;
+                ProfileManager.GlobalSettings.SoundVolume = SoundVolume;
+                ProfileManager.GlobalSettings.EnableMusic = EnableMusic;
+                ProfileManager.GlobalSettings.MusicVolume = MusicVolume;
+                ProfileManager.GlobalSettings.EnableFootstepsSound = EnableFootstepsSound;
+                ProfileManager.GlobalSettings.EnableRainSound = EnableRainSound;
+                ProfileManager.GlobalSettings.EnableCombatMusic = EnableCombatMusic;
+                ProfileManager.GlobalSettings.ReproduceSoundsInBackground = ReproduceSoundsInBackground;
+
+                ProfileMigrationVersion = 9;
+            }
+
+            if (ProfileMigrationVersion < 10)
+            {
+                ProfileManager.GlobalSettings.UseWASDInsteadArrowKeys = UseWASDInsteadArrowKeys;
+                ProfileManager.GlobalSettings.SingleClickIconUse = CastSpellsByOneClick;
+                ProfileManager.ServerSettings.TurnDelay = TurnDelay;
+
+                ProfileMigrationVersion = 10;
+            }
+
+            if (ProfileMigrationVersion < 11)
+            {
+                ProfileManager.GlobalSettings.HideJournalTimestamp = HideJournalTimestamp;
+
+                ProfileMigrationVersion = 11;
+            }
+
+            try //Cleanup old backups from previous save system
+            {
+                string dir = JsonSaveLocationHelper.GetScopeDirectory(SettingsScope.Char);
+                foreach (string f in Directory.EnumerateFiles(dir, "*.backup*"))
+                {
+                    if (!f.Contains("grid_container"))
+                        File.Delete(f);
+                }
+
+                dir = JsonSaveLocationHelper.GetScopeDirectory(SettingsScope.Char);
+                foreach (string f in Directory.EnumerateFiles(dir, "*.bak*"))
+                {
+                    if (!f.Contains("grid_container"))
+                        File.Delete(f);
+                }
+
+                dir = JsonSaveLocationHelper.GetScopeDirectory(SettingsScope.Server);
+                foreach (string f in Directory.EnumerateFiles(dir, "*.backup*"))
+                {
+                    if (!f.Contains("grid_container"))
+                        File.Delete(f);
+                }
+            }
+            catch
+            {}
         }
 
         internal void Save(World world, string path, bool saveGumps = true)
@@ -1049,18 +1050,19 @@ namespace ClassicUO.Configuration
                 return;
 
             Log.Trace($"Saving path:\t\t{path}");
-            string filePath = Path.Combine(path, "profile.json");
 
-            // Create backup rotation before saving
-            CreateBackupRotation(filePath);
-
-            // Save profile settings
-            ConfigurationResolver.Save(this, filePath, ProfileJsonContext.DefaultToUse.Profile);
+            // Atomic write with rotating backups, handled by JsonSave.
+            SaveTo(Path.Combine(path, "profile.json"));
 
             // Grid highlights live in a separate grid_highlights.json (see GridHighlightsConfig); persist
             // them alongside the profile so in-place rule edits are saved on the same cadence as before.
             if (ReferenceEquals(this, ProfileManager.CurrentProfile))
+            {
                 GridHighlightsConfig.Current.Save();
+
+                // Same arrangement for the screen decoration settings and their overlay profiles.
+                FeatureConfigs.ScreenDecorations.ScreenDecorations.Current.Save();
+            }
 
             // Save opened gumps
             if (saveGumps)
@@ -1070,47 +1072,9 @@ namespace ClassicUO.Configuration
             lastSave = Time.Ticks;
         }
 
-        public void SaveAsFile(string path, string filename) => ConfigurationResolver.Save(this, Path.Combine(path, filename), ProfileJsonContext.DefaultToUse.Profile);
+        public void SaveAsFile(string path, string filename) => SaveTo(Path.Combine(path, filename));
 
-        private void CreateBackupRotation(string filePath)
-        {
-            if (!File.Exists(filePath))
-                return;
-
-            string backup3 = filePath + ".bak3";
-            string backup2 = filePath + ".bak2";
-            string backup1 = filePath + ".bak1";
-
-            try
-            {
-                // Remove oldest backup if it exists
-                if (File.Exists(backup3))
-                {
-                    File.Delete(backup3);
-                }
-
-                // Rotate backups: .bak2 -> .bak3, .bak1 -> .bak2
-                if (File.Exists(backup2))
-                {
-                    File.Move(backup2, backup3);
-                }
-
-                if (File.Exists(backup1))
-                {
-                    File.Move(backup1, backup2);
-                }
-
-                // Copy current file to .bak1
-                File.Copy(filePath, backup1);
-            }
-            catch (IOException e)
-            {
-                // Log backup rotation failure but don't prevent the save
-                Log.Error($"Failed to create backup rotation: {e}");
-            }
-        }
-
-        public void SaveAs(string path, string filename = "default.json") => ConfigurationResolver.Save(this, Path.Combine(path, filename), ProfileJsonContext.DefaultToUse.Profile);
+        public void SaveAs(string path, string filename = "default.json") => SaveTo(Path.Combine(path, filename));
 
         private void SaveGumps(World world, string path)
         {
@@ -1260,6 +1224,10 @@ namespace ClassicUO.Configuration
             var gumps = new List<Gump>();
             List<(Gump gump, GumpType type, int x, int y, uint serial, uint parent, XmlElement xml)> nestedGumps = new();
 
+            // Seed the in-memory gump position cache from the permanent (database-backed) positions so
+            // pinned gumps reopen at their saved location. Seeded before the XML gumps are restored below.
+            UIManager.LoadPersistentPositions();
+
             // load skillsgroup
             world.SkillsGroupManager.Load();
 
@@ -1362,6 +1330,11 @@ namespace ClassicUO.Configuration
 
                                 case GumpType.Journal:
                                     gump = new ResizableJournal(world);
+
+                                    break;
+
+                                case GumpType.OldJournal:
+                                    gump = new JournalGump(world);
 
                                     break;
 

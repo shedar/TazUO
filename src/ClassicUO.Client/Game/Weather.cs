@@ -2,7 +2,6 @@ using ClassicUO.Assets;
 using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
 using ClassicUO.Renderer;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -17,7 +16,7 @@ namespace ClassicUO.Game
         private const float SIMULATION_TIME = 37.0f;
 
         private readonly WeatherEffect[] _effects = new WeatherEffect[MAX_WEATHER_EFFECT];
-        private readonly Texture2D _rainImage = PNGLoader.Instance.GetImageTexture(
+        private readonly Texture2D _rainImage = ExternalImageLoader.Instance.GetImageTexture(
             System.IO.Path.Combine(CUOEnviroment.ExecutablePath, "ExternalImages", "rain.png"));
 
         public Weather(World world) : base(world)
@@ -67,7 +66,7 @@ namespace ClassicUO.Game
                         GameActions.Print
                         (
                             _world,
-                            ResGeneral.ItBeginsToRain,
+                            TazLang.Get("it_begins_to_rain"),
                             1154,
                             MessageType.System,
                             3,
@@ -85,7 +84,7 @@ namespace ClassicUO.Game
                         GameActions.Print
                         (
                             _world,
-                            ResGeneral.AFierceStormApproaches,
+                            TazLang.Get("afierce_storm_approaches"),
                             1154,
                             MessageType.System,
                             3,
@@ -105,7 +104,7 @@ namespace ClassicUO.Game
                         GameActions.Print
                         (
                             _world,
-                            ResGeneral.ItBeginsToSnow,
+                            TazLang.Get("it_begins_to_snow"),
                             1154,
                             MessageType.System,
                             3,
@@ -125,7 +124,7 @@ namespace ClassicUO.Game
                         GameActions.Print
                         (
                             _world,
-                            ResGeneral.AStormIsBrewing,
+                            TazLang.Get("astorm_is_brewing"),
                             1154,
                             MessageType.System,
                             3,

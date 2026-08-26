@@ -403,7 +403,7 @@ namespace ClassicUO.Game.GameObjects
                         }
 
                         AutoOpenedCorpses.Add(item.Serial);
-                        GameActions.QueueOpenCorpse(item.Serial);
+                        GameActions.QueueOpenCorpse(item.Serial, isOwnCorpse);
                     }
                 }
             }
@@ -423,14 +423,77 @@ namespace ClassicUO.Game.GameObjects
                 int x = X, y = Y, z = Z;
                 Pathfinder.GetNewXY((byte)Direction, ref x, ref y);
 
-                // Send_OpenDoor toggles the door server-side, so skip already-open doors to
-                // avoid closing one the player (or a script) deliberately left open.
-                if (World.Items.Values.Any(s => s.ItemData.IsDoor && s.X == x && s.Y == y && s.Z - 15 <= z && s.Z + 15 >= z
-                    && !DoorData.IsOpenDoor(s.Graphic)))
+                // Send_OpenDoor toggles the door server-side. Skip already-open doors to avoid
+                // closing one the player (or a script) deliberately left open, unless the global
+                // auto-close setting is enabled, which uses the door regardless of its state.
+                bool closeOpenDoors = ProfileManager.GlobalSettings.AutoCloseDoors;
+
+                // Walk the tile's linked list instead of scanning every item in the world.
+                GameObject obj = World.Map.GetTile(x, y, false);
+
+                while (obj?.TPrevious != null)
                 {
-                    GameActions.OpenDoor();
+                    obj = obj.TPrevious;
+                }
+
+                for (; obj != null; obj = obj.TNext)
+                {
+                    if (obj is Item door && door.ItemData.IsDoor && door.Z - 15 <= z && door.Z + 15 >= z
+                        && (closeOpenDoors || !DoorData.IsOpenDoor(door.Graphic)))
+                    {
+                        GameActions.OpenDoor();
+                    }
                 }
             }
+        }
+
+        // Block walking into a door when auto open is off to avoid spamming the server with
+        // walk requests that get denied and cause the client to bounce back. Open doors are
+        // blocked too because the client's notion of a door's state may not match the server's.
+        private bool IsBlockedByDoor(int startX, int startY, int x, int y, sbyte z)
+        {
+            if (TileHasDoor(x, y, z))
+            {
+                return true;
+            }
+
+            // A diagonal step cuts across the corner shared by two tiles, and the server
+            // rejects it when either flanking tile blocks. Mirror that here so a door
+            // beside the path still stops the diagonal.
+            if (startX != x && startY != y)
+            {
+                return TileHasDoor(startX, y, z) || TileHasDoor(x, startY, z);
+            }
+
+            return false;
+        }
+
+        private bool TileHasDoor(int x, int y, sbyte z)
+        {
+            Profile profile = ProfileManager.CurrentProfile;
+
+            if (!profile.BlockDoorMovement || profile.AutoOpenDoors || IsDead)
+            {
+                return false;
+            }
+
+            // Walk the tile's linked list instead of scanning every item in the world.
+            GameObject obj = World.Map.GetTile(x, y, false);
+
+            while (obj?.TPrevious != null)
+            {
+                obj = obj.TPrevious;
+            }
+
+            for (; obj != null; obj = obj.TNext)
+            {
+                if (obj is Item door && door.ItemData.IsDoor && door.Z - 15 <= z && door.Z + 15 >= z)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public override void Destroy()
@@ -662,8 +725,11 @@ namespace ClassicUO.Game.GameObjects
                     oldDirection = (Direction)walkStep.Direction;
                 }
 
+                int startX = x;
+                int startY = y;
+                sbyte startZ = z;
                 sbyte oldZ = z;
-                ushort walkTime = ProfileManager.CurrentProfile.TurnDelay;
+                ushort walkTime = ProfileManager.ServerSettings.TurnDelay;
 
 
                 if (IsCardinalDirection(direction))
@@ -739,6 +805,11 @@ namespace ClassicUO.Game.GameObjects
                     }
 
                     direction = newDir;
+                }
+
+                if (IsBlockedByDoor(startX, startY, x, y, z) && (x != startX || y != startY || z != startZ))
+                {
+                    return false;
                 }
 
                 CloseBank();
@@ -869,8 +940,11 @@ namespace ClassicUO.Game.GameObjects
                 oldDirection = (Direction)walkStep.Direction;
             }
 
+            int startX = x;
+            int startY = y;
+            sbyte startZ = z;
             sbyte oldZ = z;
-            ushort walkTime = ProfileManager.CurrentProfile.TurnDelay;
+            ushort walkTime = ProfileManager.ServerSettings.TurnDelay;
 
             if ((oldDirection & Direction.Mask) == (direction & Direction.Mask))
             {
@@ -923,6 +997,11 @@ namespace ClassicUO.Game.GameObjects
                 }
 
                 direction = newDir;
+            }
+
+            if (IsBlockedByDoor(startX, startY, x, y, z) && (x != startX || y != startY || z != startZ))
+            {
+                return false;
             }
 
             CloseBank();

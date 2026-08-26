@@ -3,6 +3,7 @@ using ClassicUO.Common;
 using ClassicUO.Configuration;
 using ClassicUO.Game.Scenes;
 using ClassicUO.Game.UI.Gumps;
+using ClassicUO.Game.UI.MyraWindows.Options.Tabs.VisualEffects;
 using ClassicUO.Game.UI.MyraWindows.Widgets;
 using ClassicUO.Renderer;
 using Microsoft.Xna.Framework;
@@ -15,10 +16,8 @@ public static class VideoTab
     /// <summary>Returns the tab group containing game-window, zoom/scaling, and lighting sub-tabs</summary>
     internal static IOptionSource GetContent() => GetVideoMenuTabs();
 
-    private static OptionTabGroup GetVideoMenuTabs()
-    {
-
-        return new OptionTabGroup()
+    private static OptionTabGroup GetVideoMenuTabs() =>
+        new OptionTabGroup()
             .AddTab(
                 TazLang.Get("mog_videotab_gamewindow_label"),
                 GetGameWindowSubTabContent,
@@ -40,19 +39,21 @@ public static class VideoTab
                 new SearchMetadata(TazLang.Get("mog_videotab_shadows_label"), Keywords: [TazLang.Get("mog_kw_shadow"), TazLang.Get("mog_kw_static"), TazLang.Get("mog_kw_terrain")])
             )
             .AddTab(
+                TazLang.Get("mog_videotab_visualeffects_label", "Visual Effects"),
+                VisualEffectsTab.GetContent,
+                new SearchMetadata() // Empty metadata to disable search; profile editors don't render well in the results page.
+            )
+            .AddTab(
                 TazLang.Get("mog_videotab_misc_label"),
                 GetMiscSubTabContent,
                 new SearchMetadata(TazLang.Get("mog_videotab_misc_label"), Keywords: [TazLang.Get("mog_kw_misc"), TazLang.Get("mog_kw_miscellaneous")])
             );
-    }
 
-    private static IOptionSource GetGameWindowSubTabContent()
-    {
-        return OptionsUi.Vertical(
+    private static IOptionSource GetGameWindowSubTabContent() =>
+        OptionsUi.Vertical(
             GetRendererSection(),
             GetViewportSettingsGroup()
         ).WithSearch(new SearchMetadata(TazLang.Get("mog_videotab_gamewindow_label"), Tags: [TazLang.Get("mog_kw_window"), TazLang.Get("mog_kw_viewport")]));
-    }
 
     private static OptionFragment GetRendererSection()
     {
@@ -114,7 +115,7 @@ public static class VideoTab
                     if (b)
                     {
                         viewport.ResizeGameWindow(
-                            new Point(Client.Game.Window.ClientBounds.Width, Client.Game.Window.ClientBounds.Height)
+                            new Point(ScaleHelper.LogicalWindowWidth, ScaleHelper.LogicalWindowHeight)
                         );
                         viewport.SetGameWindowPosition(new Point(0, 0));
                         profile.GameWindowPosition = new Point(0, 0);
@@ -158,7 +159,7 @@ public static class VideoTab
             Option.Slider(
                 TazLang.Get("mog_videotab_gamewindow_viewportx"),
                 0,
-                Client.Game.Window.ClientBounds.Width,
+                ScaleHelper.LogicalWindowWidth,
                 new Accessor<float>(() => profile.GameWindowPosition.X, f =>
                 {
                     profile.GameWindowPosition = new Point((int)f, profile.GameWindowPosition.Y);
@@ -169,7 +170,7 @@ public static class VideoTab
             Option.Slider(
                 TazLang.Get("mog_videotab_gamewindow_viewporty"),
                 0,
-                Client.Game.Window.ClientBounds.Height,
+                ScaleHelper.LogicalWindowHeight,
                 new Accessor<float>(() => profile.GameWindowPosition.Y, f =>
                 {
                     profile.GameWindowPosition = new Point(profile.GameWindowPosition.X, (int)f);
@@ -180,7 +181,7 @@ public static class VideoTab
             Option.Slider(
                 TazLang.Get("mog_videotab_gamewindow_viewportw"),
                 0,
-                Client.Game.Window.ClientBounds.Width,
+                ScaleHelper.LogicalWindowWidth,
                 new Accessor<float>(() => profile.GameWindowSize.X, f =>
                 {
                     profile.GameWindowSize = new Point((int)f, profile.GameWindowSize.Y);
@@ -191,7 +192,7 @@ public static class VideoTab
             Option.Slider(
                 TazLang.Get("mog_videotab_gamewindow_viewporth"),
                 0,
-                Client.Game.Window.ClientBounds.Height,
+                ScaleHelper.LogicalWindowHeight,
                 new Accessor<float>(() => profile.GameWindowSize.Y, f =>
                 {
                     profile.GameWindowSize = new Point(profile.GameWindowSize.X, (int)f);
@@ -202,13 +203,11 @@ public static class VideoTab
         );
     }
 
-    private static IOptionSource GetZoomAndScalingSubTubContent()
-    {
-        return OptionsUi.Vertical(
+    private static IOptionSource GetZoomAndScalingSubTubContent() =>
+        OptionsUi.Vertical(
             GetZoomSection(),
             GetScalingSection()
         ).WithSearch(new SearchMetadata(TazLang.Get("mog_videotab_zoom_label"), Tags: [TazLang.Get("mog_kw_zoom"), TazLang.Get("mog_kw_scale")]));
-    }
 
     private static OptionFragment GetZoomSection()
     {
@@ -239,6 +238,11 @@ public static class VideoTab
                 TazLang.Get("mog_videotab_zoom_returndefaultzoom"),
                 new Accessor<bool>(() => profile.RestoreScaleAfterUnpressCtrl),
                 search: new SearchMetadata(TazLang.Get("mog_videotab_zoom_returndefaultzoom"), Keywords: [TazLang.Get("mog_kw_restore"), TazLang.Get("mog_kw_ctrl")])
+            ),
+            Option.Checkbox(
+                TazLang.Get("mog_videotab_zoom_overheadsscale"),
+                new Accessor<bool>(() => profile.OverheadsScaleWithZoom),
+                search: new SearchMetadata(TazLang.Get("mog_videotab_zoom_overheadsscale"), Keywords: [TazLang.Get("mog_kw_zoom"), TazLang.Get("mog_kw_scale")])
             )
         );
     }
@@ -393,6 +397,11 @@ public static class VideoTab
                 TazLang.Get("mog_videotab_lighting_coloredlight"),
                 new Accessor<bool>(() => profile.UseColoredLights),
                 search: new SearchMetadata(TazLang.Get("mog_videotab_lighting_coloredlight"), Keywords: [TazLang.Get("mog_kw_color"), TazLang.Get("mog_kw_light")])
+            ),
+            Option.Checkbox(
+                TazLang.Get("mog_videotab_lighting_candleflicker"),
+                new Accessor<bool>(() => profile.CandleFlickerLights),
+                search: new SearchMetadata(TazLang.Get("mog_videotab_lighting_candleflicker"), Keywords: [TazLang.Get("mog_kw_light")])
             )
         ).WithSearch(new SearchMetadata(TazLang.Get("mog_videotab_lighting_label"), Tags: [TazLang.Get("mog_kw_light")]));
 
@@ -457,6 +466,11 @@ public static class VideoTab
                 search: new SearchMetadata(TazLang.Get("mog_videotab_misc_bwdead"), Keywords: [TazLang.Get("mog_kw_dead"), TazLang.Get("mog_kw_bw")])
             ),
             Option.Checkbox(
+                TazLang.Get("mog_videotab_misc_screenshotondeath"),
+                new Accessor<bool>(() => profile.ScreenshotOnDeath),
+                search: new SearchMetadata(TazLang.Get("mog_videotab_misc_screenshotondeath"), Keywords: [TazLang.Get("mog_kw_death")])
+            ),
+            Option.Checkbox(
                 TazLang.Get("mog_videotab_misc_mousethread"),
                 new Accessor<bool>(() => Settings.GlobalSettings.RunMouseInASeparateThread),
                 search: new SearchMetadata(TazLang.Get("mog_videotab_misc_mousethread"), Keywords: [TazLang.Get("mog_kw_mouse"), TazLang.Get("mog_kw_thread")])
@@ -500,7 +514,7 @@ public static class VideoTab
                 Option.ComboBox(
                     TazLang.Get("mog_videotab_misc_postprocessingeffecttype"),
                     profile.PostProcessingType,
-                    ["point", "linear", "anisotropic", "xbr"],
+                    ["point", "linear", "anisotropic", "xbr", "fsr"],
                     i =>
                     {
                         profile.PostProcessingType = (ushort)i;
@@ -510,19 +524,19 @@ public static class VideoTab
                 )
             ).WithSearch(new SearchMetadata(TazLang.Get("mog_videotab_misc_label"), [TazLang.Get("mog_kw_postprocessing")], [TazLang.Get("mog_kw_post"), TazLang.Get("mog_kw_process")])),
             OptionsUi.CheckBoxGroup(
-                new PropertyBinder(new Accessor<bool>(() => profile.UseCircleOfTransparency), TazLang.Get("mog_general_enablecot")),
+                new PropertyBinder(new Accessor<bool>(() => ProfileManager.GlobalSettings.UseCircleOfTransparency), TazLang.Get("mog_general_enablecot")),
                 Option.Slider(
                     TazLang.Get("mog_general_cotdistance"),
                     Constants.MIN_CIRCLE_OF_TRANSPARENCY_RADIUS,
                     Constants.MAX_CIRCLE_OF_TRANSPARENCY_RADIUS,
-                    new Accessor<float>(() => profile.CircleOfTransparencyRadius, f => profile.CircleOfTransparencyRadius = (int)f),
+                    new Accessor<float>(() => ProfileManager.GlobalSettings.CircleOfTransparencyRadius, f => ProfileManager.GlobalSettings.CircleOfTransparencyRadius = (int)f),
                     search: new SearchMetadata(TazLang.Get("mog_general_cotdistance"), Keywords: [TazLang.Get("mog_kw_cot"), TazLang.Get("mog_kw_distance")])
                 ),
                 Option.ComboBox(
                     TazLang.Get("mog_general_cottype"),
-                    profile.CircleOfTransparencyType,
+                    ProfileManager.GlobalSettings.CircleOfTransparencyType,
                     [TazLang.Get("mog_general_cottypeoptfull"), TazLang.Get("mog_general_cottypeoptgrad"), TazLang.Get("mog_general_cottypeoptmodern")],
-                    i => profile.CircleOfTransparencyType = i,
+                    i => ProfileManager.GlobalSettings.CircleOfTransparencyType = i,
                     search: new SearchMetadata(TazLang.Get("mog_general_cottype"), Keywords: [TazLang.Get("mog_kw_cot"), TazLang.Get("mog_kw_type")])
                 )
             ).WithSearch(new SearchMetadata(TazLang.Get("mog_videotab_misc_label"), [TazLang.Get("mog_kw_misc")], [TazLang.Get("mog_kw_cot"), TazLang.Get("mog_kw_circle")])),

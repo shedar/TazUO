@@ -1,4 +1,4 @@
-﻿using ClassicUO.Assets;
+using ClassicUO.Assets;
 using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.GameObjects;
@@ -15,6 +15,7 @@ using System.Linq;
 using System.Xml;
 using System.IO;
 using ClassicUO.Game.Managers.Structs;
+using ClassicUO.Utility;
 
 
 namespace ClassicUO.Game.UI.Gumps
@@ -30,7 +31,7 @@ namespace ClassicUO.Game.UI.Gumps
         {
             if (MordernPaperdollGump == null)
             {
-                PNGLoader.Instance.TryGetEmbeddedTexture("modern-paperdollgump.png", out MordernPaperdollGump);
+                ExternalImageLoader.Instance.TryGetEmbeddedTexture("modern-paperdollgump.png", out MordernPaperdollGump);
             }
         }
         #endregion
@@ -91,7 +92,7 @@ namespace ClassicUO.Game.UI.Gumps
             _ = new ItemSlot(world, 50, 50, new Layer[] { Layer.Helmet }) { X = 100, Y = TOP_SPACING };
             itemLayerSlots.Add(_.Layers, _); //Head
 
-            _ = new ItemSlot(world, 35, 35, new Layer[] { Layer.Necklace }) { X = 150 + CELL_SPACING, Y = TOP_SPACING + 15 };
+            _ = new ItemSlot(world, 35, 35, new Layer[] { Layer.Neck }) { X = 150 + CELL_SPACING, Y = TOP_SPACING + 15 };
             itemLayerSlots.Add(_.Layers, _); //Amulet
 
 
@@ -333,7 +334,16 @@ namespace ClassicUO.Game.UI.Gumps
             else if (World.TargetManager.IsTargeting)
             {
                 if (SelectedObject.Object is Item item)
+                {
                     World.TargetManager.Target(item.Serial);
+                    Mouse.CancelDoubleClick = true;
+                    Mouse.LastLeftButtonClickTime = 0;
+
+                    if (World.TargetManager.TargetingState == CursorTarget.SetTargetClientSide)
+                    {
+                        UIManager.Add(new InspectorGump(World, item));
+                    }
+                }
             }
         }
 
@@ -358,7 +368,7 @@ namespace ClassicUO.Game.UI.Gumps
                 Height = height;
 
                 Add(_itemArea = new Area(false) { Width = Width, Height = Height, AcceptMouseInput = true, CanMove = true });
-                _itemArea.SetTooltip(layers[0].ToString());
+                _itemArea.SetTooltip(StringHelper.AddSpaceBeforeCapital(layers[0].ToString()));
 
                 Add(_durabilityBar = new AlphaBlendControl(0.75f) { Width = 7, Height = Height, Hue = ProfileManager.CurrentProfile.ModernPaperDollDurabilityHue, IsVisible = false });
 
@@ -427,9 +437,14 @@ namespace ClassicUO.Game.UI.Gumps
                 Item = null;
             }
 
-            public override void OnMouseUp(int x, int y, MouseButtonType button)
+            public override void OnMouseDown(int x, int y, MouseButtonType button)
             {
                 ConditionalRequestContextMenuForSlot(x, y, button);
+                base.OnMouseDown(x, y, button);
+            }
+
+            public override void OnMouseUp(int x, int y, MouseButtonType button)
+            {
                 base.OnMouseUp(x, y, button);
                 Parent?.InvokeMouseUp(new Point(x, y), button);
             }
@@ -443,6 +458,11 @@ namespace ClassicUO.Game.UI.Gumps
             private void ConditionalRequestContextMenuForSlot(int x, int y, MouseButtonType button)
             {
                 if (!_world.InGame || Item == null || button != MouseButtonType.Left)
+                    return;
+
+                // A press used to drop a held item or to satisfy a targeting cursor must not be
+                // treated as a single-click on the slotted item.
+                if (Client.Game.UO.GameCursor.ItemHold.Enabled || _world.TargetManager.IsTargeting)
                     return;
 
                 if (_world.DelayedObjectClickManager.IsEnabled)
@@ -792,8 +812,8 @@ namespace ClassicUO.Game.UI.Gumps
 
                     if (party == null)
                     {
-                        int x = Client.Game.Window.ClientBounds.Width / 2 - 272;
-                        int y = Client.Game.Window.ClientBounds.Height / 2 - 240;
+                        int x = Math.Max(0, ScaleHelper.LogicalWindowWidth / 2 - 272);
+                        int y = Math.Max(0, ScaleHelper.LogicalWindowHeight / 2 - 240);
                         UIManager.Add(new PartyGump(world, x, y, World.Party.CanLoot));
                     }
                     else

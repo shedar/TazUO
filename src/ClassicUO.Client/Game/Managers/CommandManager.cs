@@ -3,16 +3,15 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using ClassicUO.Game.GameObjects;
 using ClassicUO.Input;
-using ClassicUO.Resources;
 using ClassicUO.Utility.Logging;
 using System.Threading.Tasks;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Configuration;
 using ClassicUO.Game.UI;
-using ClassicUO.Game.UI.MyraWindows.Options;
 using ClassicUO.LegionScripting;
 using Myra;
 
@@ -60,7 +59,7 @@ namespace ClassicUO.Game.Managers
                 {
                     if (_world.Player != null)
                     {
-                        GameActions.Print(_world, string.Format(ResGeneral.CurrentDateTimeNowIs0, DateTime.Now));
+                        GameActions.Print(_world, string.Format(TazLang.Get("current_date_time_now_is0"), DateTime.Now));
                     }
                 }
             );
@@ -249,6 +248,8 @@ namespace ClassicUO.Game.Managers
                 Task.Run(() => SpellDefinition.SaveAllSpellsToJson(_world));
             });
 
+            Register("gumppositions", (s) => Game.UI.MyraWindows.GumpPositionManagerWindow.Show());
+
             Register("setinscreen", (s) =>
             {
                 for (LinkedListNode<IGui> last = UIManager.Gumps.Last; last != null; last = last.Previous)
@@ -282,12 +283,21 @@ namespace ClassicUO.Game.Managers
             Register("organizer", s => OrganizerAgent.Instance?.OrganizerCommand(s));
             Register("organizerlist", s => OrganizerAgent.Instance?.ListOrganizers());
             Register("old-options-window", s => GameActions.ShowLegacyOptionsGump(_world));
+            Register("language-regenerate", _ => TazLang.Load(Settings.GlobalSettings.UILanguage));
+
+            RegisterDebugCommands();
+        }
+
+        /// <summary>Registers debug-only commands. Compiled out of Release.</summary>
+        [Conditional("DEBUG")]
+        private void RegisterDebugCommands()
+        {
             Register("myra-draw-widget-frames", args => MyraEnvironment.DrawWidgetsFrames = ParseBooleanCommandArgs(args));
             Register("myra-draw-hovered-widget-frames", args => MyraEnvironment.DrawMouseHoveredWidgetFrame = ParseBooleanCommandArgs(args));
             Register("myra-draw-hovered-widget-info", args => MyraEnvironment.DrawMouseHoveredWidgetInfo = ParseBooleanCommandArgs(args));
 
-            // Reload the language strings, loading any changes that have been made without having to restart the game
-            Register("language-regenerate", _ => TazLang.Load(Settings.GlobalSettings.UILanguage));
+            // Desyncs death state from the server; only a real death/resurrect packet restores it.
+            Register("deadman-mode", args => World.Instance?.Player?.IsDead = ParseBooleanCommandArgs(args));
         }
 
         /// <summary>
@@ -367,7 +377,7 @@ namespace ClassicUO.Game.Managers
             if (entity != null)
             {
                 _world.TargetManager.Target(entity);
-                GameActions.Print(_world, string.Format(ResGeneral.ItemID0Hue1, entity.Graphic, entity.Hue));
+                GameActions.Print(_world, string.Format(TazLang.Get("item_id0_hue1"), entity.Graphic, entity.Hue));
             }
         }
     }

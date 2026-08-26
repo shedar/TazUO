@@ -192,6 +192,46 @@ namespace ClassicUO.Game.Managers
             }
         }
 
+        /// <summary>
+        /// Moves keyboard focus off any non-chat input field (search boxes, rename fields, etc.) and
+        /// hands it back to the system chat when the player clicks away from it - the game world, the
+        /// empty background, or a different gump. When chat input is inactive/disabled, focus is simply
+        /// cleared so nothing keeps capturing keystrokes. Lets the player click away from a text field
+        /// instead of pressing Esc or clicking chat.
+        /// </summary>
+        public static void RestoreSystemChatFocus()
+        {
+            SystemChatControl chat = SystemChat;
+
+            // Already resting on the chat input (or chat doesn't exist) - nothing to steal focus from.
+            if (chat == null || KeyboardFocusControl == chat.TextBoxControl)
+            {
+                return;
+            }
+
+            IGui previousFocus = KeyboardFocusControl;
+
+            KeyboardFocusControl = null;
+            chat.SetFocus();
+
+            // Setting KeyboardFocusControl above fired OnFocusLost on the field we just left, clearing its
+            // IsFocused flag. The mouse-focus tracker (_lastFocus) is separate and, on a world/background
+            // click, still points at that field. Left as-is, the "_lastFocus != control" guard in
+            // OnMouseButtonDown skips OnFocusEnter the next time the field is clicked, so it becomes
+            // keyboard-focused but stays visually unfocused (e.g. a search box keeps showing its
+            // placeholder text). Clear the tracker so re-clicking the field re-runs OnFocusEnter.
+            if (_lastFocus == previousFocus)
+            {
+                _lastFocus = null;
+            }
+        }
+
+        /// <summary>
+        /// Returns the top-level gump that owns a control (the control itself when it is already
+        /// top-level). Used to tell whether a click landed in the same window as the focused input.
+        /// </summary>
+        private static IGui GetOwningGump(IGui control) => control?.RootParent ?? control;
+
         public static void OnMouseButtonDown(MouseButtonType button)
         {
             HandleMouseInput();
@@ -215,11 +255,27 @@ namespace ClassicUO.Game.Managers
                 {
                     _keyboardFocusControl = MouseOverControl;
                 }
+                else if (button == MouseButtonType.Left && !IsModalOpen && _keyboardFocusControl != null
+                         && GetOwningGump(_keyboardFocusControl) != GetOwningGump(MouseOverControl))
+                {
+                    // Clicked a different gump than the one that owns the focused input field (search
+                    // boxes, rename fields, etc.), so release it back to the system chat - same as a
+                    // world/background click. Clicks inside the field's own gump keep it focused.
+                    RestoreSystemChatFocus();
+                }
 
                 _mouseDownControls[(int)button] = MouseOverControl;
             }
             else
             {
+                // Clicking empty background (no control, and not the game world - that path never
+                // reaches here) should drop keyboard focus from other inputs, same as a world click.
+                // Skip while a modal is open so we don't steal focus from a modal that captures input.
+                if (button == MouseButtonType.Left && !IsModalOpen)
+                {
+                    RestoreSystemChatFocus();
+                }
+
                 foreach (IGui s in Gumps)
                 {
                     if (s.IsModal && s.ModalClickOutsideAreaClosesThisControl)
@@ -266,7 +322,7 @@ namespace ClassicUO.Game.Managers
             {
                 IGui mouseDownControl = _mouseDownControls[index];
                 // only attempt to close the gump if the mouse is still on the gump when right click mouse up occurs
-                if (mouseDownControl != null && MouseOverControl == mouseDownControl)
+                if (mouseDownControl != null && (MouseOverControl == mouseDownControl || MouseOverControl?.RootParent == mouseDownControl.RootParent))
                 {
                     mouseDownControl.InvokeMouseCloseGumpWithRClick();
                 }
@@ -305,11 +361,125 @@ namespace ClassicUO.Game.Managers
 
         public static IGui LastControlMouseDown(MouseButtonType button) => _mouseDownControls[(int)button];
 
-        public static void SavePosition(uint serverSerial, Point point) => _gumpPositionCache[serverSerial] = point;
+        public static void SavePosition(uint serverSerial, Point point)
+        {
+            _gumpPositionCache[serverSerial] = point;
 
-        public static bool RemovePosition(uint serverSerial) => _gumpPositionCache.Remove(serverSerial, out _);
+            // Keep the on-disk copy in sync whenever a pinned gump is moved, so its permanent
+            // position always reflects where the user last left it.
+            if (_persistentPositionSerials.ContainsKey(serverSerial))
+                _ = GumpPositionSQLManager.Instance.UpdatePositionAsync(serverSerial, point.X, point.Y);
+        }
+
+        public static bool RemovePosition(uint serverSerial)
+        {
+            // A permanently pinned position must survive transient "forget this position" requests
+            // (e.g. a non-movable server gump closing). Removing the cache entry here would let the next
+            // open re-seed it with the server default and overwrite the saved position in the database.
+            if (_persistentPositionSerials.ContainsKey(serverSerial))
+                return false;
+
+            return _gumpPositionCache.Remove(serverSerial, out _);
+        }
 
         public static bool GetGumpCachePosition(uint id, out Point pos) => _gumpPositionCache.TryGetValue(id, out pos);
+
+        #region Persistent gump positions
+
+        // Serials whose positions are permanently saved to the GumpPositionSQLManager database, mapped to
+        // their friendly display name. This is the authoritative in-memory view of the saved set (kept in
+        // sync on every change) so the manager UI never has to block on the database to render its list.
+        // Seeded from the database on startup.
+        private static readonly Dictionary<uint, string> _persistentPositionSerials = new();
+
+        /// <summary>
+        /// Seeds the in-memory gump position cache from the permanent database. Idempotent - safe to call
+        /// on each profile load. Pinned positions become the cache values so the affected gumps reopen at
+        /// their saved location.
+        /// </summary>
+        public static void LoadPersistentPositions()
+        {
+            try
+            {
+                foreach (SavedGumpPosition saved in GumpPositionSQLManager.Instance.GetAll())
+                {
+                    _persistentPositionSerials[saved.Serial] = saved.Name;
+                    _gumpPositionCache[saved.Serial] = new Point(saved.X, saved.Y);
+                }
+            }
+            catch (Exception ex)
+            {
+                ClassicUO.Utility.Logging.Log.Error($"Failed loading persistent gump positions: {ex.Message}");
+            }
+        }
+
+        /// <summary>Whether the given gump serial currently has a permanently saved position.</summary>
+        public static bool IsPositionPersistent(uint serial) => _persistentPositionSerials.ContainsKey(serial);
+
+        /// <summary>
+        /// Snapshot of every permanently saved position, built from in-memory state (name + current cached
+        /// location) so callers get an immediately consistent view without a blocking database read.
+        /// </summary>
+        public static List<SavedGumpPosition> GetPersistentPositions()
+        {
+            var list = new List<SavedGumpPosition>(_persistentPositionSerials.Count);
+
+            foreach ((uint serial, string name) in _persistentPositionSerials)
+            {
+                Point point = _gumpPositionCache.TryGetValue(serial, out Point p) ? p : Point.Zero;
+                list.Add(new SavedGumpPosition(serial, name, point.X, point.Y));
+            }
+
+            return list;
+        }
+
+        /// <summary>A friendly display name for a gump used when persisting its position.</summary>
+        public static string GetGumpDisplayName(Gump gump) =>
+            gump.GumpType != Game.UI.Gumps.GumpType.None ? gump.GumpType.ToString() : gump.GetType().Name;
+
+        /// <summary>
+        /// When the "save all gumps automatically" profile option is enabled, permanently saves an open
+        /// server gump's position (once). No-op for non-server gumps or gumps already saved.
+        /// </summary>
+        public static void AutoSaveGumpPositionIfEnabled(Gump gump)
+        {
+            if (gump == null || gump.ServerSerial == 0)
+                return;
+
+            if (ProfileManager.CurrentProfile?.AutoSaveGumpPositions != true)
+                return;
+
+            if (_persistentPositionSerials.ContainsKey(gump.ServerSerial))
+                return;
+
+            SetPositionPersistent(gump.ServerSerial, GetGumpDisplayName(gump), gump.Location);
+        }
+
+        /// <summary>
+        /// Permanently saves a gump's position under a friendly name, updating both the in-memory cache
+        /// and the backing database.
+        /// </summary>
+        public static void SetPositionPersistent(uint serial, string name, Point point)
+        {
+            if (serial == 0)
+                return;
+
+            _persistentPositionSerials[serial] = name;
+            _gumpPositionCache[serial] = point;
+            _ = GumpPositionSQLManager.Instance.SaveAsync(serial, name, point.X, point.Y);
+        }
+
+        /// <summary>
+        /// Removes a gump's permanently saved position from the database. The current in-memory cache
+        /// entry is left untouched so the gump keeps its position for the rest of the session.
+        /// </summary>
+        public static void RemovePersistentPosition(uint serial)
+        {
+            if (_persistentPositionSerials.Remove(serial))
+                _ = GumpPositionSQLManager.Instance.RemoveAsync(serial);
+        }
+
+        #endregion
 
         public static void ShowContextMenu(ContextMenuShowMenu menu)
         {

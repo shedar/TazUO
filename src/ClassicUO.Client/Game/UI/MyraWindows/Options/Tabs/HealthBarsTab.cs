@@ -58,24 +58,7 @@ public static class HealthBarsTab
                         search: new SearchMetadata(TazLang.Get("mog_tazuo_belowmobilehealthbarscale"), Keywords: [TazLang.Get("mog_kw_below"), TazLang.Get("mog_kw_scale")])
                     )
                 ).AsSearchGroup()
-                .WithSearch(new SearchMetadata(TazLang.Get("mog_tazuo_mobilehealthindicator"), Keywords: [TazLang.Get("mog_kw_hp"), TazLang.Get("mog_kw_health"), TazLang.Get("mog_kw_scale")])),
-            OptionsUi.CheckBoxGroup(
-                new PropertyBinder(new Accessor<bool>(() => profile.EnableHealthIndicator), TazLang.Get("mog_tazuo_healthbarindicator")),
-                Option.Slider(
-                    TazLang.Get("mog_tazuo_onlyshowbelowhp"),
-                    0,
-                    100,
-                    new Accessor<float>(() => profile.ShowHealthIndicatorBelow),
-                    search: new SearchMetadata(TazLang.Get("mog_tazuo_onlyshowbelowhp"), Keywords: [TazLang.Get("mog_kw_hp")])
-                ),
-                Option.Slider(
-                    TazLang.Get("mog_tazuo_size"),
-                    1,
-                    25,
-                    new Accessor<float>(() => profile.HealthIndicatorWidth, f => profile.HealthIndicatorWidth = (int)f),
-                    search: new SearchMetadata(TazLang.Get("mog_tazuo_size"), Keywords: [TazLang.Get("mog_kw_size")])
-                )
-            ).WithSearch(new SearchMetadata(TazLang.Get("mog_tazuo_healthbarindicator"), Keywords: [TazLang.Get("mog_kw_indicator"), TazLang.Get("mog_kw_border")]))
+                .WithSearch(new SearchMetadata(TazLang.Get("mog_tazuo_mobilehealthindicator"), Keywords: [TazLang.Get("mog_kw_hp"), TazLang.Get("mog_kw_health"), TazLang.Get("mog_kw_scale")]))
         );
     }
 
@@ -86,6 +69,7 @@ public static class HealthBarsTab
         string usePartyHealthBarsLabel = TazLang.Get("healthbar_usepartystyle", "Use party health bar style for party members");
         string healCureAllLabel = TazLang.Get("healthbar_healcureall", "Show heal/cure buttons on all health bars (except invulnerable)");
         string healCureFriendsLabel = TazLang.Get("healthbar_healcurefriends", "Show heal/cure buttons on friends list health bars");
+        string healCurePetsLabel = TazLang.Get("healthbar_healcurepets", "Show heal/cure buttons on pet health bars");
 
         return OptionsUi.VisualContainer(
             new VisualContainerProps { LabelText = TazLang.Get("healthbars_floating_section") },
@@ -111,6 +95,11 @@ public static class HealthBarsTab
                 healCureFriendsLabel,
                 new Accessor<bool>(() => profile.ShowHealCureButtonsFriends),
                 search: new SearchMetadata(healCureFriendsLabel, Keywords: [TazLang.Get("mog_kw_healthbar"), TazLang.Get("mog_kw_heal")])
+            ),
+            Option.Checkbox(
+                healCurePetsLabel,
+                new Accessor<bool>(() => profile.ShowHealCureButtonsPets),
+                search: new SearchMetadata(healCurePetsLabel, Keywords: [TazLang.Get("mog_kw_healthbar"), TazLang.Get("mog_kw_heal")])
             ),
             Option.Checkbox(
                 TazLang.Get("mog_general_savehpbars"),

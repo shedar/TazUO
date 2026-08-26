@@ -5,7 +5,6 @@ using ClassicUO.Configuration;
 using ClassicUO.Game;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.Managers;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
 using Microsoft.Xna.Framework.Graphics;
@@ -97,6 +96,7 @@ namespace ClassicUO
 
         public void Unload()
         {
+            Sounds?.DisposeAll();
             FileManager.Dispose();
             World?.Map?.Destroy();
         }
@@ -107,6 +107,11 @@ namespace ClassicUO
             Task<bool> skipServerSelectTask = Client.Settings.GetAsync(SettingsScope.Global, Constants.SqlSettings.SKIP_SERVER_SELECTION, false);
 
             TazLang.Load(Settings.GlobalSettings.UILanguage);
+
+            // This provides Myra searchable combobox localization context.
+            // Basically, it allows for better developer ergonomics by negating the need to manually
+            // set localize string like tooltips, hints, etc. for every usage.
+            Game.UI.MyraWindows.Widgets.Search.SearchableComboBoxLocalization.Install();
 
             string clientPath = Settings.GlobalSettings.UltimaOnlineDirectory;
             Log.Trace($"Ultima Online installation folder: {clientPath}");
@@ -125,7 +130,7 @@ namespace ClassicUO
             if (!Directory.Exists(clientPath))
             {
                 Log.Error("Invalid client directory: " + clientPath);
-                Client.ShowErrorMessage(string.Format(ResErrorMessages.ClientPathIsNotAValidUODirectory, clientPath));
+                Client.ShowErrorMessage(string.Format(TazLang.Get("client_path_is_not_avalid_uodirectory"), clientPath));
 
                 throw new InvalidClientDirectory($"'{clientPath}' is not a valid directory");
             }
@@ -139,7 +144,7 @@ namespace ClassicUO
                 if (!ClientVersionHelper.TryParseFromFile(Path.Combine(clientPath, "client.exe"), out clientVersionText) || !ClientVersionHelper.IsClientVersionValid(clientVersionText, out clientVersion))
                 {
                     Log.Error("Invalid client version: " + clientVersionText);
-                    Client.ShowErrorMessage(string.Format(ResGumps.ImpossibleToDefineTheClientVersion0, clientVersionText));
+                    Client.ShowErrorMessage(string.Format(TazLang.Get("impossible_to_define_the_client_version0"), clientVersionText));
 
                     throw new InvalidClientVersion($"Invalid client version: '{clientVersionText}'");
                 }
@@ -196,7 +201,7 @@ namespace ClassicUO
 
             try
             {
-                FileManager.Load(Settings.GlobalSettings.UseVerdata, Settings.GlobalSettings.Language, Settings.GlobalSettings.MapsLayouts);
+                FileManager.Load(Settings.GlobalSettings.UseVerdata, Settings.GlobalSettings.Language, Client.Game.GraphicsDevice, Settings.GlobalSettings.MapsLayouts);
 
                 if (BeyondRecallQA.BrQaSession.IsActive)
                     BeyondRecallQA.BrQaSession.Instance.EmitLegalDataOpened();

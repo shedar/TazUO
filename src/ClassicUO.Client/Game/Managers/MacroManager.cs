@@ -2,14 +2,13 @@
 using ClassicUO.Configuration;
 using ClassicUO.Game.Data;
 using ClassicUO.Game.GameObjects;
+using ClassicUO.Game.Managers.Hotkeys;
 using ClassicUO.Game.Scenes;
 using ClassicUO.Game.UI.Gumps;
 using ClassicUO.Input;
 using ClassicUO.Network;
-using ClassicUO.Resources;
 using ClassicUO.Utility;
 using ClassicUO.Utility.Logging;
-using SDL3;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -20,12 +19,13 @@ using ClassicUO.Common.Enums;
 using ClassicUO.Game.UI.Gumps.SpellBar;
 using ClassicUO.LegionScripting;
 using static SDL3.SDL;
+using ClassicUO.Game.UI;
+using ClassicUO.Utility.Debounce;
 
 namespace ClassicUO.Game.Managers
 {
     public sealed class MacroManager : LinkedObject
     {
-        public static readonly string[] MacroNames = Enum.GetNames(typeof(MacroType));
         private readonly uint[] _itemsInHand = new uint[2];
         private MacroObject _lastMacro;
         private MacroObject _currentMacroHead; // head node of the macro currently executing (for toggle-stop)
@@ -33,15 +33,15 @@ namespace ClassicUO.Game.Managers
         private readonly World _world;
 
         private readonly byte[] _skillTable =
-        {
+        [
             1, 2, 35, 4, 6, 12,
             14, 15, 16, 19, 21, 56 /*imbuing*/,
             23, 3, 46, 9, 30, 22,
             48, 32, 33, 47, 36, 38
-        };
+        ];
 
         private readonly int[] _spellsCountTable =
-        {
+        [
             Constants.SPELLBOOK_1_SPELLS_COUNT,
             Constants.SPELLBOOK_2_SPELLS_COUNT,
             Constants.SPELLBOOK_3_SPELLS_COUNT,
@@ -49,10 +49,38 @@ namespace ClassicUO.Game.Managers
             Constants.SPELLBOOK_5_SPELLS_COUNT,
             Constants.SPELLBOOK_6_SPELLS_COUNT,
             Constants.SPELLBOOK_7_SPELLS_COUNT
-        };
+        ];
 
+        // Leading-edge only, one instance per action: first press of each action acts instantly, repeats
+        // of *that same* action within 100ms are collapsed. Separate instances (rather than one shared
+        // debouncer) so a quick Dismount-then-Mount still fires both instead of the second being swallowed.
+        private readonly Debounce _mountDebouncer = new(() => ExecuteMountAction(MountAction.Mount), 100, true, false);
+        private readonly Debounce _dismountDebouncer = new(() => ExecuteMountAction(MountAction.Dismount), 100, true, false);
+        private readonly Debounce _toggleMountDebouncer = new(() => ExecuteMountAction(MountAction.Toggle), 100, true, false);
 
-        public MacroManager(World world) { _world = world; }
+        public MacroManager(World world)
+        {
+            _world = world;
+            EventSink.JournalEntryAdded += OnJournalEntryAdded;
+        }
+
+        private void OnJournalEntryAdded(object sender, JournalEntry e)
+        {
+            if (e == null || string.IsNullOrEmpty(e.Text) || _world?.Player == null)
+            {
+                return;
+            }
+
+            for (var macro = (Macro)Items; macro != null; macro = (Macro)macro.Next)
+            {
+                if (macro.HasJournalTriggers && macro.MatchesJournalTrigger(e.Text) && macro.Items is MacroObject macroObject)
+                {
+                    SetMacroToExecute(macroObject);
+                    WaitForTargetTimer = 0;
+                    break;
+                }
+            }
+        }
 
         public long WaitForTargetTimer { get; set; }
 
@@ -104,7 +132,7 @@ namespace ClassicUO.Game.Managers
             }
         }
 
-        public void Save(string? path = null)
+        public void Save(string path = null)
         {
             List<Macro> list = GetAllMacros();
 
@@ -241,7 +269,7 @@ namespace ClassicUO.Game.Managers
             (
                 new Macro
                 (
-                    ResGeneral.Paperdoll,
+                    TazLang.Get("paperdoll"),
                     (SDL_Keycode)112,
                     true,
                     false,
@@ -259,7 +287,7 @@ namespace ClassicUO.Game.Managers
             (
                 new Macro
                 (
-                    ResGeneral.Options,
+                    TazLang.Get("options"),
                     (SDL_Keycode)111,
                     true,
                     false,
@@ -277,7 +305,7 @@ namespace ClassicUO.Game.Managers
             (
                 new Macro
                 (
-                    ResGeneral.Journal,
+                    TazLang.Get("journal"),
                     (SDL_Keycode)106,
                     true,
                     false,
@@ -295,7 +323,7 @@ namespace ClassicUO.Game.Managers
             (
                 new Macro
                 (
-                    ResGeneral.Backpack,
+                    TazLang.Get("backpack"),
                     (SDL_Keycode)105,
                     true,
                     false,
@@ -668,7 +696,7 @@ namespace ClassicUO.Game.Managers
                         switch (macro.Code)
                         {
                             case MacroType.Emote:
-                                text = ResGeneral.EmoteChar + text + ResGeneral.EmoteChar;
+                                text = TazLang.Get("emote_char") + text + TazLang.Get("emote_char");
                                 type = MessageType.Emote;
                                 hue = ProfileManager.CurrentProfile.EmoteHue;
 
@@ -692,6 +720,27 @@ namespace ClassicUO.Game.Managers
                         }
 
                         GameActions.Say(text, hue, type);
+                    }
+
+                    break;
+
+                case MacroType.PrivateSay:
+
+                    if (macro is MacroObjectString { Text: { } msg })
+                    {
+                        _world.MessageManager.HandleMessage
+                        (
+                            _world.Player,
+                            msg,
+                            _world.Player.Name ?? "Me",
+                            ProfileManager.CurrentProfile.SpeechHue,
+                            MessageType.Regular,
+                            3,
+                            TextType.OBJECT,
+                            true,
+                            Settings.GlobalSettings.Language,
+                            true
+                        );
                     }
 
                     break;
@@ -846,8 +895,8 @@ namespace ClassicUO.Game.Managers
 
                                     if (party == null)
                                     {
-                                        int x = Client.Game.Window.ClientBounds.Width / 2 - 272;
-                                        int y = Client.Game.Window.ClientBounds.Height / 2 - 240;
+                                        int x = ScaleHelper.LogicalWindowWidth / 2 - 272;
+                                        int y = ScaleHelper.LogicalWindowHeight / 2 - 240;
                                         UIManager.Add(new PartyGump(_world, x, y, _world.Party.CanLoot));
                                     }
                                     else
@@ -1231,8 +1280,8 @@ namespace ClassicUO.Game.Managers
 
                                     if (party == null)
                                     {
-                                        int x = Client.Game.Window.ClientBounds.Width / 2 - 272;
-                                        int y = Client.Game.Window.ClientBounds.Height / 2 - 240;
+                                        int x = ScaleHelper.LogicalWindowWidth / 2 - 272;
+                                        int y = ScaleHelper.LogicalWindowHeight / 2 - 240;
                                         UIManager.Add(new PartyGump(_world, x, y, _world.Party.CanLoot));
                                     }
                                     else
@@ -1305,43 +1354,19 @@ namespace ClassicUO.Game.Managers
                     break;
 
                 case MacroType.Dismount:
-                    Item m = _world.Player.FindItemByLayer(Layer.Mount);
-                    if (m != null)
-                    {
-                        GameActions.DoubleClickQueued(_world.Player, true);
-                        ScriptRecorder.Instance.RecordDismount();
-                    }
+                    _dismountDebouncer.Invoke();
                     break;
 
                 case MacroType.Mount:
-                    if (!GameActions.Mount())
-                    {
-                        GameActions.Print(_world, "Saved mount not found.", Constants.HUE_ERROR);
-                        goto case MacroType.SetMount;
-                    }
+                    _mountDebouncer.Invoke();
                     break;
 
                 case MacroType.SetMount:
-                    GameActions.Print(_world, "Target a mount to save it for the Mount macro.", 48);
-                    _world.TargetManager.SetTargeting(CursorTarget.SetMount, 0, TargetType.Neutral);
+                    PromptSetMount();
                     break;
 
                 case MacroType.ToggleMount:
-                    if (_world.Player.FindItemByLayer(Layer.Mount) != null)
-                    {
-                        // Player is mounted, dismount
-                        GameActions.DoubleClickQueued(_world.Player);
-                        ScriptRecorder.Instance.RecordDismount();
-                    }
-                    else
-                    {
-                        // Player is not mounted, try to mount
-                        if (!GameActions.Mount())
-                        {
-                            GameActions.Print(_world, "Saved mount not found.", Constants.HUE_ERROR);
-                            goto case MacroType.SetMount;
-                        }
-                    }
+                    _toggleMountDebouncer.Invoke();
                     break;
 
                 case MacroType.AddFriend:
@@ -1762,7 +1787,7 @@ namespace ClassicUO.Game.Managers
                     break;
 
                 case MacroType.CircleTrans:
-                    ProfileManager.CurrentProfile.UseCircleOfTransparency = !ProfileManager.CurrentProfile.UseCircleOfTransparency;
+                    ProfileManager.GlobalSettings.UseCircleOfTransparency = !ProfileManager.GlobalSettings.UseCircleOfTransparency;
 
                     break;
 
@@ -1780,7 +1805,7 @@ namespace ClassicUO.Game.Managers
                 case MacroType.AlwaysRun:
                     ProfileManager.CurrentProfile.AlwaysRun = !ProfileManager.CurrentProfile.AlwaysRun;
 
-                    GameActions.Print(_world, ProfileManager.CurrentProfile.AlwaysRun ? ResGeneral.AlwaysRunIsNowOn : ResGeneral.AlwaysRunIsNowOff);
+                    GameActions.Print(_world, ProfileManager.CurrentProfile.AlwaysRun ? TazLang.Get("always_run_is_now_on") : TazLang.Get("always_run_is_now_off"));
 
                     break;
 
@@ -1945,7 +1970,7 @@ namespace ClassicUO.Game.Managers
 
                         _world.ClientViewRange = res;
 
-                        GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, res));
+                        GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), res));
                     }
 
                     break;
@@ -1958,7 +1983,7 @@ namespace ClassicUO.Game.Managers
                         _world.ClientViewRange = Constants.MAX_VIEW_RANGE;
                     }
 
-                    GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, _world.ClientViewRange));
+                    GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), _world.ClientViewRange));
 
                     break;
 
@@ -1970,25 +1995,25 @@ namespace ClassicUO.Game.Managers
                         _world.ClientViewRange = Constants.MIN_VIEW_RANGE;
                     }
 
-                    GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, _world.ClientViewRange));
+                    GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), _world.ClientViewRange));
 
                     break;
 
                 case MacroType.MaxUpdateRange:
                     _world.ClientViewRange = Constants.MAX_VIEW_RANGE;
-                    GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, _world.ClientViewRange));
+                    GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), _world.ClientViewRange));
 
                     break;
 
                 case MacroType.MinUpdateRange:
                     _world.ClientViewRange = Constants.MIN_VIEW_RANGE;
-                    GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, _world.ClientViewRange));
+                    GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), _world.ClientViewRange));
 
                     break;
 
                 case MacroType.DefaultUpdateRange:
                     _world.ClientViewRange = Constants.MAX_VIEW_RANGE;
-                    GameActions.Print(_world, string.Format(ResGeneral.ClientViewRangeIsNow0, _world.ClientViewRange));
+                    GameActions.Print(_world, string.Format(TazLang.Get("client_view_range_is_now0"), _world.ClientViewRange));
 
                     break;
 
@@ -2007,6 +2032,7 @@ namespace ClassicUO.Game.Managers
                     // 2 - Follower (only your followers)
                     // 3 - Object (???)
                     // 4 - Mobile (any mobiles)
+                    // 5 - Friend (only mobiles on your friends list)
                     var scantype = (ScanTypeObject)(macro.SubCode - MacroSubType.Hostile);
 
                     if (scanRange == ScanModeObject.Nearest)
@@ -2129,7 +2155,7 @@ namespace ClassicUO.Game.Managers
                     break;
 
                 case MacroType.Grab:
-                    GameActions.Print(_world, ResGeneral.TargetAnItemToGrabIt);
+                    GameActions.Print(_world, TazLang.Get("target_an_item_to_grab_it"));
                     _world.TargetManager.SetTargeting(CursorTarget.Grab, 0, TargetType.Neutral);
 
                     break;
@@ -2145,7 +2171,7 @@ namespace ClassicUO.Game.Managers
                 }
 
                 case MacroType.SetGrabBag:
-                    GameActions.Print(_world, ResGumps.TargetContainerToGrabItemsInto);
+                    GameActions.Print(_world, TazLang.Get("target_container_to_grab_items_into"));
                     _world.TargetManager.SetTargeting(CursorTarget.SetGrabBag, 0, TargetType.Neutral);
 
                     break;
@@ -2400,16 +2426,16 @@ namespace ClassicUO.Game.Managers
                     break;
 
                 case MacroType.CloseCorpses:
-                    int? gridLootType = ProfileManager.CurrentProfile?.GridLootType; // 0 = none, 1 = only grid, 2 = both
+                    CorpseContainerStyle corpseStyle = ProfileManager.CurrentProfile?.CorpseContainerStyle ?? CorpseContainerStyle.Grid;
 
-                    if (gridLootType == 0 || gridLootType == 2)
+                    if (corpseStyle is CorpseContainerStyle.Original or CorpseContainerStyle.OldGridLootAndContainer)
                         UIManager.ForEach<ContainerGump>(g =>
                         {
                             if (g.Graphic == ContainerGump.CORPSES_GUMP)
                                 g.Dispose();
                         });
 
-                    if (gridLootType == 1 || gridLootType == 2)
+                    if (corpseStyle is CorpseContainerStyle.OldGridLoot or CorpseContainerStyle.OldGridLootAndContainer)
                         UIManager.ForEach<GridLootGump>(g =>
                         {
                             g.Dispose();
@@ -2489,8 +2515,7 @@ namespace ClassicUO.Game.Managers
                     break;
 
                 case MacroType.ToggleHotkeys:
-                    ProfileManager.CurrentProfile.DisableHotkeys = !ProfileManager.CurrentProfile.DisableHotkeys;
-                    GameActions.Print($"Hotkeys {(ProfileManager.CurrentProfile.DisableHotkeys ? "disabled" : "enabled")}.");
+                    HotKeyRegistrar.ToggleHotkeysEnabled();
                     break;
 
 
@@ -2561,7 +2586,7 @@ namespace ClassicUO.Game.Managers
         /// </summary>
         private Item GetHoveredItem()
         {
-            for (var control = UIManager.MouseOverControl; control != null && control is not Gump; control = control.Parent)
+            for (IGui control = UIManager.MouseOverControl; control != null && control is not Gump; control = control.Parent)
             {
                 if (!SerialHelper.IsItem(control.LocalSerial))
                     continue;
@@ -2588,7 +2613,7 @@ namespace ClassicUO.Game.Managers
                     if (ent != null)
                     {
                         if (!ProfileManager.CurrentProfile.HideMacroTargetMessage)
-                            GameActions.MessageOverhead(_world, string.Format(ResGeneral.Target0, ent.Name), Notoriety.GetHue(((Mobile)ent).NotorietyFlag), _world.Player);
+                            GameActions.MessageOverhead(_world, string.Format(TazLang.Get("target0"), ent.Name), Notoriety.GetHue(((Mobile)ent).NotorietyFlag), _world.Player);
 
                         _world.TargetManager.NewTargetSystemSerial = serial;
                         _world.TargetManager.SelectedTarget = serial;
@@ -2602,7 +2627,7 @@ namespace ClassicUO.Game.Managers
                     if (ent != null)
                     {
                         if (!ProfileManager.CurrentProfile.HideMacroTargetMessage)
-                            GameActions.MessageOverhead(_world, string.Format(ResGeneral.Target0, ent.Name), 992, _world.Player);
+                            GameActions.MessageOverhead(_world, string.Format(TazLang.Get("target0"), ent.Name), 992, _world.Player);
                         _world.TargetManager.SelectedTarget = serial;
                         _world.TargetManager.LastTargetInfo.SetEntity(serial);
 
@@ -2611,7 +2636,7 @@ namespace ClassicUO.Game.Managers
                 }
             }
 
-            GameActions.Print(_world, ResGeneral.EntityNotFound);
+            GameActions.Print(_world, TazLang.Get("entity_not_found"));
         }
 
         private int ProcessLoopContainer(MacroLoopContainer container)
@@ -2671,8 +2696,79 @@ namespace ClassicUO.Game.Managers
             return result;
         }
 
-    }
+        /// <summary>
+        /// Prompts the player to target their designated mount
+        /// </summary>
+        private static void PromptSetMount()
+        {
+            World world = World.Instance;
+            if (world == null)
+                return;
 
+            GameActions.Print(world, "Target a mount to save it for the Mount macro.", 48);
+            world.TargetManager.SetTargeting(CursorTarget.SetMount, 0, TargetType.Neutral);
+        }
+
+        /// <summary>
+        ///     Runs a mount/dismount/toggle action, deciding <see cref="MountAction.Toggle" /> by current
+        ///     mount state. Invoked via one of the per-action debouncers (<see cref="_mountDebouncer" />,
+        ///     <see cref="_dismountDebouncer" />, <see cref="_toggleMountDebouncer" />), so this may run on a
+        ///     threadpool timer thread; the body is marshaled onto the main thread since it touches
+        ///     <see cref="World" /> and sends packets.
+        /// </summary>
+        private static void ExecuteMountAction(MountAction action) =>
+            MainThreadQueue.InvokeOnMainThread(() =>
+                {
+                    World world = World.Instance;
+                    if (world?.Player == null)
+                        return;
+
+                    if (action == MountAction.Mount)
+                    {
+                        Mount();
+                        return;
+                    }
+
+                    bool isMounted = world.Player.FindItemByLayer(Layer.Mount) != null;
+
+                    if (!isMounted)
+                    {
+                        // Toggle with nothing to dismount falls through to mounting; a plain Dismount stays a no-op.
+                        if (action == MountAction.Toggle)
+                            Mount();
+                        return;
+                    }
+
+                    GameActions.DoubleClick(world, world.Player, true, true);
+                    ScriptRecorder.Instance.RecordDismount();
+                }
+            );
+
+        /// <summary>Mounts the player's saved mount, reporting an error and prompting for a new one if unset/unreachable.</summary>
+        private static void Mount()
+        {
+            GameActions.MountResult result = GameActions.Mount(false);
+            switch (result)
+            {
+                case GameActions.MountResult.NoDesignatedMount:
+                    GameActions.Print("There is no saved mount", Constants.HUE_ERROR);
+                    PromptSetMount();
+                    break;
+                case GameActions.MountResult.MountNotFound:
+                case GameActions.MountResult.MountTooFar:
+                    GameActions.Print("Saved mount was not found or is too far", Constants.HUE_WARN);
+                    break;
+            }
+        }
+
+        /// <summary>Actions dispatchable through <see cref="ExecuteMountAction" />.</summary>
+        private enum MountAction
+        {
+            Mount,
+            Dismount,
+            Toggle
+        }
+    }
 
     public class Macro : LinkedObject, IEquatable<Macro>
     {
@@ -2716,6 +2812,76 @@ namespace ClassicUO.Game.Managers
         public bool Alt { get; set; }
         public bool Ctrl { get; set; }
         public bool Shift { get; set; }
+
+        private string _journalTriggers = string.Empty;
+
+        /// <summary>
+        /// Semicolon (;) separated list of journal messages that will trigger this macro when received.
+        /// A macro is triggered when a journal entry contains any one of these substrings (case-insensitive).
+        /// </summary>
+        public string JournalTriggers
+        {
+            get => _journalTriggers;
+            set
+            {
+                _journalTriggers = value ?? string.Empty;
+                HasJournalTriggers = !string.IsNullOrWhiteSpace(_journalTriggers);
+            }
+        }
+
+        /// <summary>
+        /// Cached flag indicating this macro has at least one journal trigger configured.
+        /// Used as a cheap pre-check so journal processing can skip macros without triggers.
+        /// </summary>
+        public bool HasJournalTriggers { get; private set; }
+
+        /// <summary>
+        /// Returns true when the given journal text matches one of this macro's configured journal triggers.
+        /// </summary>
+        public bool MatchesJournalTrigger(string text)
+        {
+            if (!HasJournalTriggers || string.IsNullOrEmpty(text))
+            {
+                return false;
+            }
+
+            string[] triggers = _journalTriggers.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            foreach (string trigger in triggers)
+            {
+                if (!string.IsNullOrEmpty(trigger) && text.Contains(trigger, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public HotkeyBinding GetBinding() => new()
+        {
+            Key = Key,
+            Ctrl = Ctrl,
+            Shift = Shift,
+            Alt = Alt,
+            MouseButton = MouseButton,
+            WheelScroll = WheelScroll,
+            WheelUp = WheelUp,
+            ControllerButtons = ControllerButtons
+        };
+
+        public void ApplyBinding(HotkeyBinding binding)
+        {
+            Key = binding.Key;
+            Ctrl = binding.Ctrl;
+            Shift = binding.Shift;
+            Alt = binding.Alt;
+            MouseButton = binding.MouseButton;
+            WheelScroll = binding.WheelScroll;
+            WheelUp = binding.WheelUp;
+            ControllerButtons = binding.ControllerButtons;
+        }
+
         public bool HideLabel = false;
         public ushort Hue = 0x00;
         public ushort? Graphic = null;
@@ -2779,6 +2945,7 @@ namespace ClassicUO.Game.Managers
             writer.WriteAttributeString("hue", Hue.ToString());
             writer.WriteAttributeString("graphic", Graphic.HasValue ? Graphic.ToString() : string.Empty);
             writer.WriteAttributeString("scale", Scale.ToString());
+            writer.WriteAttributeString("journaltriggers", JournalTriggers ?? string.Empty);
 
             writer.WriteStartElement("actions");
 
@@ -2828,7 +2995,12 @@ namespace ClassicUO.Game.Managers
                 return;
             }
 
-            Key = (SDL_Keycode)int.Parse(xml.GetAttribute("key"));
+            if (!Enum.TryParse(xml.GetAttribute("key"), out SDL_Keycode mainKey))
+                mainKey = (int)SDL_Keycode.SDLK_UNKNOWN;
+
+
+
+            Key = mainKey;
             Alt = bool.Parse(xml.GetAttribute("alt"));
             Ctrl = bool.Parse(xml.GetAttribute("ctrl"));
             Shift = bool.Parse(xml.GetAttribute("shift"));
@@ -2841,6 +3013,11 @@ namespace ClassicUO.Game.Managers
             if (ushort.TryParse(xml.GetAttribute("graphic"), out ushort graphic))
             {
                 Graphic = graphic;
+            }
+
+            if (xml.HasAttribute("journaltriggers"))
+            {
+                JournalTriggers = xml.GetAttribute("journaltriggers");
             }
 
             if (xml.HasAttribute("mousebutton"))
@@ -2964,6 +3141,7 @@ namespace ClassicUO.Game.Managers
                 case MacroType.UseType:
                 case MacroType.SetOrganizerSource:
                 case MacroType.SetZoomLevel:
+                case MacroType.PrivateSay:
                     obj = new MacroObjectString(code, MacroSubType.MSC_NONE);
 
                     break;
@@ -3162,6 +3340,7 @@ namespace ClassicUO.Game.Managers
                 case MacroType.UseType:
                 case MacroType.SetOrganizerSource:
                 case MacroType.SetZoomLevel:
+                case MacroType.PrivateSay:
                     SubMenuType = 2;
 
                     break;

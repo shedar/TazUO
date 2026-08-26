@@ -1,6 +1,5 @@
 using ClassicUO.Configuration;
 using ClassicUO.Game.Managers;
-using ClassicUO.Game.UI;
 using ClassicUO.Game.UI.Controls;
 using ClassicUO.Game.UI.MyraWindows.Widgets;
 using ClassicUO.Game.UI.MyraWindows.Widgets.Assistant;
@@ -47,8 +46,8 @@ public class AssistantWindow : MyraControl
     {
         base.Dispose();
 
-        MacrosTabContent.Cleanup();
         HotkeysTabContent.Cleanup();
+        SpellBarTabContent.Cleanup();
 
         EventSink.SkillValueChangedEvent -= EventSkillUpdated;
         EventSink.SkillBaseChangedEvent -= EventSkillUpdated;
@@ -64,7 +63,7 @@ public class AssistantWindow : MyraControl
         tabs.AddTab(TazLang.Get("assistantwindow_tab_itemdatabase", "Item Database"), ItemDatabaseTabContent.Build);
         tabs.AddTab(TazLang.Get("assistantwindow_tab_macros", "Macros"), () => MacrosTabContent.Build(this));
         tabs.AddTab(TazLang.Get("assistantwindow_tab_hotkeys", "Hotkeys"), HotkeysTabContent.Build);
-        tabs.AddTab(TazLang.Get("assistantwindow_tab_skills", "Skills"), () => _skillsTabContent = new());
+        tabs.AddTab(TazLang.Get("assistantwindow_tab_skills", "Skills"), () => _skillsTabContent = new SkillsTabContent());
         tabs.SelectFirst();
         SetRootContent(tabs);
     }
